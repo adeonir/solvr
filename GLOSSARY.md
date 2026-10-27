@@ -20,6 +20,10 @@ _Avoid_: note, annotation
 A named group of sheets. A sheet belongs to at most one folder, and a sheet can also belong to no folder.
 _Avoid_: group, collection
 
+**Recently Deleted**:
+The place that holds deleted sheets until they are recovered or removed permanently.
+_Avoid_: trash, bin, deleted items
+
 **Mode**:
 The light or dark appearance of Nume: Light, Dark, or Auto. Auto follows the appearance of macOS.
 _Avoid_: appearance mode

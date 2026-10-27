@@ -39,40 +39,48 @@ Primary metric: the author uses Nume for daily calculations.
   - A time zone conversion to a city gives the time in that city. `PST` is the Pacific time zone, including daylight saving time, so `11 am PST in London` gives `18:00` on 26 October 2026.
 - FR-3 The calculation language adds these calculations: the `max` function and the `min` function; city abbreviations, as in `5pm ldn in sf`; `days until`, as in `days until 31 Mar`; and `to timespan`, as in `145 mins to timespan`.
 - FR-4 A number written with a currency uses the number format of that currency, so `$99.99` is 99.99 US dollars. A number written without a currency uses the regional number format of the system, so with the Brazilian format `1.500` is 1500 and `1,500` is 1.5. A result with a currency uses the number format of that currency, as in `$89.99`.
+- FR-36 The total of a sheet sums the results of its expressions. The total leaves out the results it cannot add, such as a temperature among money results. A sheet with a date among its results shows no total.
 - FR-5 Precision sets the number of decimal places of each result and of the total, from 1 to 10.
 - FR-6 The app converts currencies and cryptocurrencies with exchange rates that update over the internet.
 - FR-7 The app converts time zones by abbreviation and by city name.
+- FR-35 A sheet can be created.
 - FR-8 The app saves each sheet automatically after each change, with no save action.
-- FR-9 The app shows in the Dock. An optional icon shows in the menu bar.
-- FR-10 Always on Top keeps the window above other windows.
+- FR-26 Each sheet has a title, and the title can be renamed.
+- FR-27 A sheet can be deleted. Only the first deletion of a sheet asks for confirmation.
 - FR-11 The sheet font has a family, a size, and a line height:
   - The family is any monospaced font installed on the Mac.
   - The size is in px, with a default of 13.
   - The line height has a default of 2.
   - An empty size field or an empty line height field returns to its default.
-- FR-12 Mode and theme set the appearance:
-  - The mode is Light, Dark, or Auto. Auto follows the appearance of macOS.
-  - The themes are a default theme with the Apple colors, catppuccin with all its variants, rose-pine with all its variants, tokyo-night with all its variants, Dracula and Alucard, one-dark and One Light, and Monokai dark and Monokai light. Each theme is light or dark.
-  - The theme list shows only the themes that match the current mode. The default theme is first in each list.
-  - In Auto, when macOS changes between light and dark, Nume applies the first theme in the list for the new mode.
-  - The selected theme colors the whole window: the sheet, the bars, and the sheet list.
-- FR-13 The app updates itself automatically.
+- FR-12 The mode is Light, Dark, or Auto. Auto follows the appearance of macOS.
+- FR-33 The default theme uses the Apple colors and has a light version and a dark version. The theme colors the whole window: the sheet, the bars, and the sheet list.
+- FR-9 The app shows either in the Dock or in the menu bar. The Show in Menu Bar option moves the app from the Dock to the menu bar, and turning the option off moves it back to the Dock. The option is off by default. The menu of the menu bar icon opens the window, opens Settings, and quits the app.
+- FR-13 The app is distributed by direct download and by Homebrew, and updates itself automatically in both cases.
 
 ### Should Have
 
+- FR-28 A sheet can be moved to a folder, and out of its folder to no folder.
 - FR-14 Folders group sheets.
-- FR-15 iCloud syncs sheets and folders.
-- FR-16 Export writes a `.txt` file with one `expression = result` line for each expression. Import reads the same format: it removes the last `= result` from each line and keeps the `=` of an assignment, so `price = $8 times 3 = $24` comes back as `price = $8 times 3`.
-- FR-17 Extensions are `.js` files in an extensions folder. They create global variables with `nume.setVariable`, units with `nume.addUnit`, and functions with `nume.addFunction`. Nume adapts an extension written for the reference calculator when it loads the extension, so the extension runs without edits.
+- FR-30 A folder can be deleted. Deleting a folder deletes its sheets. Only the first deletion of a folder asks for confirmation.
+- FR-34 More themes join the default theme (FR-33):
+  - The themes are catppuccin with all its variants, rose-pine with all its variants, tokyo-night with all its variants, Dracula and Alucard, one-dark and One Light, and Monokai dark and Monokai light. Each theme is light or dark.
+  - The theme list shows only the themes that match the current mode. The default theme is first in each list.
+  - In Auto, when macOS changes between light and dark, Nume applies the first theme in the list for the new mode.
 - FR-18 A global hotkey opens Nume from any app.
 - FR-19 Launch at Login opens Nume when the user logs in to macOS.
-- FR-20 A URL scheme opens a sheet, creates a sheet with a given text, and adds a given text to the end of a sheet.
-- FR-21 A Raycast integration searches sheets and opens a sheet in Nume.
-- FR-22 Telemetry sends crash reports, errors, and usage data. Telemetry is on by default. The Telemetry option in the preferences turns all telemetry off. Telemetry follows NFR-1.
+- FR-22 Telemetry sends crash reports, errors, and usage data. Telemetry is on by default. The Telemetry option in Settings turns all telemetry off. Telemetry follows NFR-1.
 
 ### Could Have
 
-- None.
+- FR-25 Recently Deleted holds every deleted sheet for 30 days, and then the app removes the sheet permanently. A single Recently Deleted holds the deleted sheets of all folders. Before the 30 days end, a sheet in Recently Deleted can be recovered or deleted permanently. A recovered sheet goes back to the folder it was in before it was deleted. When that folder no longer exists, the recovered sheet belongs to no folder.
+- FR-29 A sheet can be duplicated.
+- FR-32 Search finds sheets by title and by text. The results leave out the sheets in Recently Deleted.
+- FR-31 A folder can be renamed.
+- FR-15 iCloud syncs sheets and folders.
+- FR-16 Export writes a `.txt` file with one `expression = result` line for each expression. Import reads the same format: it removes the last `= result` from each line and keeps the `=` of an assignment, so `price = $8 times 3 = $24` comes back as `price = $8 times 3`.
+- FR-20 A URL scheme opens a sheet, creates a sheet with a given text, and adds a given text to the end of a sheet.
+- FR-21 A Raycast integration searches sheets and opens a sheet in Nume.
+- FR-10 Always on Top keeps the window above other windows.
 
 ### Won't Have
 
@@ -82,6 +90,7 @@ Primary metric: the author uses Nume for daily calculations.
 ### Out of Scope
 
 - Alfred integration.
+- Extensions.
 - Dynamic font size.
 
 ## 5. Non-Functional Requirements
@@ -96,8 +105,8 @@ Primary metric: the author uses Nume for daily calculations.
 
 | Phase | Delivery | Criterion to advance |
 |-------|----------|----------------------|
-| MVP | FR-1 to FR-13 | The author uses Nume for daily calculations |
-| Roadmap | FR-14 to FR-22, in roadmap order, with no fixed phases | Not applicable: each item ships when the roadmap reaches it |
+| MVP | FR-1 to FR-9, FR-11 to FR-13, FR-26, FR-27, FR-33, FR-35, and FR-36 | The author uses Nume for daily calculations |
+| Roadmap | FR-14, FR-18, FR-19, FR-22, FR-28, FR-30, and FR-34, in roadmap order, with no fixed phases | Not applicable: each item ships when the roadmap reaches it |
 
 ## 7. Assumptions & Risks
 
@@ -110,3 +119,4 @@ Primary metric: the author uses Nume for daily calculations.
 ## 9. References
 
 - Product positioning: [PRODUCT.md](../../PRODUCT.md)
+- Hi-fi mockup: [Nume main window](https://claude.ai/artifact/FhzDwfzVV31GPTf6LKWWe9)
