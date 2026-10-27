@@ -4,8 +4,20 @@ Nume is a text calculator for the Mac. This glossary defines the words that the 
 
 ## Language
 
+**Sheet**:
+A saved, named page of text in Nume that holds expressions, variables, and comments, in a format close to Markdown. Variables and earlier expressions in a sheet keep their meaning until someone deletes them.
+_Avoid_: note, calculation, document, file
+
+**Expression**:
+One line of a sheet that Nume evaluates to a result.
+_Avoid_: calculation, formula, line
+
+**Comment**:
+Text in a sheet that Nume does not evaluate.
+_Avoid_: note, annotation
+
 **Folder**:
-A named group of notes. A note belongs to at most one folder, and a note can also belong to no folder.
+A named group of sheets. A sheet belongs to at most one folder, and a sheet can also belong to no folder.
 _Avoid_: group, collection
 
 **Mode**:
@@ -21,5 +33,5 @@ The data that Nume sends about its own operation: crash reports, errors, and usa
 _Avoid_: analytics, tracking, error tracker
 
 **Anonymization**:
-The replacement of each real name and each real number in note text by a false value of the same type and format, so the expression can still be calculated. Nume keeps no link between a false value and the real value.
+The replacement of each real name and each real number in sheet text by a false value of the same type and format, so the expression can still be calculated. Nume keeps no link between a false value and the real value.
 _Avoid_: masking, redaction, pseudonymization
