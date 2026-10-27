@@ -10,11 +10,11 @@ sources: []
 
 ## 1. Problem
 
-The text calculators the author uses today do not keep notes between sessions, cannot group notes, cannot sync notes, and give wrong results for some calculations. The evidence is anecdotal: the author's own daily use.
+The text calculators the author uses today do not keep sheets between sessions, cannot group sheets, cannot sync sheets, and give wrong results for some calculations. The evidence is anecdotal: the author's own daily use.
 
 ## 2. Audience
 
-- **Primary user, the author:** a developer who uses a text calculator on the Mac every day. Main use cases: quick calculations during work, such as unit conversions, currency conversions, `px` to `em`, and time zones; and saved notes for calculations that come back, such as a budget or a split of expenses.
+- **Primary user, the author:** a developer who uses a text calculator on the Mac every day. Main use cases: quick calculations during work, such as unit conversions, currency conversions, `px` to `em`, and time zones; and saved sheets for calculations that come back, such as a budget or a split of expenses.
 - **Other Mac users who find the project:** people with the same use cases as the primary user.
 
 ## 3. Goals & Metrics
@@ -29,7 +29,7 @@ Primary metric: the author uses Nume for daily calculations.
 
 ### Must Have
 
-- FR-1 The calculation language covers the calculations of a daily use of Nume, as the use cases of section 2 state: quick calculations during work, such as unit conversions, currency conversions, `px` to `em`, and time zones; and saved notes, such as a budget or a split of expenses.
+- FR-1 The calculation language covers the calculations of a daily use of Nume, as the use cases of section 2 state: quick calculations during work, such as unit conversions, currency conversions, `px` to `em`, and time zones; and saved sheets, such as a budget or a split of expenses.
 - FR-2 The calculation language reads these expressions as follows:
   - `and` adds. `&` is bitwise AND. `|` and `or` are bitwise OR.
   - `min` followed by parentheses is the minimum function, as in `min(3; 7)`. `min` after a number is the minute unit, as in `15 min`.
@@ -42,10 +42,10 @@ Primary metric: the author uses Nume for daily calculations.
 - FR-5 Precision sets the number of decimal places of each result and of the total, from 1 to 10.
 - FR-6 The app converts currencies and cryptocurrencies with exchange rates that update over the internet.
 - FR-7 The app converts time zones by abbreviation and by city name.
-- FR-8 The app saves each note automatically after each change, with no save action.
+- FR-8 The app saves each sheet automatically after each change, with no save action.
 - FR-9 The app shows in the Dock. An optional icon shows in the menu bar.
 - FR-10 Always on Top keeps the window above other windows.
-- FR-11 The note font has a family, a size, and a line height:
+- FR-11 The sheet font has a family, a size, and a line height:
   - The family is any monospaced font installed on the Mac.
   - The size is in px, with a default of 13.
   - The line height has a default of 2.
@@ -55,19 +55,19 @@ Primary metric: the author uses Nume for daily calculations.
   - The themes are a default theme with the Apple colors, catppuccin with all its variants, rose-pine with all its variants, tokyo-night with all its variants, Dracula and Alucard, one-dark and One Light, and Monokai dark and Monokai light. Each theme is light or dark.
   - The theme list shows only the themes that match the current mode. The default theme is first in each list.
   - In Auto, when macOS changes between light and dark, Nume applies the first theme in the list for the new mode.
-  - The selected theme colors the whole window: the note, the bars, and the note list.
+  - The selected theme colors the whole window: the sheet, the bars, and the sheet list.
 - FR-13 The app updates itself automatically.
 
 ### Should Have
 
-- FR-14 Folders group notes.
-- FR-15 iCloud syncs notes and folders.
+- FR-14 Folders group sheets.
+- FR-15 iCloud syncs sheets and folders.
 - FR-16 Export writes a `.txt` file with one `expression = result` line for each expression. Import reads the same format: it removes the last `= result` from each line and keeps the `=` of an assignment, so `price = $8 times 3 = $24` comes back as `price = $8 times 3`.
 - FR-17 Extensions are `.js` files in an extensions folder. They create global variables with `nume.setVariable`, units with `nume.addUnit`, and functions with `nume.addFunction`. Nume adapts an extension written for the reference calculator when it loads the extension, so the extension runs without edits.
 - FR-18 A global hotkey opens Nume from any app.
 - FR-19 Launch at Login opens Nume when the user logs in to macOS.
-- FR-20 A URL scheme opens a note, creates a note with a given text, and adds a given text to the end of a note.
-- FR-21 A Raycast integration searches notes and opens a note in Nume.
+- FR-20 A URL scheme opens a sheet, creates a sheet with a given text, and adds a given text to the end of a sheet.
+- FR-21 A Raycast integration searches sheets and opens a sheet in Nume.
 - FR-22 Telemetry sends crash reports, errors, and usage data. Telemetry is on by default. The Telemetry option in the preferences turns all telemetry off. Telemetry follows NFR-1.
 
 ### Could Have
@@ -76,7 +76,7 @@ Primary metric: the author uses Nume for daily calculations.
 
 ### Won't Have
 
-- FR-23 Built-in demo notes — not a priority now.
+- FR-23 Built-in demo sheets — not a priority now.
 - FR-24 Send Feedback — not a priority now.
 
 ### Out of Scope
@@ -88,7 +88,7 @@ Primary metric: the author uses Nume for daily calculations.
 
 | ID | Requirement | Target |
 |----|------------|--------|
-| NFR-1 | Telemetry carries no personal data. Note text and expressions go with telemetry only in anonymized form: each real name and each real number is replaced by a false value of the same type and format, and the expression can still be calculated, so `salário = R$ 8.000 - 4%` becomes `var1 = R$ 3.517 - 7%`. | Every telemetry event |
+| NFR-1 | Telemetry carries no personal data. Sheet text and expressions go with telemetry only in anonymized form: each real name and each real number is replaced by a false value of the same type and format, and the expression can still be calculated, so `salário = R$ 8.000 - 4%` becomes `var1 = R$ 3.517 - 7%`. | Every telemetry event |
 | NFR-2 | Without an internet connection, currency conversion and time zone conversion by city name use the cached data. | Each conversion that has cached data |
 | NFR-3 | Nume runs on the supported macOS versions. | macOS 15 or later |
 
