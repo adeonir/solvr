@@ -1,0 +1,24 @@
+# AGENTS.md
+
+Guidance for AI agents working in this repository.
+
+## Project
+
+Nume is a text calculator for the Mac. It combines a calculation language with sheets that stay saved, organized, and synced.
+## Layout
+
+- `PRODUCT.md` — the product register: purpose, users, brand personality, design principles
+- `GLOSSARY.md` — the language of the product; define every new domain term here
+- `docs/product/PRD.md` — requirements (FR, NFR), scope, phases, assumptions, risks, open questions
+- `docs/adr/` — architecture decision records, one file per decision
+
+## Conventions
+
+- All documents in English.
+- Use the terms defined in `GLOSSARY.md` and prefer the defined term over an `_Avoid_` word for the same concept; an `_Avoid_` word stays free for its other meanings. When a concept has no term, add it to the glossary instead of rotating synonyms.
+- Requirements stay at requirement level. Implementation choices such as the engine, the sync mechanism, or the tracker service enter the documents only when the work asks for them.
+- Record only what was said. No gap filling with assumptions, and flag each assumption. Documents carry no chat references.
+- Assign an ID to every new requirement: the next free number in its list (FR for functional, NFR for non-functional).
+- The PRD keeps its numbered structure (1. Problem through 9. References) and the scope groups Must Have, Should Have, Could Have, Won't Have, and Out of Scope.
+- An ADR keeps the structure name, Context, Decision, Alternatives Considered, Consequences, References.
+- Commits follow Conventional Commits in English, with `docs:` for document-only changes so far.
