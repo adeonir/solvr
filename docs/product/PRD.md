@@ -55,7 +55,7 @@ Primary metric: the author uses Nume for daily calculations.
 - FR-12 The mode is Light, Dark, or Auto. Auto follows the appearance of macOS.
 - FR-33 The default theme uses the Apple colors and has a light version and a dark version. The theme colors the whole window: the sheet, the bars, and the sheet list.
 - FR-9 The app shows either in the Dock or in the menu bar. The Show in Menu Bar option moves the app from the Dock to the menu bar, and turning the option off moves it back to the Dock. The option is off by default. The menu of the menu bar icon opens the window, opens Settings, and quits the app.
-- FR-13 The app is distributed by direct download and by Homebrew, and updates itself automatically in both cases.
+- FR-13 The app is distributed by direct download, by Homebrew, and maybe by the App Store. The app updates itself automatically in every case.
 
 ### Should Have
 
@@ -106,7 +106,7 @@ Primary metric: the author uses Nume for daily calculations.
 | Phase | Delivery | Criterion to advance |
 |-------|----------|----------------------|
 | MVP | FR-1 to FR-9, FR-11 to FR-13, FR-26, FR-27, FR-33, FR-35, and FR-36 | The author uses Nume for daily calculations |
-| Roadmap | FR-14, FR-18, FR-19, FR-22, FR-28, FR-30, and FR-34, in roadmap order, with no fixed phases | Not applicable: each item ships when the roadmap reaches it |
+| Next | FR-14, FR-18, FR-19, FR-22, FR-28, FR-30, and FR-34, in roadmap order, with no fixed phases | Not applicable: each item ships when the roadmap reaches it |
 
 ## 7. Assumptions & Risks
 
