@@ -1,6 +1,6 @@
 # Nume
 
-I'm building Nume, a text calculator for the Mac. I do calculations in text every day at work, and I wanted sheets that stay saved between sessions, stay organized, and sync through iCloud. Nume is that place where the calculation lives next to its comments.
+I'm building Nume, a beautiful text calculator for Mac. I do calculations in text every day at work, and I wanted sheets that stay saved between sessions, stay organized, and sync through iCloud. Nume is that place where the calculation lives next to its comments.
 
 ## What Nume does
 

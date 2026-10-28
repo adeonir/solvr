@@ -4,7 +4,7 @@ Guidance for AI agents working in this repository.
 
 ## Project
 
-Nume is a text calculator for the Mac. It combines a calculation language with sheets that stay saved, organized, and synced.
+Nume is a beautiful text calculator for Mac. It combines a calculation language with sheets that stay saved, organized, and synced.
 ## Layout
 
 - `PRODUCT.md` — the product register: purpose, users, brand personality, design principles
