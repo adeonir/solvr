@@ -1,6 +1,6 @@
 ---
 name: 002-match-the-longest-defined-variable-name
-status: proposed
+status: accepted
 date: 2026-10-30
 updated: 2026-10-30
 sources: []

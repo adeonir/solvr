@@ -1,6 +1,6 @@
 ---
 name: 003-use-30-days-for-months-without-a-reference-date
-status: proposed
+status: accepted
 date: 2026-10-30
 updated: 2026-10-30
 sources: []

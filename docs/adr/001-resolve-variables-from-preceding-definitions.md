@@ -1,6 +1,6 @@
 ---
 name: 001-resolve-variables-from-preceding-definitions
-status: proposed
+status: accepted
 date: 2026-10-30
 updated: 2026-10-30
 sources: []
