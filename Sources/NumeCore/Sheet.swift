@@ -123,24 +123,11 @@ struct SheetEvaluator {
                     return ExpressionResult(kind: .expression, diagnostic: failure)
                 }
                 let retained = Numeric.retain(value)
-                // A whole-line representation conversion shows its own form
-                // beside the expression; the numeric value never changes.
-                if case let .representation(kind, _) = node {
-                    return ExpressionResult(
-                        kind: .expression,
-                        value: .decimal(retained),
-                        display: Display.format(
-                            retained, as: kind,
-                            precision: context.displayPrecision, locale: locale
-                        )
-                    )
-                }
+                let display = representation(of: node, for: retained)
                 return ExpressionResult(
                     kind: .expression,
                     value: .decimal(retained),
-                    display: Numeric.display(
-                        retained, precision: context.displayPrecision, locale: locale
-                    )
+                    display: display
                 )
             } catch let lineError as LineError {
                 firstFailure = firstFailure ?? lineError.diagnostic
@@ -173,40 +160,59 @@ struct SheetEvaluator {
 
     // MARK: Value evaluation; failures throw the line's diagnostic.
 
-    mutating func evaluate(node: Node) throws -> Decimal {
+    mutating func evaluate(node: Node, overriding override: Units.Override? = nil) throws -> Decimal {
         switch node {
         case .number(let value):
             return value
+        case .quantity(let number, let unit):
+            // A `rem` or `em` quantity counts its pixels at the shared
+            // Settings base, or the expression-local substitute (ADK-227).
+            return try Units.quantityValue(
+                of: number, in: unit, pixelBase: Units.pixelBase(in: context, override: override)
+            )
+        case .conversion(let inner, let target, let localOverride):
+            let value = try evaluate(node: inner, overriding: localOverride ?? override)
+            return try Units.convert(
+                value,
+                from: Units.sourceUnit(of: inner),
+                to: target,
+                context: context,
+                override: localOverride ?? override
+            )
         case .reference(let name):
             return try resolved(name: name)
         case .unaryMinus(let inner):
-            return try Numeric.subtract(Decimal(0), evaluate(node: inner))
+            return try Numeric.subtract(
+                Decimal(0), try evaluate(node: inner, overriding: override)
+            )
         case .call:
             // Function behavior arrives with the function work; the parser
             // only opens incomplete-call recognition here.
             throw Diagnostic.syntax
         case .binary(let op, let lhsNode, let rhsNode):
-            return try evaluateBinary(op, lhsNode, rhsNode)
+            return try evaluateBinary(op, lhsNode, rhsNode, overriding: override)
         case .representation(let kind, let inner):
             // Inside arithmetic, a conversion contributes its value only;
             // the representation shows when the whole line is the
             // conversion (ADK-222).
-            let value = try evaluate(node: inner)
+            let value = try evaluate(node: inner, overriding: override)
             try Display.validate(value, as: kind)
             return value
         case .percentShare(let percent, let base):
             return try Percent.share(
-                try evaluate(node: percent), of: try evaluate(node: base)
+                try evaluate(node: percent, overriding: override),
+                of: try evaluate(node: base, overriding: override)
             )
         case .percentOff(let percent, let base):
             return try Percent.off(
-                try evaluate(node: percent), of: try evaluate(node: base)
+                try evaluate(node: percent, overriding: override),
+                of: try evaluate(node: base, overriding: override)
             )
         case .percentPortion(let inner):
-            return try Percent.portion(try evaluate(node: inner))
+            return try Percent.portion(try evaluate(node: inner, overriding: override))
         case .assignment(let name, let value):
             do {
-                let result = try evaluate(node: value)
+                let result = try evaluate(node: value, overriding: override)
                 let retained = Numeric.retain(result)
                 variables.define(name, .decimal(retained))
                 return retained
@@ -222,11 +228,30 @@ struct SheetEvaluator {
         }
     }
 
+    /// The form a whole line shows beside itself: a representation
+    /// conversion its own form, a bare quantity its unit, a unit
+    /// conversion the destination unit, and arithmetic the plain locale
+    /// number (ADK-222, ADK-227).
+    private func representation(of node: Node, for value: Decimal) -> String {
+        let precision = context.displayPrecision
+        switch node {
+        case .representation(let kind, _):
+            return Display.format(value, as: kind, precision: precision, locale: locale)
+        case .quantity(_, let unit):
+            return Units.quantityDisplay(value, in: unit, precision: precision, locale: locale)
+        case .conversion(_, let target, _):
+            return Units.display(value, in: target, precision: precision, locale: locale)
+        default:
+            return Numeric.display(value, precision: precision, locale: locale)
+        }
+    }
+
     private mutating func evaluateBinary(
-        _ `operator`: NumericOperator, _ lhsNode: Node, _ rhsNode: Node
+        _ `operator`: NumericOperator, _ lhsNode: Node, _ rhsNode: Node,
+        overriding override: Units.Override? = nil
     ) throws -> Decimal {
-        let lhs = try evaluate(node: lhsNode)
-        let rhs = try evaluate(node: rhsNode)
+        let lhs = try evaluate(node: lhsNode, overriding: override)
+        let rhs = try evaluate(node: rhsNode, overriding: override)
         switch `operator` {
         case .add: return try Numeric.add(lhs, rhs)
         case .subtract:

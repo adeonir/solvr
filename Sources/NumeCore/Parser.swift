@@ -17,6 +17,14 @@ enum Node {
     /// A representation conversion: the inner value's numeric meaning does
     /// not change; the kind picks how the line displays it (ADK-222).
     indirect case representation(Display.Representation, Node)
+    /// A quantity: a number with its unit, in the sense the language
+    /// defines for conversions (ADK-227).
+    indirect case quantity(Decimal, Unit)
+    /// A quantity conversion through `in`: the value converts into the
+    /// target unit, which the whole line's display carries (ADK-227). An
+    /// `at` override substitutes a Settings reference for this
+    /// expression only.
+    indirect case conversion(Node, Unit, override: Units.Override?)
     /// `N% of M`: the share M that the percent N names (ADK-226).
     indirect case percentShare(Node, Node)
     /// `N% off M`: M with the share taken off it (ADK-226).
@@ -70,7 +78,9 @@ struct Parser {
             }
             position += 1 // the `=`
             let name = normalizeName(names)
-            guard Language.reservedNames.contains(name) == false else {
+            // Unit aliases hold for every casing, so their reservation
+            // holds likewise (ADK-227).
+            guard Language.reservedNames.contains(name.lowercased()) == false else {
                 throw LineError(diagnostic: .reservedName(name: name))
             }
             let value: Node
@@ -116,17 +126,22 @@ struct Parser {
                 // Implicit multiplication: `2 (3)` multiplies 2 by 3.
                 lhs = .binary(.multiply, lhs, try parsePower(definedNames: definedNames))
             case .in:
-                // Representation conversion at the tight multiplicative
-                // level: `0b110111011 in hex + 1` adds one to the value.
+                // Representation and unit conversions at the tight
+                // multiplicative level: `0b110111011 in hex + 1` adds one
+                // to the value, `10 ft in m` converts the quantity.
                 position += 1
                 guard case .word(let keyword) = peek() else {
                     throw atEnd ? ParseError.pending : .invalid
                 }
-                guard let representation = Display.Representation(keyword: keyword) else {
+                if let representation = Display.Representation(keyword: keyword) {
+                    position += 1
+                    lhs = .representation(representation, lhs)
+                } else if let unit = Units.unit(for: keyword) {
+                    position += 1
+                    lhs = try parseConversion(lhs, unit, definedNames: definedNames)
+                } else {
                     throw ParseError.invalid
                 }
-                position += 1
-                lhs = .representation(representation, lhs)
             case .percent:
                 lhs = try parsePercentForms(lhs, definedNames: definedNames)
             case .word("as") where matchesPercentRatioKeyword():
@@ -162,6 +177,12 @@ struct Parser {
         switch peek() {
         case .number(let value):
             position += 1
+            // A unit word straight after its number makes the pair a
+            // quantity: `16px` or `2 inches` (ADK-227).
+            if case .word(let unitWord) = peek(), let unit = Units.unit(for: unitWord) {
+                position += 1
+                return .quantity(value, unit)
+            }
             return .number(value)
         case .openParen:
             position += 1
@@ -238,6 +259,32 @@ struct Parser {
             && tokens[position + 1] == .word("a")
             && tokens[position + 2] == .percent
             && tokens[position + 3] == .word("of")
+    }
+
+    // MARK: Unit forms (ADK-227)
+
+    private mutating func parseConversion(
+        _ source: Node, _ target: Unit, definedNames: Set<String>
+    ) throws -> Node {
+        // The expression-local `at Npx` or `at N ppi` clause substitutes
+        // its reference for this expression only (ADK-227).
+        if case let .word(keyword) = peek(), keyword == "at" {
+            position += 1
+            guard case .number(let value) = peek() else {
+                throw atEnd ? ParseError.pending : .invalid
+            }
+            position += 1
+            guard case .word(let unitWord) = peek(),
+                let kind = Units.Override.kind(for: unitWord)
+            else {
+                throw atEnd ? ParseError.pending : .invalid
+            }
+            position += 1
+            return .conversion(
+                source, target, override: Units.Override(kind: kind, value: value)
+            )
+        }
+        return .conversion(source, target, override: nil)
     }
 
     // MARK: Helpers
