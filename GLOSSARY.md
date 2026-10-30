@@ -48,6 +48,22 @@ _Avoid_: rem size, font size
 The shared value in pixels per inch that a sheet's Settings give the translation of points and physical lengths into pixels, initially 96 ppi. An expression-local override written with `at`, as in `2 inches in px at 72 ppi`, replaces the density for that expression only.
 _Avoid_: resolution, DPI
 
+**Calendar date**:
+A written day with its month and an optional year, as in `31 Mar` or `31 Mar 2027`, that resolves in the sheet's clock and time zone. Without a year the current year holds it, and a day the year lacks goes to the next year that carries the day, as in `29 Feb`.
+_Avoid_: date value, day entry
+
+**Calendar-day difference**:
+The whole days from the calendar's today to a date, independent of the hours and of daylight-saving shifts, as `days until 31 Mar` shows in `152 days`. Today counts as zero, and a passed date takes its next yearly occurrence.
+_Avoid_: countdown, date diff
+
+**Calendar-month shift**:
+A date plus whole calendar months with the month ends resolved, so `31 Jan + 1 month` reaches `28 February` in a common year and `29 February` in a leap year.
+_Avoid_: month addition over month end
+
+**Unix timestamp**:
+The whole seconds after the Unix epoch that `fromunix` converts into the exact instant it represents, shown in the sheet's time zone.
+_Avoid_: epoch time, unix time
+
 **Folder**:
 A named group of sheets. A sheet belongs to at most one folder, and a sheet can also belong to no folder.
 _Avoid_: group, collection
