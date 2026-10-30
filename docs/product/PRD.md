@@ -115,7 +115,7 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
 
 ## 6. Assumptions & Risks
 
-- **Risk:** Currency conversion and time zone conversion by city name depend on an external data source. If the source stops working or changes, these conversions stop. — The cache (NFR-2) keeps conversions working with the last data, and telemetry (FR-22) shows failures. Telemetry ships after the MVP, so during the MVP only the cache covers this risk.
+- **Risk:** Currency conversion and time zone conversion by city name depend on an external data source. If the source stops working or changes, these conversions stop. — The cache (NFR-2) keeps conversions working with the last data, and telemetry (FR-22) shows failures.
 
 ## 7. Open Questions
 
