@@ -13,5 +13,5 @@ I'm building Nume, a beautiful text calculator for Mac. I do calculations in tex
 ## Docs
 
 - [PRODUCT.md](PRODUCT.md), the product register: positioning, users, brand personality, and design principles
-- [PRD.md](docs/product/PRD.md), the requirements, scope, phases, and risks
+- [PRD.md](docs/product/PRD.md), the requirements, scope, and risks
 - [GLOSSARY.md](GLOSSARY.md), the words the product, its documents, and its code use for the same concepts

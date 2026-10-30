@@ -27,6 +27,8 @@ Primary metric: the author uses Nume for daily calculations.
 
 ## 4. Scope
 
+Must Have, Should Have, and Could Have state how much a requirement matters to the user. They do not set the order of delivery.
+
 ### Must Have
 
 - FR-1 The calculation language covers the calculations of a daily use of Nume, as the use cases of section 2 state: quick calculations during work, such as unit conversions, currency conversions, `px` to `em`, and time zones; and saved sheets, such as a budget or a split of expenses.
@@ -111,22 +113,15 @@ Primary metric: the author uses Nume for daily calculations.
 | NFR-2 | Without an internet connection, currency conversion and time zone conversion by city name use the cached data. | Each conversion that has cached data |
 | NFR-3 | Nume runs on the supported macOS versions. | macOS 15 or later |
 
-## 6. Phases
-
-| Phase | Delivery | Criterion to advance |
-|-------|----------|----------------------|
-| MVP | FR-1 to FR-9, FR-11 to FR-13, FR-18, FR-19, FR-26, FR-27, FR-29, and FR-33 to FR-39 | The author uses Nume for daily calculations |
-| Next | FR-10, FR-14, FR-15, FR-16, FR-20, FR-21, FR-22, FR-25, FR-28, and FR-30 to FR-32 | Not applicable: each item ships when the roadmap reaches it |
-
-## 7. Assumptions & Risks
+## 6. Assumptions & Risks
 
 - **Risk:** Currency conversion and time zone conversion by city name depend on an external data source. If the source stops working or changes, these conversions stop. — The cache (NFR-2) keeps conversions working with the last data, and telemetry (FR-22) shows failures. Telemetry ships after the MVP, so during the MVP only the cache covers this risk.
 
-## 8. Open Questions
+## 7. Open Questions
 
 - App Store distribution: TBD.
 
-## 9. References
+## 8. References
 
 - Product positioning: [PRODUCT.md](../../PRODUCT.md)
 - Hi-fi mockup: [Nume main window](https://claude.ai/artifact/FhzDwfzVV31GPTf6LKWWe9)
