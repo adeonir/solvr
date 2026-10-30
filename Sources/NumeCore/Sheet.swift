@@ -120,6 +120,18 @@ struct SheetEvaluator {
                     return ExpressionResult(kind: .expression, diagnostic: failure)
                 }
                 let retained = Numeric.retain(value)
+                // A whole-line representation conversion shows its own form
+                // beside the expression; the numeric value never changes.
+                if case let .representation(kind, _) = node {
+                    return ExpressionResult(
+                        kind: .expression,
+                        value: .decimal(retained),
+                        display: Display.format(
+                            retained, as: kind,
+                            precision: context.displayPrecision, locale: locale
+                        )
+                    )
+                }
                 return ExpressionResult(
                     kind: .expression,
                     value: .decimal(retained),
@@ -160,6 +172,13 @@ struct SheetEvaluator {
             throw Diagnostic.syntax
         case .binary(let op, let lhsNode, let rhsNode):
             return try evaluateBinary(op, lhsNode, rhsNode)
+        case .representation(let kind, let inner):
+            // Inside arithmetic, a conversion contributes its value only;
+            // the representation shows when the whole line is the
+            // conversion (ADK-222).
+            let value = try evaluate(node: inner)
+            try Display.validate(value, as: kind)
+            return value
         case .assignment(let name, let value):
             do {
                 let result = try evaluate(node: value)
