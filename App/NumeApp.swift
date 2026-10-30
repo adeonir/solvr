@@ -40,6 +40,9 @@ private struct SheetEditorView: View {
             }
             .frame(minWidth: 140)
         }
+        .safeAreaPadding(.top, 8)
+        .background(Color(nsColor: .windowBackgroundColor).ignoresSafeArea())
+        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .onAppear(perform: openSheet)
         .onDisappear { coordinator.closeSheet() }
     }
@@ -64,25 +67,37 @@ private struct SheetTextView: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    func makeNSView(context: Context) -> ShortcutTextView {
-        let view = ShortcutTextView()
-        view.isRichText = false
-        view.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
-        view.delegate = context.coordinator
-        view.onCommentShortcut = { textView in
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.autohidesScrollers = true
+        scrollView.drawsBackground = false
+
+        let textView = ShortcutTextView()
+        textView.isRichText = false
+        textView.drawsBackground = false
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.widthTracksTextView = true
+        textView.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
+        textView.delegate = context.coordinator
+        textView.onCommentShortcut = { textView in
             let lineIndexes = context.coordinator.selectedLineIndexes(in: textView)
             let updated = CommentShortcut.toggle(textView.string, lines: lineIndexes)
             textView.string = updated
             self.text = updated
             self.onEdit(updated)
         }
-        view.string = text
-        return view
+        textView.string = text
+        scrollView.documentView = textView
+        return scrollView
     }
 
-    func updateNSView(_ view: ShortcutTextView, context: Context) {
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.parent = self
-        if view.string != text { view.string = text }
+        guard let textView = scrollView.documentView as? ShortcutTextView else { return }
+        if textView.string != text { textView.string = text }
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
