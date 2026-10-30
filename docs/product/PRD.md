@@ -75,6 +75,7 @@ Primary metric: the author uses Nume for daily calculations.
 - FR-18 A global hotkey opens Nume from any app. The user configures the hotkey in Settings. No global hotkey is configured by default.
 - FR-19 Launch at Login opens Nume when the user logs in to macOS.
 - FR-22 Telemetry sends crash reports, errors, and usage data. Telemetry is on by default. The Telemetry option in Settings turns all telemetry off. Telemetry follows NFR-1.
+- FR-39 The shortcut Cmd + / comments the line with the cursor by adding `// ` at its start, and uncomments it when it already starts with `//`. With several lines selected, the shortcut comments all of them, or uncomments all of them when every selected line is already a comment.
 
 ### Could Have
 
@@ -115,7 +116,7 @@ Primary metric: the author uses Nume for daily calculations.
 | Phase | Delivery | Criterion to advance |
 |-------|----------|----------------------|
 | MVP | FR-1 to FR-9, FR-11 to FR-13, FR-26, FR-27, FR-33, and FR-35 to FR-38 | The author uses Nume for daily calculations |
-| Next | FR-14, FR-18, FR-19, FR-22, FR-28, FR-30, and FR-34, in roadmap order, with no fixed phases | Not applicable: each item ships when the roadmap reaches it |
+| Next | FR-14, FR-18, FR-19, FR-22, FR-28, FR-30, FR-34, and FR-39, in roadmap order, with no fixed phases | Not applicable: each item ships when the roadmap reaches it |
 
 ## 7. Assumptions & Risks
 
