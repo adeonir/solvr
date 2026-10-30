@@ -14,7 +14,7 @@ Variable names can contain spaces. A sheet can define names with a shared prefix
 
 ## Decision
 
-We will recognize the longest complete variable name defined before the reference.
+We will recognize the longest complete variable name defined before the reference. When comparing names, any run of spaces, tabs, and non-breaking spaces between words counts as one space.
 
 ## Alternatives Considered
 
@@ -24,6 +24,7 @@ We will recognize the longest complete variable name defined before the referenc
 
 - When both `despesa` and `despesa mensal` are defined, `despesa mensal * 2` uses `despesa mensal`.
 - Names containing spaces can be referenced without quotes.
+- With `despesa mensal` defined, `despesa  mensal` written with two spaces or a tab refers to the same variable.
 - Parsing a reference depends on the variable names visible at that point in the sheet. Splitting text at spaces alone is insufficient.
 - Adding, removing, or renaming a preceding definition can change how subsequent text is recognized.
 
