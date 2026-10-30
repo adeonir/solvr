@@ -3,7 +3,7 @@ id: "001"
 name: calculate-everyday-expressions
 status: draft
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-10-30
 ---
 
 # Intent: Calculate everyday expressions correctly
@@ -30,6 +30,9 @@ The author and other Mac users with the same use cases; Nume and macOS regional 
 - `log 100` uses base 10 and gives `2`; `log 2 (8)` uses the given base and gives `3`.
 - Numbers without a currency use the system regional number format: in Brazilian format, `1.500` is 1500 and `1,500` is 1.5.
 - The language supports `days until 31 Mar` and `145 mins to timespan`.
+- Settings holds one shared pixel base for `rem` and `em`, 16 px by default. `16px in em at 20px` uses 20 px for that expression only.
+- An expression that cannot be calculated shows a short message that names the cause in place of its result. The other expressions keep their results.
+- The shortcut Cmd + / comments and uncomments the line with the cursor or the selected lines.
 
 ## Open questions
 
