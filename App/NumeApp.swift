@@ -29,8 +29,10 @@ private struct SheetEditorView: View {
             ScrollView {
                 LazyVStack(alignment: .trailing, spacing: 6) {
                     ForEach(Array(coordinator.results.enumerated()), id: \.offset) { _, result in
-                        Text(result.diagnostic?.message ?? result.display ?? "")
-                            .foregroundStyle(result.diagnostic == nil ? .secondary : .red)
+                        let resultText = result.diagnostic?.message ?? result.display ?? ""
+                        let resultColor: Color = result.diagnostic == nil ? .secondary : .red
+                        Text(resultText)
+                            .foregroundStyle(resultColor)
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }
                 }
@@ -93,6 +95,7 @@ private struct SheetTextView: NSViewRepresentable {
             parent.onEdit(view.string)
         }
 
+        @MainActor
         func selectedLineIndexes(in view: NSTextView) -> [Int] {
             let source = view.string as NSString
             let selection = view.selectedRange()
