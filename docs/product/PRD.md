@@ -59,7 +59,7 @@ Primary metric: the author uses Nume for daily calculations.
   - The line height has a default of 2.
   - An empty size field or an empty line height field returns to its default.
 - FR-12 The mode is Light, Dark, or Auto. Auto follows the appearance of macOS.
-- FR-33 The default theme uses the Apple colors and has a light version and a dark version. The theme colors the whole window: the sheet, the bars, and the sheet list. The theme includes an error color.
+- FR-33 The default theme uses the Apple colors and has a light version and a dark version. The theme colors the whole window: the sheet, the bars, and the sheet list.
 - FR-9 The app shows either in the Dock or in the menu bar. The Show in Menu Bar option moves the app from the Dock to the menu bar, and turning the option off moves it back to the Dock. The option is off by default. The menu of the menu bar icon opens the window, opens Settings, and quits the app.
 - FR-13 The app is distributed by direct download and by Homebrew. App Store distribution is TBD. The app updates itself automatically in every case.
 
