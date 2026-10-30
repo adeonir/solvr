@@ -115,8 +115,8 @@ Primary metric: the author uses Nume for daily calculations.
 
 | Phase | Delivery | Criterion to advance |
 |-------|----------|----------------------|
-| MVP | FR-1 to FR-9, FR-11 to FR-13, FR-26, FR-27, FR-33, and FR-35 to FR-38 | The author uses Nume for daily calculations |
-| Next | FR-14, FR-18, FR-19, FR-22, FR-28, FR-30, FR-34, and FR-39, in roadmap order, with no fixed phases | Not applicable: each item ships when the roadmap reaches it |
+| MVP | FR-1 to FR-9, FR-11 to FR-13, FR-18, FR-19, FR-26, FR-27, FR-29, and FR-33 to FR-39 | The author uses Nume for daily calculations |
+| Next | FR-10, FR-14, FR-15, FR-16, FR-20, FR-21, FR-22, FR-25, FR-28, and FR-30 to FR-32 | Not applicable: each item ships when the roadmap reaches it |
 
 ## 7. Assumptions & Risks
 
