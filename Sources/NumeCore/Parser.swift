@@ -21,6 +21,16 @@ enum Node {
     /// A quantity: a number with its unit, in the sense the language
     /// defines for conversions (ADK-227).
     indirect case quantity(Decimal, Unit)
+    /// A duration quantity: a number with a time unit, whose value
+    /// anchors on the seconds magnitude (ADK-228).
+    case duration(Decimal, Duration.Unit)
+    /// A duration conversion through `in`: representational, the count
+    /// shown in the destination unit while the value keeps its seconds
+    /// magnitude (ADK-228).
+    indirect case durationConversion(Node, Duration.Unit)
+    /// `N to timespan`: the duration composed to its decomposed form,
+    /// representational like the conversion (ADK-228).
+    indirect case toTimespan(Node)
     /// A quantity conversion through `in`: the value converts into the
     /// target unit, which the whole line's display carries (ADK-227). An
     /// `at` override substitutes a Settings reference for this
@@ -192,9 +202,24 @@ struct Parser {
                 } else if let unit = Units.unit(for: keyword) {
                     position += 1
                     lhs = try parseConversion(lhs, unit, definedNames: definedNames)
+                } else if let unit = Duration.unit(for: keyword) {
+                    // A duration unit conversion is representational: the
+                    // count shows in the destination unit (ADK-228).
+                    position += 1
+                    lhs = .durationConversion(lhs, unit)
                 } else {
                     throw ParseError.invalid
                 }
+            case .word(let leading) where leading.lowercased() == "to":
+                // `to timespan` composes the duration representation in
+                // the written order, at the same level as `in` (ADK-228):
+                // `1500 mins to timespan in days` reads the days back and
+                // `1500 mins in days to timespan` composes last.
+                guard peekTimespanKeyword() else {
+                    throw position + 1 >= tokens.count ? ParseError.pending : .invalid
+                }
+                position += 2
+                lhs = .toTimespan(lhs)
             case .percent:
                 lhs = try parsePercentForms(lhs, definedNames: definedNames)
             case .word("as") where matchesPercentRatioKeyword():
@@ -240,6 +265,13 @@ struct Parser {
             if case .word(let unitWord) = peek(), let unit = Units.unit(for: unitWord) {
                 position += 1
                 return .quantity(value, unit)
+            }
+            // A duration unit word straight after its number makes the
+            // pair a duration quantity: `15 min` is 15 minutes, not a
+            // minimum call (ADK-228).
+            if case .word(let unitWord) = peek(), let unit = Duration.unit(for: unitWord) {
+                position += 1
+                return .duration(value, unit)
             }
             // A month name straight after its number makes the pair a
             // calendar date, with an optional year after the month
@@ -335,6 +367,16 @@ struct Parser {
         }
         position += 1
         return .call(name: name, arguments: arguments)
+    }
+
+    /// Whether the tokens from the current position spell `timespan`
+    /// behind the `to` the caller seen: `N to timespan` is the composed
+    /// duration form (ADK-228).
+    private func peekTimespanKeyword() -> Bool {
+        guard position + 1 < tokens.count, case .word(let second) = tokens[position + 1] else {
+            return false
+        }
+        return second.lowercased() == "timespan"
     }
 
     // MARK: Percent forms (ADK-226)

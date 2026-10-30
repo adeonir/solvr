@@ -204,6 +204,19 @@ struct SheetEvaluator {
             return try Units.quantityValue(
                 of: number, in: unit, pixelBase: Units.pixelBase(in: context, override: override)
             )
+        case .duration(let number, let unit):
+            // A duration value anchors on the seconds magnitude of its
+            // written quantity (ADK-228).
+            return try Numeric.multiply(number, unit.factor)
+        case .durationConversion(let inner, _):
+            // The conversion is representational: the count only shows;
+            // the value keeps its seconds magnitude, so chains compose in
+            // their written order without rounding (ADK-228).
+            return try evaluate(node: inner, overriding: override)
+        case .toTimespan(let inner):
+            // The timespan form is representational like the conversion
+            // (ADK-228).
+            return try evaluate(node: inner, overriding: override)
         case .conversion(let inner, let target, let localOverride):
             let value = try evaluate(node: inner, overriding: localOverride ?? override)
             return try Units.convert(
@@ -276,6 +289,19 @@ struct SheetEvaluator {
     /// number (ADK-222, ADK-227).
     private func representation(of node: Node, for value: Decimal) -> String {
         let precision = context.displayPrecision
+        // A duration form its own representation, count in unit or
+        // composed timespan (ADK-228): a call shows the count in the unit
+        // its duration-carrying argument holds, so `round(1 month in
+        // days)` returns `30 days`.
+        if case .call(_, let arguments) = node,
+            let argument = arguments.first(where: { Duration.carriesQuantity(of: $0) }),
+            let unit = Duration.representativeUnit(of: argument)
+        {
+            return Duration.count(value, in: unit, precision: precision, locale: locale)
+        }
+        if let durationDisplay = durationDisplay(of: node, for: value) {
+            return durationDisplay
+        }
         switch node {
         case .representation(let kind, _):
             return Display.format(value, as: kind, precision: precision, locale: locale)
