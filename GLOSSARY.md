@@ -40,6 +40,14 @@ _Avoid_: measurement, amount
 The standard of measure that gives a quantity its meaning, such as the metre or the pixel. Each unit accepts exactly its standard abbreviation and its full name singular and plural, as in `ft`, `foot`, and `feet`; no other alias.
 _Avoid_: measure, metric
 
+**Duration**:
+A quantity of time, as in `15 min`, whose value counts in seconds and stays independent of any reference date, so a date-free month counts 30 days. A duration converts to another unit through `in`, as in `1500 mins in days`, shown in the destination unit on the sheet's display precision.
+_Avoid_: elapsed time, time span
+
+**Timespan**:
+The composed form of a duration that `to timespan` shows, as in `145 mins to timespan` showing `2 hours 25 min`, with one sign over the whole duration and preserved fractions. It remains convertible to a numeric unit quantity through `in`.
+_Avoid_: duration, period
+
 **Pixel base**:
 The shared value in pixels that a sheet's Settings give the `rem` and the `em`, initially 16 pixels. An expression-local override written with `at`, as in `16px in em at 20px`, replaces the base for that expression only.
 _Avoid_: rem size, font size
