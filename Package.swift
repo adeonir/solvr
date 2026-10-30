@@ -6,6 +6,9 @@ let package = Package(
     platforms: [
         .macOS(.v15)
     ],
+    products: [
+        .library(name: "NumeCore", targets: ["NumeCore"]),
+    ],
     targets: [
         .target(name: "NumeCore"),
         .testTarget(
