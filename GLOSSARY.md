@@ -5,7 +5,7 @@ Nume is a text calculator for the Mac. This glossary defines the words that the 
 ## Language
 
 **Sheet**:
-A saved, named page of text in Nume that holds expressions, variables, headings, and comments, in a format close to Markdown. Variables and earlier expressions in a sheet keep their meaning until someone deletes them.
+A saved, named page of text in Nume that holds expressions, variables, headings, comments, and text lines, in a format close to Markdown. Variables and earlier expressions in a sheet keep their meaning until someone deletes them.
 _Avoid_: note, calculation, document, file
 
 **Expression**:
@@ -23,6 +23,14 @@ _Avoid_: title, section, header
 **Comment**:
 Text in a sheet that starts with `//`, either as a whole line or after an expression, and that Nume does not evaluate. A heading is not a comment.
 _Avoid_: note, annotation
+
+**Label**:
+Words at the start of an expression, before its first number or known name, that Nume ignores when the rest of the line is a valid expression, as in `compras 2 + 3`.
+_Avoid_: caption, tag, prefix
+
+**Text line**:
+A line of a sheet with no number, operator, `=`, or known name. Nume does not evaluate it, and it shows no result and no message.
+_Avoid_: plain text, note
 
 **Folder**:
 A named group of sheets. A sheet belongs to at most one folder, and a sheet can also belong to no folder.
