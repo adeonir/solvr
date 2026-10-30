@@ -13,7 +13,7 @@ import Foundation
 /// Names the language keeps for itself; assigning to one is a reserved-name
 /// error. Units register their own reserved names alongside these sets.
 enum Language {
-    static let functionNames: Set<String> = ["min", "max", "sqrt", "fact", "sin", "round", "log"]
+    static let functionNames: Set<String> = ["min", "max", "sqrt", "fact", "sin", "round", "log", "fromunix"]
     static let constantNames: Set<String> = ["pi"]
     /// The word forms of the operators (`times`, `and`, `or`); their symbol
     /// forms cannot spell a name.

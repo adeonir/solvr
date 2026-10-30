@@ -58,6 +58,12 @@ public enum LineKind: Sendable, Equatable {
 /// display representation.
 public enum ExpressionValue: Sendable, Equatable {
     case decimal(Decimal)
+    /// A calendar date, or an instant shown with its time of day
+    /// (ADK-229).
+    case date(Date)
+    /// A calendar-day difference in whole days, apart from any numeric
+    /// magnitude (ADK-229).
+    case difference(Int)
 }
 
 /// One line's evaluation outcome: per line a nullable value, its display
