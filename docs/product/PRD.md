@@ -1,7 +1,7 @@
 ---
 name: prd
 created: 2026-10-26
-updated: 2026-10-29
+updated: 2026-10-30
 status: approved
 sources: []
 ---
@@ -39,6 +39,11 @@ Primary metric: the author uses Nume for daily calculations.
   - A time zone conversion to a city gives the time in that city. `PST` is the Pacific time zone, including daylight saving time, so `11 am PST in London` gives `18:00` on 26 October 2026.
 - FR-3 The calculation language adds these calculations: the `max` function and the `min` function; city abbreviations, as in `5pm ldn in sf`; `days until`, as in `days until 31 Mar`; and `to timespan`, as in `145 mins to timespan`.
 - FR-4 A number written with a currency uses the number format of that currency, so `$99.99` is 99.99 US dollars. A number written without a currency uses the regional number format of the system, so with the Brazilian format `1.500` is 1500 and `1,500` is 1.5. A result with a currency uses the number format of that currency, as in `$89.99`.
+- FR-37 Settings defines one shared pixel base for `rem` and `em` conversions, with a default of 16 px:
+  - Without an explicit base in the expression, both units use the value from Settings. With the default base, `1 rem` displays `16 px` and `16px in em` returns `1 em`.
+  - With the base set to 20 px, `1 rem in px` returns `20 px` and `16px in em` returns `0,8 em` with Brazilian number formatting.
+  - An explicit base in an `em` conversion represents the element's font size. With Brazilian number formatting, `16px in em at 20px` returns `0,8 em`, using 20 px as the base for that expression only.
+  - An expression's explicit base leaves the shared Settings value and other expressions unchanged.
 - FR-36 The total of a sheet sums the results of its expressions. The total leaves out the results it cannot add, such as a temperature among money results. A sheet with a date among its results shows no total.
 - FR-5 Precision sets the number of decimal places of each result and of the total, from 1 to 10.
 - FR-6 The app converts currencies and cryptocurrencies with exchange rates that update over the internet.
@@ -108,7 +113,7 @@ Primary metric: the author uses Nume for daily calculations.
 
 | Phase | Delivery | Criterion to advance |
 |-------|----------|----------------------|
-| MVP | FR-1 to FR-9, FR-11 to FR-13, FR-26, FR-27, FR-33, FR-35, and FR-36 | The author uses Nume for daily calculations |
+| MVP | FR-1 to FR-9, FR-11 to FR-13, FR-26, FR-27, FR-33, and FR-35 to FR-37 | The author uses Nume for daily calculations |
 | Next | FR-14, FR-18, FR-19, FR-22, FR-28, FR-30, and FR-34, in roadmap order, with no fixed phases | Not applicable: each item ships when the roadmap reaches it |
 
 ## 7. Assumptions & Risks
