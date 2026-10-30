@@ -45,6 +45,7 @@ Primary metric: the author uses Nume for daily calculations.
   - An explicit base in an `em` conversion represents the element's font size. With Brazilian number formatting, `16px in em at 20px` returns `0,8em`, using 20 px as the base for that expression only.
   - An expression's explicit base leaves the shared Settings value and other expressions unchanged.
 - FR-36 The total of a sheet sums the results of its expressions. The total leaves out the results it cannot add, such as a temperature among money results. A sheet with a date among its results shows no total.
+- FR-38 An expression that cannot be calculated shows a short message that names the cause in place of its result, on the same line as the expression, in the error color of the theme. The other expressions of the sheet keep their results. An expression that depends on an invalid expression shows that it depends on an error. An incomplete expression shows no message.
 - FR-5 Precision sets the number of decimal places of each result and of the total, from 1 to 10.
 - FR-6 The app converts currencies and cryptocurrencies with exchange rates that update over the internet.
 - FR-7 The app converts time zones by abbreviation and by city name.
@@ -58,7 +59,7 @@ Primary metric: the author uses Nume for daily calculations.
   - The line height has a default of 2.
   - An empty size field or an empty line height field returns to its default.
 - FR-12 The mode is Light, Dark, or Auto. Auto follows the appearance of macOS.
-- FR-33 The default theme uses the Apple colors and has a light version and a dark version. The theme colors the whole window: the sheet, the bars, and the sheet list.
+- FR-33 The default theme uses the Apple colors and has a light version and a dark version. The theme colors the whole window: the sheet, the bars, and the sheet list. The theme includes an error color.
 - FR-9 The app shows either in the Dock or in the menu bar. The Show in Menu Bar option moves the app from the Dock to the menu bar, and turning the option off moves it back to the Dock. The option is off by default. The menu of the menu bar icon opens the window, opens Settings, and quits the app.
 - FR-13 The app is distributed by direct download and by Homebrew. App Store distribution is TBD. The app updates itself automatically in every case.
 
@@ -68,7 +69,7 @@ Primary metric: the author uses Nume for daily calculations.
 - FR-14 Folders group sheets.
 - FR-30 A folder can be deleted. Deleting a folder deletes its sheets. Only the first deletion of a folder asks for confirmation.
 - FR-34 More themes join the default theme (FR-33):
-  - The themes are catppuccin with all its variants, rose-pine with all its variants, tokyo-night with all its variants, Dracula and Alucard, one-dark and One Light, and Monokai dark and Monokai light. Each theme is light or dark.
+  - The themes are catppuccin with all its variants, rose-pine with all its variants, tokyo-night with all its variants, Dracula and Alucard, one-dark and One Light, and Monokai dark and Monokai light. Each theme is light or dark and has an error color.
   - The theme list shows only the themes that match the current mode. The default theme is first in each list.
   - In Auto, when macOS changes between light and dark, Nume applies the first theme in the list for the new mode.
 - FR-18 A global hotkey opens Nume from any app. The user configures the hotkey in Settings. No global hotkey is configured by default.
@@ -113,7 +114,7 @@ Primary metric: the author uses Nume for daily calculations.
 
 | Phase | Delivery | Criterion to advance |
 |-------|----------|----------------------|
-| MVP | FR-1 to FR-9, FR-11 to FR-13, FR-26, FR-27, FR-33, and FR-35 to FR-37 | The author uses Nume for daily calculations |
+| MVP | FR-1 to FR-9, FR-11 to FR-13, FR-26, FR-27, FR-33, and FR-35 to FR-38 | The author uses Nume for daily calculations |
 | Next | FR-14, FR-18, FR-19, FR-22, FR-28, FR-30, and FR-34, in roadmap order, with no fixed phases | Not applicable: each item ships when the roadmap reaches it |
 
 ## 7. Assumptions & Risks
