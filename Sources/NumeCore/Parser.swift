@@ -33,16 +33,13 @@ enum NumericOperator {
 enum ParseError: Error {
     /// The line is only the start of its expression.
     case pending
+    /// The line is an assignment whose value is still only the start of
+    /// its expression; the assigned name walks with it, so dependents of
+    /// the name never see a stale value (an assigned name whose expression
+    /// never finished keeps it erred for the sheet).
+    case pendingAssignment(String)
     /// The tokens cannot form an expression at all.
     case invalid
-}
-
-/// Names the language keeps for functions and constants; assigning to them
-/// is a reserved-name error (shared language semantics).
-enum Language {
-    static let functionNames: Set<String> = ["min", "max", "sqrt", "fact", "sin", "round", "log"]
-    static let constantNames: Set<String> = ["pi"]
-    static var reservedNames: Set<String> { functionNames.union(constantNames) }
 }
 
 struct Parser {
@@ -76,7 +73,12 @@ struct Parser {
             guard Language.reservedNames.contains(name) == false else {
                 throw LineError(diagnostic: .reservedName(name: name))
             }
-            let value = try parseExpression(definedNames: definedNames)
+            let value: Node
+            do {
+                value = try parseExpression(definedNames: definedNames)
+            } catch ParseError.pending {
+                throw ParseError.pendingAssignment(name)
+            }
             return .assignment(name: name, value)
         }
         position = 0
@@ -245,23 +247,4 @@ struct Parser {
     }
 
     private var atEnd: Bool { position >= tokens.count }
-}
-
-/// Names normalize runs of spaces, tabs, and non-breaking spaces between
-/// the words of a name into one space (ADR-002).
-func normalizeName(_ words: [String]) -> String {
-    words.joined(separator: " ")
-}
-
-/// Longest complete defined name the word run starts with, as words.
-func matchingDefinedName(words: [String], definedNames: Set<String>) -> [String]? {
-    guard !definedNames.isEmpty, !words.isEmpty else { return nil }
-    for length in stride(from: words.count, through: 1, by: -1) {
-        let candidate = Array(words.prefix(length))
-        let name = normalizeName(candidate)
-        if definedNames.contains(name) {
-            return candidate
-        }
-    }
-    return nil
 }

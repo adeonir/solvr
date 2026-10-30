@@ -8,10 +8,8 @@ import Foundation
 
 struct SheetEvaluator {
     let context: EvaluationContext
-    /// Names defined so far, with the values their expressions produced.
-    var bindings: [String: ExpressionValue] = [:]
-    /// Names whose defining expression erred.
-    var erredNames: Set<String> = []
+    /// The variable bindings the sheet has defined so far (ADK-223).
+    var variables = VariableTable()
 
     let locale: Locale
     let decimalSeparator: Character
@@ -78,10 +76,11 @@ struct SheetEvaluator {
             return true
         }
         // A word of the line is known when the sheet defines it already or
-        // the language reserves it.
-        for word in line.split(separator: " ") {
+        // the language reserves it. A blank run inside a name collides with
+        // the plain-space spelling the name normalizes to (ADR-002).
+        for word in line.map({ Tokenizer.isBlank($0) ? " " : $0 }).split(separator: " ") {
             let text = String(word)
-            if bindings.keys.contains(where: { name in nameKnown(name, word: text) })
+            if variables.definedNames.contains(where: { name in nameKnown(name, word: text) })
                 || Language.functionNames.contains(text)
                 || Language.constantNames.contains(text)
                 || text == "times"
@@ -102,20 +101,23 @@ struct SheetEvaluator {
     /// Parse attempts that strip 0 through every leading word: the first
     /// attempt that parses and evaluates completes the line; otherwise the
     /// strongest failure decides the outcome, with an unfinished line
-    /// staying silent.
+    /// staying silent. Every attempt sees the names defined so far, so a
+    /// reference recognizes the longest complete visible name (ADR-002).
     private mutating func attempt(lineTokens tokens: [Token]) -> ExpressionResult {
         var leadingWords = 0
         while leadingWords < tokens.count, case .word = tokens[leadingWords] {
             leadingWords += 1
         }
 
+        let definedNames = variables.definedNames
         var pendingSeen = false
+        var pendingAssignment: String?
         var firstFailure: Diagnostic?
 
         for stripped in 0 ... leadingWords {
             let remaining = Array(tokens[stripped ..< tokens.count])
             do {
-                let node = try Parser.parse(remaining)
+                let node = try Parser.parse(remaining, definedNames: definedNames)
                 let value = try evaluate(node: node)
                 if let failure = Numeric.rangeDiagnostic(for: value) {
                     return ExpressionResult(kind: .expression, diagnostic: failure)
@@ -140,10 +142,17 @@ struct SheetEvaluator {
                         retained, precision: context.displayPrecision, locale: locale
                     )
                 )
+            } catch let lineError as LineError {
+                firstFailure = firstFailure ?? lineError.diagnostic
             } catch let diagnostic as Diagnostic {
                 firstFailure = firstFailure ?? diagnostic
             } catch ParseError.pending {
                 pendingSeen = true
+            } catch ParseError.pendingAssignment(let name) {
+                pendingSeen = true
+                // The deepest attempt names the assignment the line still
+                // means: `compras price =` stays short for `price =`.
+                pendingAssignment = name
             } catch {
                 // The line parses no further: an invalid-syntax candidate.
             }
@@ -152,6 +161,11 @@ struct SheetEvaluator {
             return ExpressionResult(kind: .expression, diagnostic: failure)
         }
         if pendingSeen {
+            // An assigned name whose expression never finished stays erred,
+            // with no stale value its dependents could use (ADK-223).
+            if let name = pendingAssignment {
+                variables.fail(name)
+            }
             return ExpressionResult(kind: .incomplete)
         }
         return ExpressionResult(kind: .expression, diagnostic: .syntax)
@@ -194,15 +208,16 @@ struct SheetEvaluator {
             do {
                 let result = try evaluate(node: value)
                 let retained = Numeric.retain(result)
-                bindings[name] = .decimal(retained)
-                erredNames.remove(name)
+                variables.define(name, .decimal(retained))
                 return retained
             } catch let diagnostic as Diagnostic {
-                // Neither a stale value nor an erred one: dependents show
+                // Neither a stale value nor a silent one: dependents show
                 // that the dependency erred.
-                bindings.removeValue(forKey: name)
-                erredNames.insert(name)
+                variables.fail(name)
                 throw diagnostic
+            } catch let lineError as LineError {
+                variables.fail(name)
+                throw lineError.diagnostic
             }
         }
     }
@@ -236,25 +251,7 @@ struct SheetEvaluator {
     }
 
     mutating func resolved(name: String) throws -> Decimal {
-        if let constant = Constants.values[name] {
-            return constant
-        }
-        if let value = bindings[name], case .decimal(let number) = value {
-            return number
-        }
-        if erredNames.contains(name) {
-            throw Diagnostic.dependsOnError
-        }
-        throw Diagnostic.undefinedVariable(name: name)
-    }
-
-    /// Names the language defines values for.
-    enum Constants {
-        /// pi carries enough digits that approximations stay within the
-        /// error budget of one unit in the 34th significant digit.
-        static let values: [String: Decimal] = [
-            "pi": Decimal(string: "3.1415926535897932384626433832795028842", locale: Locale(identifier: "en_US_POSIX"))!
-        ]
+        try variables.resolve(name)
     }
 }
 
