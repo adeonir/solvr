@@ -53,8 +53,12 @@ enum Numeric {
     static func divide(_ a: Decimal, by b: Decimal) throws -> Decimal {
         if b == 0 { throw Diagnostic.divisionByZero }
         if a == 0 { return Decimal(0) }
-        let (mantissaA, exponentA) = normalizedParts(of: a)
-        let (mantissaB, exponentB) = normalizedParts(of: b)
+        // The mantissas normalize apart over magnitudes: the remainder sign
+        // is applied after reassembly, or the sign becomes part of the
+        // digit string and counts as an exponent place (ADK-227).
+        let negative = (a < 0) != (b < 0)
+        let (mantissaA, exponentA) = normalizedParts(of: a < 0 ? -a : a)
+        let (mantissaB, exponentB) = normalizedParts(of: b < 0 ? -b : b)
         let quotient = try check(mantissaA / mantissaB)
         let (mantissaQ, exponentQ) = normalizedParts(of: quotient)
         var digits = normalizedMantissaDigits(of: mantissaQ)
@@ -68,7 +72,7 @@ enum Numeric {
         guard let value = parsedDecimal("\(digits)e\(leadingExponent - digits.count + 1)") else {
             throw Diagnostic.outOfRange
         }
-        return try check(value)
+        return try check(negative ? -value : value)
     }
 
     /// Parse a decimal text with `en_US_POSIX`, the form every supported
@@ -81,9 +85,14 @@ enum Numeric {
     /// derived without entering the underflowing region: magnitudes above
     /// one lose digits through divisions that stay inside the representable
     /// range and magnitudes below one climb through safe multiplications.
+    /// The magnitude normalizes first: a negative mantissa never leaves
+    /// the `mantissa < 1` climb until it reaches NaN (ADK-227).
     static func normalizedParts(of value: Decimal) -> (Decimal, Int) {
+        if value.isNaN { return (value, 0) }
         var mantissa = value
         var exponent = 0
+        let negative = mantissa < 0
+        if negative { mantissa = -mantissa }
         while mantissa >= 10 {
             mantissa /= 10
             exponent += 1
@@ -92,7 +101,7 @@ enum Numeric {
             mantissa *= 10
             exponent -= 1
         }
-        return (mantissa, exponent)
+        return (negative ? -mantissa : mantissa, exponent)
     }
 
     /// The full-precision digit string of a normalized mantissa, decimal

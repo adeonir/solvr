@@ -19,7 +19,7 @@ enum Language {
     /// forms cannot spell a name.
     static let operatorNames: Set<String> = ["and", "or", "times"]
     static var reservedNames: Set<String> {
-        functionNames.union(constantNames).union(operatorNames)
+        functionNames.union(constantNames).union(operatorNames).union(Units.reservedNames)
     }
 }
 
