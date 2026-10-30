@@ -26,6 +26,8 @@ enum Token: Equatable, Sendable {
     case times
     /// The `in` keyword that introduces a representation conversion.
     case `in`
+    /// The `%` sign of a percent form (ADK-226).
+    case percent
     /// Nothing left on the line; only the parser sees it.
     case end
 }
@@ -79,6 +81,7 @@ enum Tokenizer {
             case ")": tokens.append(.closeParen)
             case "=": tokens.append(.equals)
             case ";": tokens.append(.semicolon)
+            case "%": tokens.append(.percent)
             case " ", "\t", "\u{00A0}", "\u{202F}", "\u{2060}":
                 break
             default:

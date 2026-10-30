@@ -17,10 +17,13 @@ enum Display {
         case oct
         /// Base sixteen with the `0x` prefix.
         case hex
+        /// A percent form: the ratio shown as a percent, e.g. `0,5` as
+        /// `50%` with Brazilian formatting (ADK-226).
+        case percent
 
         var base: Int? {
             switch self {
-            case .sci: return nil
+            case .sci, .percent: return nil
             case .bin: return 2
             case .oct: return 8
             case .hex: return 16
@@ -34,6 +37,7 @@ enum Display {
             case "bin": self = .bin
             case "oct": self = .oct
             case "hex": self = .hex
+            case "percent": self = .percent
             default: return nil
             }
         }
@@ -106,6 +110,14 @@ enum Display {
         switch representation {
         case .sci:
             return scientific(value, precision: precision, locale: locale)
+        case .percent:
+            // The percent representation scales the value to a hundred,
+            // applies the displayed decimal places, trims trailing zeros,
+            // and keeps the percent sign on the form: `0,5` shows `50%`
+            // (ADK-226).
+            let scaled = value * 100
+            guard !scaled.isNaN else { return "" }
+            return digits(of: Numeric.roundPlain(scaled, scale: precision), locale: locale) + "%"
         case .bin, .oct, .hex:
             guard let base = representation.base else { return "" }
             let sign = value < 0 ? "-" : ""
