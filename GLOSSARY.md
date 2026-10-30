@@ -5,15 +5,23 @@ Nume is a text calculator for the Mac. This glossary defines the words that the 
 ## Language
 
 **Sheet**:
-A saved, named page of text in Nume that holds expressions, variables, and comments, in a format close to Markdown. Variables and earlier expressions in a sheet keep their meaning until someone deletes them.
+A saved, named page of text in Nume that holds expressions, variables, headings, and comments, in a format close to Markdown. Variables and earlier expressions in a sheet keep their meaning until someone deletes them.
 _Avoid_: note, calculation, document, file
 
 **Expression**:
 One line of a sheet that Nume evaluates to a result.
 _Avoid_: calculation, formula, line
 
+**Variable**:
+A name that an expression in a sheet gives a value, as in `price = 8`. Later expressions in the same sheet use the name in place of the value, and a name used before its first definition is an error.
+_Avoid_: constant, field, parameter
+
+**Heading**:
+A line of a sheet that starts with one to six `#` markers and a space, and titles a part of the sheet. Nume does not evaluate it and gives it no result.
+_Avoid_: title, section, header
+
 **Comment**:
-Text in a sheet that Nume does not evaluate.
+Text in a sheet that starts with `//`, either as a whole line or after an expression, and that Nume does not evaluate. A heading is not a comment.
 _Avoid_: note, annotation
 
 **Folder**:
