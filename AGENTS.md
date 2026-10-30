@@ -22,3 +22,7 @@ Nume is a beautiful text calculator for Mac. It combines a calculation language 
 - The PRD keeps its numbered structure (1. Problem through 9. References) and the scope groups Must Have, Should Have, Could Have, Won't Have, and Out of Scope.
 - An ADR keeps the structure name, Context, Decision, Alternatives Considered, Consequences, References.
 - Commits follow Conventional Commits in English, with `docs:` for document-only changes so far.
+
+## Issue tracker
+
+Tracker: Linear — team Development, project Nume App. Configuration: repository-local `tracker.*`; inspect with `git config --local --get-regexp '^tracker\.'`. Change with "configure tracker".
