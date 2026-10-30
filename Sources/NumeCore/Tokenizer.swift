@@ -24,6 +24,8 @@ enum Token: Equatable, Sendable {
     case equals
     case semicolon
     case times
+    /// The `in` keyword that introduces a representation conversion.
+    case `in`
     /// Nothing left on the line; only the parser sees it.
     case end
 }
@@ -47,10 +49,17 @@ enum Tokenizer {
                     index = line.index(after: index)
                 }
                 let word = String(line[start ..< index])
-                tokens.append(word == "times" ? .times : .word(word))
+                tokens.append(word == "times" ? .times : word == "in" ? .in : .word(word))
                 continue
             }
             if character.isNumber {
+                // A base literal `0b/0o/0x <digits>` shares the plain
+                // decimal value of its digits in its base.
+                if let literal = Display.scanBaseLiteral(at: index, in: line) {
+                    tokens.append(.number(literal.value))
+                    index = literal.end
+                    continue
+                }
                 let (number, next) = try scanNumber(
                     from: index, in: line,
                     decimalSeparator: decimalSeparator,
@@ -80,10 +89,11 @@ enum Tokenizer {
         return tokens
     }
 
-    /// Scan a number: a run of digits and the two regional separators. A
-    /// separator at the run edges folds the trailing part into its own
-    /// token, so an expression like `2.+3` fails as invalid syntax instead
-    /// of swallowing characters.
+    /// Scan a number: a run of digits and the two regional separators,
+    /// with the blanks between digit groups of a grouped number inside the
+    /// run. A separator at the run edges folds the trailing part into its
+    /// own token, so an expression like `2.+3` fails as invalid syntax
+    /// instead of swallowing characters.
     static func scanNumber(
         from start: String.Index, in line: String,
         decimalSeparator: Character, groupingSeparator: Character
@@ -95,6 +105,13 @@ enum Tokenizer {
             if character.isNumber || character == decimalSeparator || character == groupingSeparator {
                 run += String(character)
                 index = line.index(after: index)
+            } else if isBlank(character) {
+                // A blank inside a number may group digits: `5 300` is one
+                // number when the following group is complete.
+                let next = line.index(after: index)
+                guard next < line.endIndex, line[next].isNumber else { break }
+                run += String(character)
+                index = next
             } else {
                 break
             }
@@ -105,12 +122,12 @@ enum Tokenizer {
         return (number, index)
     }
 
-    /// Interpret a digit run. Digits around the locale decimal separator are
-    /// decimal; the other separator groups thousands in complete 3-digit
-    /// groups; when both kinds appear, the last separator is the decimal
-    /// one. A run that starts ends with separators, repeats adjacent
-    /// separators, uses a duplicate decimal point, or wears incomplete
-    /// groups does not parse.
+    /// Interpret a digit run. Digits around the locale decimal separator
+    /// are decimal; the other separator groups thousands in complete 3-digit
+    /// groups, and blanks inside the run group alike; when both kinds
+    /// appear, the last separator is the decimal one. A run that starts
+    /// ends with separators, repeats adjacent separators, uses a duplicate
+    /// decimal point, or wears incomplete groups does not parse.
     static func parseNumberRun(
         _ run: String, decimal decimalSeparator: Character, grouping groupingSeparator: Character
     ) -> Decimal? {
@@ -120,7 +137,10 @@ enum Tokenizer {
             if character.isNumber {
                 digits.append(character)
             } else {
-                separators[offset] = character
+                // Blanks group like the locale grouping separator here;
+                // the complete-group check decides whether the run reads
+                // as one number.
+                separators[offset] = isBlank(character) ? groupingSeparator : character
                 digits.append("/")
             }
         }
@@ -144,7 +164,15 @@ enum Tokenizer {
                     grouping: groupingSeparator
                 )
             else { return nil }
-            canonical = digits.map { $0 == "/" ? "." : String($0) }.joined()
+            // The grouped digits fold together; only the decimal separator
+            // survives the canonical form: `1.500,5` is `1500.5`.
+            canonical = digits
+                .enumerated()
+                .map { offset, digit -> String in
+                    if digit != "/" { return String(digit) }
+                    return offset == lastPosition ? "." : ""
+                }
+                .joined()
         } else if separators.count == 1, let only = separators.values.first, only == decimalSeparator {
             canonical = digits.map { $0 == "/" ? "." : String($0) }.joined()
         } else if separators.values.allSatisfy({ $0 == groupingSeparator }),
@@ -179,5 +207,12 @@ enum Tokenizer {
         }
         let tail = digits.count - positions.last! - 1
         return tail == 3
+    }
+
+    /// The horizontal blanks between words and between grouped digits
+    /// count alike.
+    static func isBlank(_ character: Character) -> Bool {
+        character == " " || character == "\t"
+            || character == "\u{00A0}" || character == "\u{202F}" || character == "\u{2060}"
     }
 }

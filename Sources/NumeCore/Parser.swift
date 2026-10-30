@@ -14,6 +14,9 @@ enum Node {
     indirect case binary(NumericOperator, Node, Node)
     indirect case unaryMinus(Node)
     indirect case assignment(name: String, Node)
+    /// A representation conversion: the inner value's numeric meaning does
+    /// not change; the kind picks how the line displays it (ADK-222).
+    indirect case representation(Display.Representation, Node)
 }
 
 enum NumericOperator {
@@ -103,6 +106,18 @@ struct Parser {
             case .openParen:
                 // Implicit multiplication: `2 (3)` multiplies 2 by 3.
                 lhs = .binary(.multiply, lhs, try parsePower(definedNames: definedNames))
+            case .in:
+                // Representation conversion at the tight multiplicative
+                // level: `0b110111011 in hex + 1` adds one to the value.
+                position += 1
+                guard case .word(let keyword) = peek() else {
+                    throw atEnd ? ParseError.pending : .invalid
+                }
+                guard let representation = Display.Representation(keyword: keyword) else {
+                    throw ParseError.invalid
+                }
+                position += 1
+                lhs = .representation(representation, lhs)
             default:
                 break loop
             }
@@ -159,7 +174,7 @@ struct Parser {
                 position -= words.count - match.count // leave stray words for the leftover check
             }
             return .reference(defined?.joined(separator: " ") ?? first)
-        case .minus, .plus, .star, .slash, .caret, .closeParen, .equals, .semicolon, .times, .end:
+        case .minus, .plus, .star, .slash, .caret, .closeParen, .equals, .semicolon, .times, .in, .end:
             throw atEnd ? ParseError.pending : .invalid
         }
     }
