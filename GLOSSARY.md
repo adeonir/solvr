@@ -72,6 +72,14 @@ _Avoid_: month addition over month end
 The whole seconds after the Unix epoch that `fromunix` converts into the exact instant it represents, shown in the sheet's time zone.
 _Avoid_: epoch time, unix time
 
+**Date-dependent result**:
+A visible result whose value follows the sheet's date and changes as that date changes, such as a calendar-day difference. An edit alone does not bring it current, so it keeps reevaluation triggers.
+_Avoid_: time-sensitive result
+
+**Reevaluation trigger**:
+An application event that asks a sheet's results to recalculate: an edit, local midnight in the system time zone, the sheet opening, and returning to the app.
+_Avoid_: refresh request, invalidation
+
 **Folder**:
 A named group of sheets. A sheet belongs to at most one folder, and a sheet can also belong to no folder.
 _Avoid_: group, collection
