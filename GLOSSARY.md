@@ -32,6 +32,22 @@ _Avoid_: caption, tag, prefix
 A line of a sheet with no number, operator, `=`, or known name. Nume does not evaluate it, and it shows no result and no message.
 _Avoid_: plain text, note
 
+**Quantity**:
+A number written with its unit in an expression, as in `10 ft` or `100 F`. Nume converts a quantity to another unit through `in`, as in `10 ft in m`, and shows the result beside the expression in the destination unit.
+_Avoid_: measurement, amount
+
+**Unit**:
+The standard of measure that gives a quantity its meaning, such as the metre or the pixel. Each unit accepts exactly its standard abbreviation and its full name singular and plural, as in `ft`, `foot`, and `feet`; no other alias.
+_Avoid_: measure, metric
+
+**Pixel base**:
+The shared value in pixels that a sheet's Settings give the `rem` and the `em`, initially 16 pixels. An expression-local override written with `at`, as in `16px in em at 20px`, replaces the base for that expression only.
+_Avoid_: rem size, font size
+
+**Pixel density**:
+The shared value in pixels per inch that a sheet's Settings give the translation of points and physical lengths into pixels, initially 96 ppi. An expression-local override written with `at`, as in `2 inches in px at 72 ppi`, replaces the density for that expression only.
+_Avoid_: resolution, DPI
+
 **Folder**:
 A named group of sheets. A sheet belongs to at most one folder, and a sheet can also belong to no folder.
 _Avoid_: group, collection
