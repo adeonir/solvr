@@ -28,6 +28,13 @@ enum Token: Equatable, Sendable {
     case `in`
     /// The `%` sign of a percent form (ADK-226).
     case percent
+    /// The bitwise AND `&` of the operator split: arithmetic binds
+    /// tighter (ADK-225).
+    case ampersand
+    /// The bitwise OR `|`; the `or` word shares the meaning (ADK-225).
+    case pipe
+    /// The degree marker `°` that rides its number (ADK-225).
+    case degree
     /// Nothing left on the line; only the parser sees it.
     case end
 }
@@ -82,6 +89,9 @@ enum Tokenizer {
             case "=": tokens.append(.equals)
             case ";": tokens.append(.semicolon)
             case "%": tokens.append(.percent)
+            case "&": tokens.append(.ampersand)
+            case "|": tokens.append(.pipe)
+            case "°": tokens.append(.degree)
             case " ", "\t", "\u{00A0}", "\u{202F}", "\u{2060}":
                 break
             default:

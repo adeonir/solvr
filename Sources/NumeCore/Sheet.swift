@@ -88,6 +88,17 @@ struct SheetEvaluator {
             {
                 return true
             }
+            // A call whose arguments are still empty carries only the
+            // name and its parentheses: `sqrt()` and `log()` read their
+            // function name, and the empty call belongs to an expression.
+            var letters = ""
+            for character in text {
+                guard character.isLetter else { break }
+                letters.append(character)
+            }
+            if letters != text, Language.functionNames.contains(letters) {
+                return true
+            }
         }
         return false
     }
@@ -115,6 +126,14 @@ struct SheetEvaluator {
         var firstFailure: Diagnostic?
 
         for stripped in 0 ... leadingWords {
+            // A function name is never a stray label: the prefix call form
+            // parses it with its operand, and stripping would evaluate the
+            // bare operand alone (ADK-225).
+            if stripped > 0, case .word(let word) = tokens[stripped - 1],
+                Language.functionNames.contains(word)
+            {
+                continue
+            }
             let remaining = Array(tokens[stripped ..< tokens.count])
             do {
                 let node = try Parser.parse(remaining, definedNames: definedNames)
@@ -185,10 +204,14 @@ struct SheetEvaluator {
             return try Numeric.subtract(
                 Decimal(0), try evaluate(node: inner, overriding: override)
             )
-        case .call:
-            // Function behavior arrives with the function work; the parser
-            // only opens incomplete-call recognition here.
-            throw Diagnostic.syntax
+        case .call(let name, let arguments):
+            var argumentValues: [Decimal] = []
+            for functionArgument in arguments {
+                argumentValues.append(
+                    try evaluate(node: functionArgument, overriding: override)
+                )
+            }
+            return try Functions.apply(name: name, arguments: argumentValues)
         case .binary(let op, let lhsNode, let rhsNode):
             return try evaluateBinary(op, lhsNode, rhsNode, overriding: override)
         case .representation(let kind, let inner):
@@ -254,6 +277,8 @@ struct SheetEvaluator {
         let rhs = try evaluate(node: rhsNode, overriding: override)
         switch `operator` {
         case .add: return try Numeric.add(lhs, rhs)
+        case .bitwiseAnd: return try Functions.bitwiseAnd(lhs, rhs)
+        case .bitwiseOr: return try Functions.bitwiseOr(lhs, rhs)
         case .subtract:
             // `X - N%` takes the portion N/100 of X off X (ADK-226).
             if case .percentPortion(let inner) = rhsNode {
