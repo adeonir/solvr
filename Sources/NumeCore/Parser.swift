@@ -36,6 +36,9 @@ enum Node {
 
 enum NumericOperator {
     case add, subtract, multiply, divide, power
+    /// The bitwise operators over whole numbers: arithmetic binds tighter
+    /// than `&`, and `&` binds tighter than `|` and the `or` word (ADK-225).
+    case bitwiseAnd, bitwiseOr
 }
 
 enum ParseError: Error {
@@ -95,11 +98,39 @@ struct Parser {
         return try parseExpression(definedNames: definedNames)
     }
 
+    /// Arithmetic binds tighter than `&` (bitwise AND), and `&` binds
+    /// tighter than `|` and the `or` word (bitwise OR): `1 + 2 & 2` is 2
+    /// and `1 | 2 & 0` is 1 (ADK-225). The `and` word weighs as the
+    /// addition it stands for, so `6 and 3` is 9.
     mutating func parseExpression(definedNames: Set<String>) throws -> Node {
+        var lhs = try parseBitwiseAnd(definedNames: definedNames)
+        loop: while true {
+            switch peek() {
+            case .pipe, .word("or"):
+                position += 1
+                lhs = .binary(.bitwiseOr, lhs, try parseBitwiseAnd(definedNames: definedNames))
+            default:
+                break loop
+            }
+        }
+        return lhs
+    }
+
+    mutating func parseBitwiseAnd(definedNames: Set<String>) throws -> Node {
+        var lhs = try parseAdditive(definedNames: definedNames)
+        loop: while peek() == .ampersand {
+            position += 1
+            lhs = .binary(.bitwiseAnd, lhs, try parseAdditive(definedNames: definedNames))
+        }
+        return lhs
+    }
+
+    /// The additive level: `+`, `-`, and the `and` word, which adds.
+    mutating func parseAdditive(definedNames: Set<String>) throws -> Node {
         var lhs = try parseMultiplicative(definedNames: definedNames)
         loop: while true {
             switch peek() {
-            case .plus:
+            case .plus, .word("and"):
                 position += 1
                 lhs = .binary(.add, lhs, try parseMultiplicative(definedNames: definedNames))
             case .minus:
@@ -177,6 +208,11 @@ struct Parser {
         switch peek() {
         case .number(let value):
             position += 1
+            // The degree marker rides its number: `45°` keeps the value
+            // and the trigonometric forms read degrees (ADK-225).
+            if peek() == .degree {
+                position += 1
+            }
             // A unit word straight after its number makes the pair a
             // quantity: `16px` or `2 inches` (ADK-227).
             if case .word(let unitWord) = peek(), let unit = Units.unit(for: unitWord) {
@@ -194,8 +230,8 @@ struct Parser {
             return inner
         case .word(let first):
             position += 1
-            if peek() == .openParen, Language.functionNames.contains(first) {
-                return try parseCall(name: first, definedNames: definedNames)
+            if Language.functionNames.contains(first) {
+                return try parseFunctionCall(first, definedNames: definedNames)
             }
             // Recognize the longest complete name defined before the
             // reference; any run of spaces, tabs, and non-breaking spaces
@@ -212,13 +248,42 @@ struct Parser {
                 position -= words.count - match.count // leave stray words for the leftover check
             }
             return .reference(defined?.joined(separator: " ") ?? first)
-        case .minus, .plus, .star, .slash, .caret, .closeParen, .equals, .semicolon, .times, .in, .percent, .end:
+        case .minus, .plus, .star, .slash, .caret, .closeParen, .equals, .semicolon, .times, .in, .percent, .end, .ampersand, .pipe, .degree:
             throw atEnd ? ParseError.pending : .invalid
         }
     }
 
+    /// Call forms: the parentheses form like `min(3; 7)` and the prefix
+    /// form without parentheses, where the operand follows the name, like
+    /// `sqrt 16`. The `log` name takes its base before the value in the
+    /// prefix form, so `log 2 (10)` is the base-2 logarithm of 10 (ADK-225).
+    private mutating func parseFunctionCall(
+        _ name: String, definedNames: Set<String>
+    ) throws -> Node {
+        if peek() == .openParen {
+            return try parseCall(name: name, definedNames: definedNames)
+        }
+        let base = try parsePower(definedNames: definedNames)
+        guard name == "log", peek() == .openParen else {
+            return .call(name: name, arguments: [base])
+        }
+        position += 1 // the `(`
+        let value = try parseExpression(definedNames: definedNames)
+        guard peek() == .closeParen else {
+            throw atEnd ? ParseError.pending : .invalid
+        }
+        position += 1
+        return .call(name: name, arguments: [value, base])
+    }
+
     mutating func parseCall(name: String, definedNames: Set<String>) throws -> Node {
         position += 1 // the `(`
+        // An empty call still parses, so `sqrt()` names its argument-count
+        // error instead of failing as unmatched syntax (ADK-225).
+        guard peek() != .closeParen else {
+            position += 1
+            return .call(name: name, arguments: [])
+        }
         var arguments: [Node] = [try parseExpression(definedNames: definedNames)]
         while peek() == .semicolon {
             position += 1
