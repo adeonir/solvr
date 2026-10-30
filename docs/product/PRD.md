@@ -1,7 +1,7 @@
 ---
 name: prd
 created: 2026-10-26
-updated: 2026-10-27
+updated: 2026-10-29
 status: approved
 sources: []
 ---
@@ -44,7 +44,7 @@ Primary metric: the author uses Nume for daily calculations.
 - FR-6 The app converts currencies and cryptocurrencies with exchange rates that update over the internet.
 - FR-7 The app converts time zones by abbreviation and by city name.
 - FR-35 A sheet can be created.
-- FR-8 The app saves each sheet automatically after each change, with no save action.
+- FR-8 The app saves each sheet locally and automatically after each change, with no save action. Sheets can be edited without an internet connection.
 - FR-26 Each sheet has a title, and the title can be renamed.
 - FR-27 A sheet can be deleted. Only the first deletion of a sheet asks for confirmation.
 - FR-11 The sheet font has a family, a size, and a line height:
@@ -55,7 +55,7 @@ Primary metric: the author uses Nume for daily calculations.
 - FR-12 The mode is Light, Dark, or Auto. Auto follows the appearance of macOS.
 - FR-33 The default theme uses the Apple colors and has a light version and a dark version. The theme colors the whole window: the sheet, the bars, and the sheet list.
 - FR-9 The app shows either in the Dock or in the menu bar. The Show in Menu Bar option moves the app from the Dock to the menu bar, and turning the option off moves it back to the Dock. The option is off by default. The menu of the menu bar icon opens the window, opens Settings, and quits the app.
-- FR-13 The app is distributed by direct download, by Homebrew, and maybe by the App Store. The app updates itself automatically in every case.
+- FR-13 The app is distributed by direct download and by Homebrew. App Store distribution is TBD. The app updates itself automatically in every case.
 
 ### Should Have
 
@@ -66,7 +66,7 @@ Primary metric: the author uses Nume for daily calculations.
   - The themes are catppuccin with all its variants, rose-pine with all its variants, tokyo-night with all its variants, Dracula and Alucard, one-dark and One Light, and Monokai dark and Monokai light. Each theme is light or dark.
   - The theme list shows only the themes that match the current mode. The default theme is first in each list.
   - In Auto, when macOS changes between light and dark, Nume applies the first theme in the list for the new mode.
-- FR-18 A global hotkey opens Nume from any app.
+- FR-18 A global hotkey opens Nume from any app. The user configures the hotkey in Settings. No global hotkey is configured by default.
 - FR-19 Launch at Login opens Nume when the user logs in to macOS.
 - FR-22 Telemetry sends crash reports, errors, and usage data. Telemetry is on by default. The Telemetry option in Settings turns all telemetry off. Telemetry follows NFR-1.
 
@@ -76,7 +76,10 @@ Primary metric: the author uses Nume for daily calculations.
 - FR-29 A sheet can be duplicated.
 - FR-32 Search finds sheets by title and by text. The results leave out the sheets in Recently Deleted.
 - FR-31 A folder can be renamed.
-- FR-15 iCloud syncs sheets and folders.
+- FR-15 iCloud syncs sheets and folders. Sync resumes when an internet connection returns. When the same sheet is edited on two devices, changes are compared against the last synced version:
+  - Changes to different parts are merged automatically. Identical changes are kept once.
+  - When devices make different changes to the same expression, including deleting it on one device and editing it on another, the user chooses the final content. Both versions are preserved until the conflict is resolved.
+  - Nume recalculates the sheet after merging changes.
 - FR-16 Export writes a `.txt` file with one `expression = result` line for each expression. Import reads the same format: it removes the last `= result` from each line and keeps the `=` of an assignment, so `price = $8 times 3 = $24` comes back as `price = $8 times 3`.
 - FR-20 A URL scheme opens a sheet, creates a sheet with a given text, and adds a given text to the end of a sheet.
 - FR-21 A Raycast integration searches sheets and opens a sheet in Nume.
@@ -114,7 +117,7 @@ Primary metric: the author uses Nume for daily calculations.
 
 ## 8. Open Questions
 
-- None.
+- App Store distribution: TBD.
 
 ## 9. References
 
