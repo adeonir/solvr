@@ -17,6 +17,13 @@ enum Node {
     /// A representation conversion: the inner value's numeric meaning does
     /// not change; the kind picks how the line displays it (ADK-222).
     indirect case representation(Display.Representation, Node)
+    /// `N% of M`: the share M that the percent N names (ADK-226).
+    indirect case percentShare(Node, Node)
+    /// `N% off M`: M with the share taken off it (ADK-226).
+    indirect case percentOff(Node, Node)
+    /// The bare `N%`: the fraction N/100, meaningful inside `X - N%`
+    /// (ADK-226).
+    indirect case percentPortion(Node)
 }
 
 enum NumericOperator {
@@ -118,6 +125,14 @@ struct Parser {
                 }
                 position += 1
                 lhs = .representation(representation, lhs)
+            case .percent:
+                lhs = try parsePercentForms(lhs, definedNames: definedNames)
+            case .word("as") where matchesPercentRatioKeyword():
+                // `X as a % of Y`: the ratio shown as a percent
+                // representation (ADK-226); the numeric value stays X/Y.
+                position += 4 // as, a, %, of
+                let total = try parsePower(definedNames: definedNames)
+                lhs = .representation(.percent, .binary(.divide, lhs, total))
             default:
                 break loop
             }
@@ -174,7 +189,7 @@ struct Parser {
                 position -= words.count - match.count // leave stray words for the leftover check
             }
             return .reference(defined?.joined(separator: " ") ?? first)
-        case .minus, .plus, .star, .slash, .caret, .closeParen, .equals, .semicolon, .times, .in, .end:
+        case .minus, .plus, .star, .slash, .caret, .closeParen, .equals, .semicolon, .times, .in, .percent, .end:
             throw atEnd ? ParseError.pending : .invalid
         }
     }
@@ -191,6 +206,36 @@ struct Parser {
         }
         position += 1
         return .call(name: name, arguments: arguments)
+    }
+
+    // MARK: Percent forms (ADK-226)
+
+    /// The percent forms after `<value>%`: `of M` takes the share of M,
+    /// `off M` takes the share of M off it, and the bare `%` is the
+    /// portion N/100 that `X - N%` consumes.
+    private mutating func parsePercentForms(
+        _ lhs: Node, definedNames: Set<String>
+    ) throws -> Node {
+        position += 1 // the `%`
+        if case .word(let keyword) = peek(), keyword == "of" || keyword == "off" {
+            position += 1
+            let amount = try parsePower(definedNames: definedNames)
+            return keyword == "of" ? .percentShare(lhs, amount) : .percentOff(lhs, amount)
+        }
+        // The words reserved for the percent forms mean nothing alone.
+        if case .word = peek() {
+            throw ParseError.invalid
+        }
+        return .percentPortion(lhs)
+    }
+
+    /// Whether the words from the current position spell the ratio keyword
+    /// `as a % of`, with an operand after it: `X as a % of Y`.
+    private func matchesPercentRatioKeyword() -> Bool {
+        position + 4 < tokens.count
+            && tokens[position + 1] == .word("a")
+            && tokens[position + 2] == .percent
+            && tokens[position + 3] == .word("of")
     }
 
     // MARK: Helpers

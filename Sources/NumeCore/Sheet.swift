@@ -85,6 +85,7 @@ struct SheetEvaluator {
                 || Language.functionNames.contains(text)
                 || Language.constantNames.contains(text)
                 || text == "times"
+                || text == "%"
             {
                 return true
             }
@@ -179,6 +180,16 @@ struct SheetEvaluator {
             let value = try evaluate(node: inner)
             try Display.validate(value, as: kind)
             return value
+        case .percentShare(let percent, let base):
+            return try Percent.share(
+                try evaluate(node: percent), of: try evaluate(node: base)
+            )
+        case .percentOff(let percent, let base):
+            return try Percent.off(
+                try evaluate(node: percent), of: try evaluate(node: base)
+            )
+        case .percentPortion(let inner):
+            return try Percent.portion(try evaluate(node: inner))
         case .assignment(let name, let value):
             do {
                 let result = try evaluate(node: value)
@@ -203,7 +214,13 @@ struct SheetEvaluator {
         let rhs = try evaluate(node: rhsNode)
         switch `operator` {
         case .add: return try Numeric.add(lhs, rhs)
-        case .subtract: return try Numeric.subtract(lhs, rhs)
+        case .subtract:
+            // `X - N%` takes the portion N/100 of X off X (ADK-226).
+            if case .percentPortion(let inner) = rhsNode {
+                let portion = try evaluate(node: inner)
+                return try Numeric.subtract(lhs, try Percent.share(portion, of: lhs))
+            }
+            return try Numeric.subtract(lhs, rhs)
         case .multiply: return try Numeric.multiply(lhs, rhs)
         case .divide:
             if rhs == 0 { throw Diagnostic.divisionByZero }
