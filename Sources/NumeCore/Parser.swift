@@ -10,6 +10,7 @@ import Foundation
 enum Node {
     case number(Decimal)
     case reference(String)
+
     indirect case call(name: String, arguments: [Node])
     indirect case binary(NumericOperator, Node, Node)
     indirect case unaryMinus(Node)
@@ -32,6 +33,17 @@ enum Node {
     /// The bare `N%`: the fraction N/100, meaningful inside `X - N%`
     /// (ADK-226).
     indirect case percentPortion(Node)
+    /// A calendar date literal: `31 Mar`, `31 Mar 2027` (ADK-229).
+    case date(Dates.Spec)
+    /// `days until <date>`: the calendar-day difference to the date
+    /// (ADK-229).
+    case daysUntil(Dates.Spec)
+    /// `<weekday> in N weeks`: the weekday of the calendar week N weeks
+    /// away (ADK-229).
+    case weekday(Dates.Weekday, weeks: Int)
+    /// `<date> + N month(s)` and its negative `... - ...`: a shift in
+    /// calendar months (ADK-229).
+    indirect case calendarShift(Node, months: Int)
 }
 
 enum NumericOperator {
@@ -132,10 +144,20 @@ struct Parser {
             switch peek() {
             case .plus, .word("and"):
                 position += 1
-                lhs = .binary(.add, lhs, try parseMultiplicative(definedNames: definedNames))
+                // The calendar-month shift keeps whole calendar months on
+                // a date; other values add numerically (ADK-229).
+                if Dates.isCalendarDate(lhs), let months = try parseMonthCount() {
+                    lhs = .calendarShift(lhs, months: months)
+                } else {
+                    lhs = .binary(.add, lhs, try parseMultiplicative(definedNames: definedNames))
+                }
             case .minus:
                 position += 1
-                lhs = .binary(.subtract, lhs, try parseMultiplicative(definedNames: definedNames))
+                if Dates.isCalendarDate(lhs), let months = try parseMonthCount() {
+                    lhs = .calendarShift(lhs, months: -months)
+                } else {
+                    lhs = .binary(.subtract, lhs, try parseMultiplicative(definedNames: definedNames))
+                }
             default:
                 break loop
             }
@@ -219,6 +241,13 @@ struct Parser {
                 position += 1
                 return .quantity(value, unit)
             }
+            // A month name straight after its number makes the pair a
+            // calendar date, with an optional year after the month
+            // (ADK-229).
+            if case .word(let monthWord) = peek(), Dates.month(for: monthWord) != nil {
+                let date = try parseDateLiteral(day: value)
+                return .date(date)
+            }
             return .number(value)
         case .openParen:
             position += 1
@@ -230,6 +259,18 @@ struct Parser {
             return inner
         case .word(let first):
             position += 1
+            // `days until <date>`: the calendar-day difference to the
+            // next occurrence or the dated day (ADK-229).
+            if first.lowercased() == "days", case .word(let second) = peek(), second.lowercased() == "until" {
+                position += 1
+                return try parseDaysUntil()
+            }
+            // `<weekday> in N weeks`: the weekday of the calendar week N
+            // weeks away (ADK-229).
+            if let weekday = Dates.Weekday(keyword: first.lowercased()), peek() == .in {
+                position += 1
+                return try parseWeekday(weekday)
+            }
             if Language.functionNames.contains(first) {
                 return try parseFunctionCall(first, definedNames: definedNames)
             }
@@ -350,6 +391,78 @@ struct Parser {
             )
         }
         return .conversion(source, target, override: nil)
+    }
+
+    // MARK: Date forms (ADK-229)
+
+    /// `<day> <month> [year]` after the day's number is known: the whole
+    /// numbers parse, a non-integer or out-of-range day runs the numeric
+    /// line logic instead of a date.
+    private mutating func parseDateLiteral(day: Decimal) throws -> Dates.Spec {
+        guard let dayNumber = Dates.integer(of: day, range: 1 ... 31) else {
+            throw ParseError.invalid
+        }
+        guard case .word(let monthWord) = peek(), let month = Dates.month(for: monthWord) else {
+            throw ParseError.invalid
+        }
+        position += 1
+        return try parseYearSuffix(day: dayNumber, month: month)
+    }
+
+    /// The optional year after a written date, whole numbers only.
+    private mutating func parseYearSuffix(day: Int, month: Int) throws -> Dates.Spec {
+        var year: Int?
+        if case .number(let value) = peek() {
+            guard let yearNumber = Dates.integer(of: value) else {
+                throw ParseError.invalid
+            }
+            year = yearNumber
+            position += 1
+        }
+        return Dates.Spec(day: day, month: month, year: year)
+    }
+
+    /// After `days until`: the day and month, optional year, form the
+    /// referenced date; the `until` keyword cannot stand alone.
+    private mutating func parseDaysUntil() throws -> Node {
+        guard case .number(let day) = peek() else {
+            throw atEnd ? ParseError.pending : .invalid
+        }
+        position += 1
+        let spec = try parseDateLiteral(day: day)
+        return .daysUntil(spec)
+    }
+
+    /// After the weekday's name: `in N weeks`, whole weeks only.
+    private mutating func parseWeekday(_ weekday: Dates.Weekday) throws -> Node {
+        guard case .number(let count) = peek() else {
+            throw atEnd ? ParseError.pending : .invalid
+        }
+        position += 1
+        guard case .word(let unit) = peek(),
+            ["week", "weeks"].contains(unit.lowercased()),
+            let weeks = Dates.integer(of: count)
+        else {
+            throw ParseError.invalid
+        }
+        position += 1
+        return .weekday(weekday, weeks: weeks)
+    }
+
+    /// `<date> +/- N month(s)` on a calendar date: the written sign the
+    /// caller already consumed, so the count comes out signed at the end.
+    /// No count with months behind it keeps the plain operator form.
+    private mutating func parseMonthCount() throws -> Int? {
+        guard case .number(let count) = peek() else { return nil }
+        let next = position + 1
+        guard next < tokens.count, case .word(let unit) = tokens[next],
+            Dates.monthShiftUnit(unit)
+        else {
+            return nil
+        }
+        guard let whole = Dates.integer(of: count) else { throw ParseError.invalid }
+        position += 2
+        return whole
     }
 
     // MARK: Helpers

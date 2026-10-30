@@ -79,7 +79,13 @@ struct SheetEvaluator {
         // the language reserves it. A blank run inside a name collides with
         // the plain-space spelling the name normalizes to (ADR-002).
         for word in line.map({ Tokenizer.isBlank($0) ? " " : $0 }).split(separator: " ") {
-            let text = String(word)
+            var text = String(word)
+            // A function call spells its name straight before the
+            // parenthesis; the arguments inside carry no signal on their
+            // own (`fromunix(seconds)`).
+            if let cut = text.firstIndex(of: "(") {
+                text = String(text[text.startIndex ..< cut])
+            }
             if variables.definedNames.contains(where: { name in nameKnown(name, word: text) })
                 || Language.functionNames.contains(text)
                 || Language.constantNames.contains(text)
@@ -137,6 +143,15 @@ struct SheetEvaluator {
             let remaining = Array(tokens[stripped ..< tokens.count])
             do {
                 let node = try Parser.parse(remaining, definedNames: definedNames)
+                // Date forms carry date values and differences, apart
+                // from the numeric magnitudes (ADK-229).
+                if let dateValue = try evaluateDateForm(node) {
+                    return ExpressionResult(
+                        kind: .expression,
+                        value: dateValue,
+                        display: dateDisplay(dateValue, node: node)
+                    )
+                }
                 let value = try evaluate(node: node)
                 if let failure = Numeric.rangeDiagnostic(for: value) {
                     return ExpressionResult(kind: .expression, diagnostic: failure)
@@ -248,6 +263,10 @@ struct SheetEvaluator {
                 variables.fail(name)
                 throw lineError.diagnostic
             }
+        case .date, .daysUntil, .weekday, .calendarShift:
+            // Date forms carry typed values, not magnitudes; they reach
+            // the sheet only as a whole line (ADK-229).
+            throw Diagnostic.syntax
         }
     }
 
