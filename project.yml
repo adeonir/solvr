@@ -1,0 +1,29 @@
+name: Nume
+
+options:
+  bundleIdPrefix: com.adeonir.labs
+  deploymentTarget:
+    macOS: "15.0"
+
+packages:
+  NumeCore:
+    path: .
+
+targets:
+  Nume:
+    type: application
+    platform: macOS
+    sources:
+      - App
+    dependencies:
+      - package: NumeCore
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleName: Nume
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: 1
+        LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
