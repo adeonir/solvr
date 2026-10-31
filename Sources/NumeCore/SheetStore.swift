@@ -35,6 +35,17 @@ public struct SheetStore: Sendable {
         return sheet
     }
 
+    public func rename(_ id: UUID, title: String, now: Date = Date()) throws {
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw StoreError.invalidTitle }
+        let file = folder.appending(path: "\(id.uuidString).md")
+        let sheet = try read(file)
+        let encodedTitle = String(decoding: try JSONEncoder().encode(title), as: UTF8.self)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let content = "---\ntitle: \(encodedTitle)\ncreated: \(formatter.string(from: sheet.created))\nupdated: \(formatter.string(from: now))\n---\n\(sheet.text)"
+        try content.write(to: file, atomically: true, encoding: .utf8)
+    }
+
     public func list() throws -> SheetList {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let files = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
@@ -67,5 +78,5 @@ public struct SheetStore: Sendable {
         return formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
     }
 
-    private enum StoreError: Error { case invalidFilename, invalidFrontmatter }
+    private enum StoreError: Error { case invalidFilename, invalidFrontmatter, invalidTitle }
 }
