@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import NumeCore
+import Testing
 
 // Complete-sheet tests for arithmetic evaluation (ADK-221). Locale, display
 // precision, time zone, and clock are fixed per fixture through the
@@ -91,7 +91,7 @@ struct ArithmeticSheetTests {
     func supportedMagnitudeEndpointsAreAccepted() {
         let results = evaluate(sheetText: "10^127\n10^-127\n0", context: context(precision: 40))
         #expect(results.allSatisfy { $0.diagnostic == nil })
-        #expect(results[0].display!.uppercased() == "1E127")
+        #expect(results[0].display?.uppercased() == "1E127")
         #expect(results[1].value == .decimal(Numeric.minimumMagnitude))
         #expect(results[2].display == "0")
     }

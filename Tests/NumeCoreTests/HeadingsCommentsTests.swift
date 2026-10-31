@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import NumeCore
+import Testing
 
 // Complete-sheet tests for headings and comments (ADK-224). Headings and
 // comments organize the sheet without evaluating their text; the evaluator
@@ -27,7 +27,7 @@ struct HeadingsCommentsTests {
         "### Title",
         "#### Title",
         "##### Title",
-        "###### Title",
+        "###### Title"
     ]
 
     // MARK: Headings produce no numeric result
@@ -134,9 +134,9 @@ struct HeadingsCommentsTests {
         #expect(results.allSatisfy { result in
             switch result.kind {
             case .heading, .comment, .textLine:
-                return result.value == nil && result.display == nil
+                result.value == nil && result.display == nil
             case .expression, .incomplete:
-                return true
+                true
             }
         })
     }

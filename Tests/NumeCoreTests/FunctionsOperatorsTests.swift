@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import NumeCore
+import Testing
 
 // Complete-sheet tests for the named functions and the split between
 // arithmetic and bitwise operators (ADK-225). Locale, display precision,
@@ -25,9 +25,11 @@ struct FunctionsOperatorsTests {
     private func approximately(
         _ expressionValue: ExpressionValue?, _ reference: Decimal, tolerance: Decimal
     ) -> Bool {
-        guard case .decimal(let value) = expressionValue else { return false }
+        guard case let .decimal(value) = expressionValue else { return false }
         let difference = value < reference ? reference - value : value - reference
-        if difference.isNaN { return false }
+        if difference.isNaN {
+            return false
+        }
         return difference <= tolerance
     }
 
@@ -127,7 +129,7 @@ struct FunctionsOperatorsTests {
         let reference = try Decimal(exact: "1.4142135623730950488016887242096980785696")
         let result = evaluate(sheetText: "sqrt 2", context: context(precision: 40))[0]
         #expect(result.diagnostic == nil)
-        #expect(approximately(result.value, reference, tolerance: try Decimal(exact: "0.5e-33")))
+        #expect(try approximately(result.value, reference, tolerance: Decimal(exact: "0.5e-33")))
     }
 
     /// `sin` and `log` keep one unit in the 34th significant digit.
@@ -136,7 +138,7 @@ struct FunctionsOperatorsTests {
         let reference = try Decimal(exact: "0.7071067811865475244008443621048490392848")
         let result = evaluate(sheetText: "sin 45°", context: context(precision: 40))[0]
         #expect(result.diagnostic == nil)
-        #expect(approximately(result.value, reference, tolerance: try Decimal(exact: "1e-34")))
+        #expect(try approximately(result.value, reference, tolerance: Decimal(exact: "1e-34")))
     }
 
     @Test
@@ -144,7 +146,7 @@ struct FunctionsOperatorsTests {
         let reference = try Decimal(exact: "3.3219280948873623478703194294893901758648")
         let result = evaluate(sheetText: "log 2 (10)", context: context(precision: 40))[0]
         #expect(result.diagnostic == nil)
-        #expect(approximately(result.value, reference, tolerance: try Decimal(exact: "1e-33")))
+        #expect(try approximately(result.value, reference, tolerance: Decimal(exact: "1e-33")))
     }
 
     /// The retained value does not depend on the displayed places.
@@ -216,7 +218,7 @@ struct FunctionsOperatorsTests {
             "total = fact 6",
             "total",
             "sqrt(-1)",
-            "4 * 4",
+            "4 * 4"
         ].joined(separator: "\n")
         let results = evaluate(sheetText: source, context: context())
         #expect(results.count == 9)

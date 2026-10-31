@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import NumeCore
+import Testing
 
 // Complete-sheet tests for regional number reading and representation
 // conversion (ADK-222). Locale and display precision are fixed per fixture
@@ -26,9 +26,9 @@ struct RegionalNumberTests {
         let results = evaluate(sheetText: "1.500\n1,500\n1.500 + 1,5", context: context())
         #expect(results[0].value == .decimal(Decimal(1500)))
         #expect(results[0].display == "1.500")
-        #expect(results[1].value == .decimal(try Decimal(exact: "1.5")))
+        #expect(try results[1].value == .decimal(Decimal(exact: "1.5")))
         #expect(results[1].display == "1,5")
-        #expect(results[2].value == .decimal(try Decimal(exact: "1501.5")))
+        #expect(try results[2].value == .decimal(Decimal(exact: "1501.5")))
         #expect(results[2].display == "1.501,5")
     }
 
@@ -37,12 +37,12 @@ struct RegionalNumberTests {
         let results = evaluate(sheetText: "1,500\n1.500", context: context(locale: "en_US"))
         #expect(results[0].value == .decimal(Decimal(1500)))
         #expect(results[0].display == "1,500")
-        #expect(results[1].value == .decimal(try Decimal(exact: "1.5")))
+        #expect(try results[1].value == .decimal(Decimal(exact: "1.5")))
     }
 
     @Test(arguments: [
         ("5 300", Decimal(5300)),
-        ("1 500 000", Decimal(1500000)),
+        ("1 500 000", Decimal(1_500_000))
     ])
     func blankSeparatedGroupsReadAsOneNumber(_ source: String, _ value: Decimal) {
         let result = evaluate(sheetText: source, context: context())[0]
@@ -51,9 +51,9 @@ struct RegionalNumberTests {
     }
 
     @Test
-    func blankGroupsComposeWithTheDecimalSeparator() {
+    func blankGroupsComposeWithTheDecimalSeparator() throws {
         let result = evaluate(sheetText: "1 500,5", context: context())[0]
-        #expect(result.value == .decimal(try! Decimal(exact: "1500.5")))
+        #expect(try result.value == .decimal(Decimal(exact: "1500.5")))
         #expect(result.display == "1.500,5")
     }
 
@@ -68,7 +68,7 @@ struct RegionalNumberTests {
 
     @Test(arguments: [
         ("0b110111011", Decimal(443)),
-        ("0o1435343", Decimal(408291)),
+        ("0o1435343", Decimal(408_291)),
         ("0x1bb", Decimal(443)),
     ])
     func baseLiteralsReadAsPlainNumbers(_ source: String, _ value: Decimal) {
@@ -81,7 +81,7 @@ struct RegionalNumberTests {
 
     @Test(arguments: [
         ("0b110111011 in hex", "0x1bb", Decimal(443)),
-        ("0o1435343 in hex", "0x63ae3", Decimal(408291)),
+        ("0o1435343 in hex", "0x63ae3", Decimal(408_291)),
         ("443 in bin", "0b110111011", Decimal(443)),
         ("443 in oct", "0o673", Decimal(443)),
         ("255 in hex", "0xff", Decimal(255)),

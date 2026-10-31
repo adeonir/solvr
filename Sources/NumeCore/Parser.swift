@@ -97,7 +97,7 @@ struct Parser {
             var names: [String] = []
             names.reserveCapacity(words)
             for index in 0 ..< tokens.count where index < words {
-                if case .word(let word) = tokens[index] {
+                if case let .word(word) = tokens[index] {
                     names.append(word)
                 }
             }
@@ -130,7 +130,7 @@ struct Parser {
             switch peek() {
             case .pipe, .word("or"):
                 position += 1
-                lhs = .binary(.bitwiseOr, lhs, try parseBitwiseAnd(definedNames: definedNames))
+                lhs = try .binary(.bitwiseOr, lhs, parseBitwiseAnd(definedNames: definedNames))
             default:
                 break loop
             }
@@ -142,7 +142,7 @@ struct Parser {
         var lhs = try parseAdditive(definedNames: definedNames)
         loop: while peek() == .ampersand {
             position += 1
-            lhs = .binary(.bitwiseAnd, lhs, try parseAdditive(definedNames: definedNames))
+            lhs = try .binary(.bitwiseAnd, lhs, parseAdditive(definedNames: definedNames))
         }
         return lhs
     }
@@ -159,14 +159,14 @@ struct Parser {
                 if Dates.isCalendarDate(lhs), let months = try parseMonthCount() {
                     lhs = .calendarShift(lhs, months: months)
                 } else {
-                    lhs = .binary(.add, lhs, try parseMultiplicative(definedNames: definedNames))
+                    lhs = try .binary(.add, lhs, parseMultiplicative(definedNames: definedNames))
                 }
             case .minus:
                 position += 1
                 if Dates.isCalendarDate(lhs), let months = try parseMonthCount() {
                     lhs = .calendarShift(lhs, months: -months)
                 } else {
-                    lhs = .binary(.subtract, lhs, try parseMultiplicative(definedNames: definedNames))
+                    lhs = try .binary(.subtract, lhs, parseMultiplicative(definedNames: definedNames))
                 }
             default:
                 break loop
@@ -181,19 +181,19 @@ struct Parser {
             switch peek() {
             case .star, .times:
                 position += 1
-                lhs = .binary(.multiply, lhs, try parsePower(definedNames: definedNames))
+                lhs = try .binary(.multiply, lhs, parsePower(definedNames: definedNames))
             case .slash:
                 position += 1
-                lhs = .binary(.divide, lhs, try parsePower(definedNames: definedNames))
+                lhs = try .binary(.divide, lhs, parsePower(definedNames: definedNames))
             case .openParen:
                 // Implicit multiplication: `2 (3)` multiplies 2 by 3.
-                lhs = .binary(.multiply, lhs, try parsePower(definedNames: definedNames))
+                lhs = try .binary(.multiply, lhs, parsePower(definedNames: definedNames))
             case .in:
                 // Representation and unit conversions at the tight
                 // multiplicative level: `0b110111011 in hex + 1` adds one
                 // to the value, `10 ft in m` converts the quantity.
                 position += 1
-                guard case .word(let keyword) = peek() else {
+                guard case let .word(keyword) = peek() else {
                     throw atEnd ? ParseError.pending : .invalid
                 }
                 if let representation = Display.Representation(keyword: keyword) {
@@ -210,7 +210,7 @@ struct Parser {
                 } else {
                     throw ParseError.invalid
                 }
-            case .word(let leading) where leading.lowercased() == "to":
+            case let .word(leading) where leading.lowercased() == "to":
                 // `to timespan` composes the duration representation in
                 // the written order, at the same level as `in` (ADK-228):
                 // `1500 mins to timespan in days` reads the days back and
@@ -240,7 +240,7 @@ struct Parser {
     mutating func parsePower(definedNames: Set<String>) throws -> Node {
         if peek() == .minus {
             position += 1
-            return .unaryMinus(try parsePower(definedNames: definedNames))
+            return try .unaryMinus(parsePower(definedNames: definedNames))
         }
         let lhs = try parsePrimary(definedNames: definedNames)
         if peek() == .caret {
@@ -253,7 +253,7 @@ struct Parser {
 
     mutating func parsePrimary(definedNames: Set<String>) throws -> Node {
         switch peek() {
-        case .number(let value):
+        case let .number(value):
             position += 1
             // The degree marker rides its number: `45°` keeps the value
             // and the trigonometric forms read degrees (ADK-225).
@@ -262,21 +262,21 @@ struct Parser {
             }
             // A unit word straight after its number makes the pair a
             // quantity: `16px` or `2 inches` (ADK-227).
-            if case .word(let unitWord) = peek(), let unit = Units.unit(for: unitWord) {
+            if case let .word(unitWord) = peek(), let unit = Units.unit(for: unitWord) {
                 position += 1
                 return .quantity(value, unit)
             }
             // A duration unit word straight after its number makes the
             // pair a duration quantity: `15 min` is 15 minutes, not a
             // minimum call (ADK-228).
-            if case .word(let unitWord) = peek(), let unit = Duration.unit(for: unitWord) {
+            if case let .word(unitWord) = peek(), let unit = Duration.unit(for: unitWord) {
                 position += 1
                 return .duration(value, unit)
             }
             // A month name straight after its number makes the pair a
             // calendar date, with an optional year after the month
             // (ADK-229).
-            if case .word(let monthWord) = peek(), Dates.month(for: monthWord) != nil {
+            if case let .word(monthWord) = peek(), Dates.month(for: monthWord) != nil {
                 let date = try parseDateLiteral(day: value)
                 return .date(date)
             }
@@ -289,11 +289,11 @@ struct Parser {
             }
             position += 1
             return inner
-        case .word(let first):
+        case let .word(first):
             position += 1
             // `days until <date>`: the calendar-day difference to the
             // next occurrence or the dated day (ADK-229).
-            if first.lowercased() == "days", case .word(let second) = peek(), second.lowercased() == "until" {
+            if first.lowercased() == "days", case let .word(second) = peek(), second.lowercased() == "until" {
                 position += 1
                 return try parseDaysUntil()
             }
@@ -310,7 +310,7 @@ struct Parser {
             // reference; any run of spaces, tabs, and non-breaking spaces
             // between the words of a name counts as one space (ADR-002).
             var words = [first]
-            while case .word(let word) = peek() {
+            while case let .word(word) = peek() {
                 words.append(word)
                 position += 1
             }
@@ -357,10 +357,10 @@ struct Parser {
             position += 1
             return .call(name: name, arguments: [])
         }
-        var arguments: [Node] = [try parseExpression(definedNames: definedNames)]
+        var arguments: [Node] = try [parseExpression(definedNames: definedNames)]
         while peek() == .semicolon {
             position += 1
-            arguments.append(try parseExpression(definedNames: definedNames))
+            try arguments.append(parseExpression(definedNames: definedNames))
         }
         guard peek() == .closeParen else {
             throw atEnd ? ParseError.pending : .invalid
@@ -373,7 +373,7 @@ struct Parser {
     /// behind the `to` the caller seen: `N to timespan` is the composed
     /// duration form (ADK-228).
     private func peekTimespanKeyword() -> Bool {
-        guard position + 1 < tokens.count, case .word(let second) = tokens[position + 1] else {
+        guard position + 1 < tokens.count, case let .word(second) = tokens[position + 1] else {
             return false
         }
         return second.lowercased() == "timespan"
@@ -388,7 +388,7 @@ struct Parser {
         _ lhs: Node, definedNames: Set<String>
     ) throws -> Node {
         position += 1 // the `%`
-        if case .word(let keyword) = peek(), keyword == "of" || keyword == "off" {
+        if case let .word(keyword) = peek(), keyword == "of" || keyword == "off" {
             position += 1
             let amount = try parsePower(definedNames: definedNames)
             return keyword == "of" ? .percentShare(lhs, amount) : .percentOff(lhs, amount)
@@ -412,18 +412,18 @@ struct Parser {
     // MARK: Unit forms (ADK-227)
 
     private mutating func parseConversion(
-        _ source: Node, _ target: Unit, definedNames: Set<String>
+        _ source: Node, _ target: Unit, definedNames _: Set<String>
     ) throws -> Node {
         // The expression-local `at Npx` or `at N ppi` clause substitutes
         // its reference for this expression only (ADK-227).
         if case let .word(keyword) = peek(), keyword == "at" {
             position += 1
-            guard case .number(let value) = peek() else {
+            guard case let .number(value) = peek() else {
                 throw atEnd ? ParseError.pending : .invalid
             }
             position += 1
-            guard case .word(let unitWord) = peek(),
-                let kind = Units.Override.kind(for: unitWord)
+            guard case let .word(unitWord) = peek(),
+                  let kind = Units.Override.kind(for: unitWord)
             else {
                 throw atEnd ? ParseError.pending : .invalid
             }
@@ -441,10 +441,7 @@ struct Parser {
     /// numbers parse, a non-integer or out-of-range day runs the numeric
     /// line logic instead of a date.
     private mutating func parseDateLiteral(day: Decimal) throws -> Dates.Spec {
-        guard let dayNumber = Dates.integer(of: day, range: 1 ... 31) else {
-            throw ParseError.invalid
-        }
-        guard case .word(let monthWord) = peek(), let month = Dates.month(for: monthWord) else {
+        guard let dayNumber = Dates.integer(of: day, range: 1 ... 31), case let .word(monthWord) = peek(), let month = Dates.month(for: monthWord) else {
             throw ParseError.invalid
         }
         position += 1
@@ -454,7 +451,7 @@ struct Parser {
     /// The optional year after a written date, whole numbers only.
     private mutating func parseYearSuffix(day: Int, month: Int) throws -> Dates.Spec {
         var year: Int?
-        if case .number(let value) = peek() {
+        if case let .number(value) = peek() {
             guard let yearNumber = Dates.integer(of: value) else {
                 throw ParseError.invalid
             }
@@ -467,7 +464,7 @@ struct Parser {
     /// After `days until`: the day and month, optional year, form the
     /// referenced date; the `until` keyword cannot stand alone.
     private mutating func parseDaysUntil() throws -> Node {
-        guard case .number(let day) = peek() else {
+        guard case let .number(day) = peek() else {
             throw atEnd ? ParseError.pending : .invalid
         }
         position += 1
@@ -477,13 +474,13 @@ struct Parser {
 
     /// After the weekday's name: `in N weeks`, whole weeks only.
     private mutating func parseWeekday(_ weekday: Dates.Weekday) throws -> Node {
-        guard case .number(let count) = peek() else {
+        guard case let .number(count) = peek() else {
             throw atEnd ? ParseError.pending : .invalid
         }
         position += 1
-        guard case .word(let unit) = peek(),
-            ["week", "weeks"].contains(unit.lowercased()),
-            let weeks = Dates.integer(of: count)
+        guard case let .word(unit) = peek(),
+              ["week", "weeks"].contains(unit.lowercased()),
+              let weeks = Dates.integer(of: count)
         else {
             throw ParseError.invalid
         }
@@ -495,10 +492,10 @@ struct Parser {
     /// caller already consumed, so the count comes out signed at the end.
     /// No count with months behind it keeps the plain operator form.
     private mutating func parseMonthCount() throws -> Int? {
-        guard case .number(let count) = peek() else { return nil }
+        guard case let .number(count) = peek() else { return nil }
         let next = position + 1
-        guard next < tokens.count, case .word(let unit) = tokens[next],
-            Dates.monthShiftUnit(unit)
+        guard next < tokens.count, case let .word(unit) = tokens[next],
+              Dates.monthShiftUnit(unit)
         else {
             return nil
         }
@@ -513,5 +510,7 @@ struct Parser {
         position < tokens.count ? tokens[position] : .end
     }
 
-    private var atEnd: Bool { position >= tokens.count }
+    private var atEnd: Bool {
+        position >= tokens.count
+    }
 }

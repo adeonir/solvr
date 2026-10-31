@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import NumeCore
+import Testing
 
 // Complete-sheet tests for variables (ADK-223). Bindings, names,
 // reassignment, and error propagation follow ADR-001's nearest preceding

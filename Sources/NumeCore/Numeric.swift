@@ -51,8 +51,12 @@ enum Numeric {
     /// safely near exponent zero, and the exponent reassembles through an
     /// exact string form that any representable decimal accepts (ADR-006).
     static func divide(_ a: Decimal, by b: Decimal) throws -> Decimal {
-        if b == 0 { throw Diagnostic.divisionByZero }
-        if a == 0 { return Decimal(0) }
+        if b == 0 {
+            throw Diagnostic.divisionByZero
+        }
+        if a == 0 {
+            return Decimal(0)
+        }
         // The mantissas normalize apart over magnitudes: the remainder sign
         // is applied after reassembly, or the sign becomes part of the
         // digit string and counts as an exponent place (ADK-227).
@@ -68,8 +72,7 @@ enum Numeric {
             stripped += 1
         }
         let leadingExponent = exponentA - exponentB + exponentQ + stripped
-        guard (-127 ... 127).contains(leadingExponent) else { throw Diagnostic.outOfRange }
-        guard let value = parsedDecimal("\(digits)e\(leadingExponent - digits.count + 1)") else {
+        guard (-127 ... 127).contains(leadingExponent), let value = parsedDecimal("\(digits)e\(leadingExponent - digits.count + 1)") else {
             throw Diagnostic.outOfRange
         }
         return try check(negative ? -value : value)
@@ -88,11 +91,15 @@ enum Numeric {
     /// The magnitude normalizes first: a negative mantissa never leaves
     /// the `mantissa < 1` climb until it reaches NaN (ADK-227).
     static func normalizedParts(of value: Decimal) -> (Decimal, Int) {
-        if value.isNaN { return (value, 0) }
+        if value.isNaN {
+            return (value, 0)
+        }
         var mantissa = value
         var exponent = 0
         let negative = mantissa < 0
-        if negative { mantissa = -mantissa }
+        if negative {
+            mantissa = -mantissa
+        }
         while mantissa >= 10 {
             mantissa /= 10
             exponent += 1
@@ -112,7 +119,9 @@ enum Numeric {
     }
 
     static func power(_ base: Decimal, by exponent: Int) throws -> Decimal {
-        if base == 0 && exponent < 0 { throw Diagnostic.divisionByZero }
+        if base == 0, exponent < 0 {
+            throw Diagnostic.divisionByZero
+        }
         if exponent < 0 {
             // One final inversion keeps the wide negative exponents inside
             // the supported range; iterating divisions would underflow
@@ -124,9 +133,13 @@ enum Numeric {
         var factor = base
         var bits = exponent
         while bits > 0 {
-            if bits & 1 == 1 { result = try multiply(result, factor) }
+            if bits & 1 == 1 {
+                result = try multiply(result, factor)
+            }
             bits >>= 1
-            if bits > 0 { factor = try multiply(factor, factor) }
+            if bits > 0 {
+                factor = try multiply(factor, factor)
+            }
         }
         return result
     }
@@ -134,16 +147,22 @@ enum Numeric {
     /// Foundation reports calculation overflow or underflow as NaN; any NaN
     /// lies beyond the supported range (ADR-006).
     static func check(_ value: Decimal) throws -> Decimal {
-        if value.isNaN { throw Diagnostic.outOfRange }
+        if value.isNaN {
+            throw Diagnostic.outOfRange
+        }
         return value
     }
 
     /// Diagnose a finished literal or value: zero passes; anything outside
     /// 10^-127..10^127 — including NaN — is a numeric-range error.
     static func rangeDiagnostic(for value: Decimal) -> Diagnostic? {
-        if value == 0 { return nil }
+        if value == 0 {
+            return nil
+        }
         let magnitude = value < 0 ? -value : value
-        if magnitude.isNaN { return .outOfRange }
+        if magnitude.isNaN {
+            return .outOfRange
+        }
         if magnitude > maximumMagnitude || magnitude < minimumMagnitude {
             return .outOfRange
         }
@@ -159,11 +178,17 @@ enum Numeric {
     /// 1 <= mantissa < 10, rounds with one integer digit plus the remaining
     /// 33 decimals, and goes back through the exponent.
     static func retain(_ value: Decimal) -> Decimal {
-        if value == 0 || value.isNaN { return value }
+        if value == 0 || value.isNaN {
+            return value
+        }
         var magnitude = value < 0 ? -value : value
         var exponent = 0
-        while magnitude >= 10 { magnitude /= 10; exponent += 1 }
-        while magnitude < 1 { magnitude *= 10; exponent -= 1 }
+        while magnitude >= 10 {
+            magnitude /= 10; exponent += 1
+        }
+        while magnitude < 1 {
+            magnitude *= 10; exponent -= 1
+        }
         var mantissa = roundPlain(magnitude, scale: retainedDigits - 1)
         if mantissa >= 10 {
             mantissa /= 10
@@ -203,14 +228,20 @@ enum Numeric {
     /// format through double precision, so the digits come from the Decimal
     /// description itself.
     static func display(_ value: Decimal, precision: Int, locale: Locale) -> String {
-        if value.isNaN { return "NaN" }
-        if value == 0 { return "0" }
+        if value.isNaN {
+            return "NaN"
+        }
+        if value == 0 {
+            return "0"
+        }
         let negative = value < 0
         var magnitude = value < 0 ? -value : value
         let text: String
         if magnitude >= scientificThreshold {
             var exponent = 0
-            while magnitude >= 10 { magnitude /= 10; exponent += 1 }
+            while magnitude >= 10 {
+                magnitude /= 10; exponent += 1
+            }
             var mantissa = roundPlain(magnitude, scale: precision)
             if mantissa >= 10 {
                 mantissa /= 10
@@ -219,7 +250,9 @@ enum Numeric {
             text = digits(of: mantissa, locale: locale) + "E\(exponent)"
         } else {
             magnitude = roundPlain(magnitude, scale: precision)
-            if magnitude == 0 { return "0" }
+            if magnitude == 0 {
+                return "0"
+            }
             text = grouped(digits(of: magnitude, locale: locale), locale: locale)
         }
         return (negative ? "-" : "") + text
@@ -263,5 +296,7 @@ enum Numeric {
 }
 
 private extension Decimal {
-    var magnitude: Decimal { self < 0 ? -self : self }
+    var magnitude: Decimal {
+        self < 0 ? -self : self
+    }
 }

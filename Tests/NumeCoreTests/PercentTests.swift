@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import NumeCore
+import Testing
 
 // Complete-sheet tests for percentage shares and discounts (ADK-226).
 // Percentages take numeric amounts; currency parsing stays out of scope.
@@ -52,13 +52,13 @@ struct PercentTests {
     @Test
     func sheetShowsTheResultBesideEachExpression() {
         let sheet = """
-            # Split
-            52% of 900
-            20% off 80
-            10 - 40%
-            20% of 10
-            50 as a % of 100
-            """
+        # Split
+        52% of 900
+        20% off 80
+        10 - 40%
+        20% of 10
+        50 as a % of 100
+        """
         let results = evaluate(sheetText: sheet, context: context())
         #expect(results.count == 6)
         #expect(results[0].kind == .heading)

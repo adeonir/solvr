@@ -25,23 +25,23 @@ public enum Diagnostic: Error, Equatable, Sendable, Hashable {
     public var message: String {
         switch self {
         case .syntax:
-            return "Invalid syntax"
+            "Invalid syntax"
         case .divisionByZero:
-            return "Division by zero"
+            "Division by zero"
         case .outOfRange:
-            return "Out of range"
+            "Out of range"
         case .notARealNumber:
-            return "Not a real number"
-        case .undefinedVariable(let name):
-            return "Undefined variable: \(name)"
-        case .reservedName(let name):
-            return "Reserved name: \(name)"
+            "Not a real number"
+        case let .undefinedVariable(name):
+            "Undefined variable: \(name)"
+        case let .reservedName(name):
+            "Reserved name: \(name)"
         case .invalidDate:
-            return "Invalid date"
+            "Invalid date"
         case .dependsOnError:
-            return "Depends on an error"
-        case .argumentCount(let function, let requirement):
-            return "\(function) takes \(requirement)"
+            "Depends on an error"
+        case let .argumentCount(function, requirement):
+            "\(function) takes \(requirement)"
         }
     }
 }

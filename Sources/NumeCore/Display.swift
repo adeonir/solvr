@@ -23,10 +23,10 @@ enum Display {
 
         var base: Int? {
             switch self {
-            case .sci, .percent: return nil
-            case .bin: return 2
-            case .oct: return 8
-            case .hex: return 16
+            case .sci, .percent: nil
+            case .bin: 2
+            case .oct: 8
+            case .hex: 16
             }
         }
 
@@ -94,7 +94,9 @@ enum Display {
     /// integer; scientific notation applies to every value.
     static func validate(_ value: Decimal, as representation: Representation) throws {
         guard representation.base != nil else { return }
-        if value.isNaN { throw Diagnostic.outOfRange }
+        if value.isNaN {
+            throw Diagnostic.outOfRange
+        }
         guard value == Numeric.roundPlain(value, scale: 0) else {
             throw Diagnostic.syntax
         }
@@ -135,7 +137,9 @@ enum Display {
     static func scientific(
         _ value: Decimal, precision: Int, locale: Locale
     ) -> String {
-        if value == 0 { return "0" }
+        if value == 0 {
+            return "0"
+        }
         let negative = value < 0
         var magnitude = negative ? -value : value
         var exponent = 0
@@ -177,9 +181,11 @@ enum Display {
     /// trailing zeros beyond the integer's last place belong only to the
     /// stored scale and drop, so `443.00` and `443` hold digits alike.
     private static func integerDigits(of magnitude: Decimal) -> String? {
-        if magnitude == 0 { return "0" }
+        if magnitude == 0 {
+            return "0"
+        }
         guard !magnitude.isNaN,
-            magnitude == Numeric.roundPlain(magnitude, scale: 0)
+              magnitude == Numeric.roundPlain(magnitude, scale: 0)
         else { return nil }
         let (mantissa, exponent) = Numeric.normalizedParts(of: magnitude)
         var digits = Numeric.normalizedMantissaDigits(of: mantissa)

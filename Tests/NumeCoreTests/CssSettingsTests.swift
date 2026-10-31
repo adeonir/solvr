@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import NumeCore
+import Testing
 
 // Complete-sheet tests for the CSS quantity conversions and the Settings
 // references they consume (ADK-227): one shared pixel-base value serves
