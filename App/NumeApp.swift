@@ -168,8 +168,7 @@ private struct SheetEditorView: View {
     private func renameSheet() {
         guard let id = selectedID, let sheet = sheets.first(where: { $0.id == id }), sheetTitle != sheet.title else { return }
         do {
-            try store.rename(id, title: sheetTitle)
-            sheets = try store.list().sheets
+            sheets = try SheetActions(store: store).rename(id, title: sheetTitle, sheets: sheets)
         } catch {
             sheetTitle = sheet.title
             logger.error("Could not rename sheet: \(error.localizedDescription)")
@@ -178,9 +177,9 @@ private struct SheetEditorView: View {
 
     private func duplicateSheet(_ source: StoredSheet) {
         do {
-            let copy = try store.duplicate(id: source.id, text: source.id == selectedID ? sheetText : nil)
-            loadSheets()
-            selectedID = copy.id
+            let result = try SheetActions(store: store).duplicate(source.id, sheets: sheets, selectedID: selectedID)
+            sheets = result.sheets
+            selectedID = result.copy.id
         } catch {
             logger.error("Could not duplicate sheet: \(error.localizedDescription)")
         }
