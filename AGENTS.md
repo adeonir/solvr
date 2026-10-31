@@ -23,6 +23,7 @@ Nume is a beautiful text calculator for Mac. It combines a calculation language 
 - An ADR keeps the structure name, Context, Decision, Alternatives Considered, Consequences, References.
 - Commits follow Conventional Commits in English, with `docs:` for document-only changes so far.
 - Conventional commit messages carry the Linear issue they implement as the scope, in lowercase, e.g. `feat(adk-233): add the Nume core package`.
+- Pull requests merge into `main` with squash and merge.
 
 ## Issue tracker
 
