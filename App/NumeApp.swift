@@ -1,6 +1,6 @@
 import AppKit
-import SwiftUI
 import NumeCore
+import SwiftUI
 
 @main
 struct NumeApp: App {
@@ -88,7 +88,7 @@ private struct SheetEditorView: View {
 /// Lets the window background show through the title bar, so the title bar
 /// has the color of the sheet. The title "Nume" stays drawn.
 private struct WindowChrome: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
+    func makeNSView(context _: Context) -> NSView {
         let view = NSView()
         DispatchQueue.main.async { [weak view] in
             guard let window = view?.window else { return }
@@ -100,7 +100,7 @@ private struct WindowChrome: NSViewRepresentable {
         return view
     }
 
-    func updateNSView(_ view: NSView, context: Context) {}
+    func updateNSView(_: NSView, context _: Context) {}
 }
 
 /// What the editor draws beside a line: a result, an error message, or nothing.
@@ -134,7 +134,9 @@ private struct SheetTextView: NSViewRepresentable {
     var results: [SheetLineResult]
     var onEdit: (String) -> Void
 
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView()
@@ -163,8 +165,8 @@ private struct SheetTextView: NSViewRepresentable {
             let updated = CommentShortcut.toggle(textView.string, lines: lineIndexes)
             textView.string = updated
             textView.applySheetStyle()
-            self.text = updated
-            self.onEdit(updated)
+            text = updated
+            onEdit(updated)
         }
         textView.string = text
         textView.applySheetStyle()
@@ -180,12 +182,16 @@ private struct SheetTextView: NSViewRepresentable {
             textView.string = text
             textView.applySheetStyle()
         }
-        if textView.lineResults != results { textView.lineResults = results }
+        if textView.lineResults != results {
+            textView.lineResults = results
+        }
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: SheetTextView
-        init(_ parent: SheetTextView) { self.parent = parent }
+        init(_ parent: SheetTextView) {
+            self.parent = parent
+        }
 
         func textDidChange(_ notification: Notification) {
             guard let view = notification.object as? ShortcutTextView else { return }
@@ -245,7 +251,7 @@ private final class ShortcutTextView: NSTextView {
             .font: Metrics.font,
             .foregroundColor: Palette.text,
             .paragraphStyle: lineParagraphStyle,
-            .baselineOffset: (Metrics.lineHeight - Metrics.font.boundingRectForFont.height) / 2 + 2.75,
+            .baselineOffset: (Metrics.lineHeight - Metrics.font.boundingRectForFont.height) / 2 + 2.75
         ]
         typingAttributes = base
         let source = storage.string as NSString
@@ -316,7 +322,7 @@ private final class ShortcutTextView: NSTextView {
         for (index, line) in lines.enumerated() {
             let numberAttributes: [NSAttributedString.Key: Any] = [
                 .font: Metrics.font,
-                .foregroundColor: index == activeLine ? Palette.lineNumberActive : Palette.lineNumber,
+                .foregroundColor: index == activeLine ? Palette.lineNumberActive : Palette.lineNumber
             ]
             let number = "\(index + 1)" as NSString
             let numberSize = number.size(withAttributes: numberAttributes)
@@ -330,7 +336,7 @@ private final class ShortcutTextView: NSTextView {
             let result = lineResults[index]
             let resultAttributes: [NSAttributedString.Key: Any] = [
                 .font: Metrics.font,
-                .foregroundColor: result.isError ? Palette.error : Palette.result,
+                .foregroundColor: result.isError ? Palette.error : Palette.result
             ]
             let resultText = result.text as NSString
             let resultSize = resultText.size(withAttributes: resultAttributes)
@@ -364,7 +370,9 @@ private final class ShortcutTextView: NSTextView {
         }
         if source.length == 0 || source.hasSuffix("\n") {
             var rect = layoutManager.extraLineFragmentRect
-            if rect.isEmpty { rect = NSRect(x: 0, y: CGFloat(fragments.count) * Metrics.lineHeight, width: 0, height: Metrics.lineHeight) }
+            if rect.isEmpty {
+                rect = NSRect(x: 0, y: CGFloat(fragments.count) * Metrics.lineHeight, width: 0, height: Metrics.lineHeight)
+            }
             rect.origin.x += origin.x
             rect.origin.y += origin.y
             let baseline = fragments.last?.baseline
@@ -382,7 +390,8 @@ private final class ShortcutTextView: NSTextView {
 
     override func keyDown(with event: NSEvent) {
         if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
-           event.charactersIgnoringModifiers == "/" {
+           event.charactersIgnoringModifiers == "/"
+        {
             onCommentShortcut?(self)
             return
         }

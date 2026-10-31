@@ -8,8 +8,8 @@
 
 import AppKit
 import Foundation
-import Observation
 import NumeCore
+import Observation
 
 @MainActor
 @Observable
@@ -73,7 +73,7 @@ final class SheetRefreshCoordinator: NSObject {
 
     /// Returning to the app recalculates the date-dependent results
     /// without a text edit.
-    @objc private func workspaceDidBecomeActive(_ notification: Notification) {
+    @objc private func workspaceDidBecomeActive(_: Notification) {
         MainActor.assumeIsolated {
             fire(.returningToApp)
         }
@@ -81,7 +81,7 @@ final class SheetRefreshCoordinator: NSObject {
 
     /// Local midnight in the system time zone: the refresher's context
     /// carries that zone, so the calendar matches the timer.
-    @objc private func midnightFell(_ timer: Timer) {
+    @objc private func midnightFell(_: Timer) {
         MainActor.assumeIsolated {
             fire(.midnight)
             scheduleMidnightTimer()
@@ -111,8 +111,7 @@ final class SheetRefreshCoordinator: NSObject {
     }
 
     private func fire(_ trigger: SheetRefreshTrigger) {
-        guard refresher != nil else { return }
-        guard let outcome = refresher?.refresh(trigger, now: Date()) else { return }
+        guard refresher != nil, let outcome = refresher?.refresh(trigger, now: Date()) else { return }
         results = outcome.results
     }
 }

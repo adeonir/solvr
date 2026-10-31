@@ -9,8 +9,6 @@ struct LineError: Error {
     var diagnostic: Diagnostic
 }
 
-import Foundation
-
 enum Token: Equatable, Sendable {
     case number(Decimal)
     case word(String)
@@ -53,7 +51,7 @@ enum Tokenizer {
             if character.isLetter {
                 let start = index
                 while index < line.endIndex,
-                    line[index].isLetter || line[index].isNumber || line[index] == "_"
+                      line[index].isLetter || line[index].isNumber || line[index] == "_"
                 {
                     index = line.index(after: index)
                 }
@@ -169,27 +167,29 @@ enum Tokenizer {
         } else if kinds.count == 2 {
             let lastPosition = separators.keys.max()!
             guard separators[lastPosition] == decimalSeparator,
-                separators.values.filter({ $0 == decimalSeparator }).count == 1,
-                separators.values.filter({ $0 == groupingSeparator }).count == separators.count - 1,
-                hasCompleteGroups(
-                    digits: Array(digits[0 ..< lastPosition]),
-                    separators: separators.filter { $0.key < lastPosition },
-                    grouping: groupingSeparator
-                )
+                  separators.values.filter({ $0 == decimalSeparator }).count == 1,
+                  separators.values.filter({ $0 == groupingSeparator }).count == separators.count - 1,
+                  hasCompleteGroups(
+                      digits: Array(digits[0 ..< lastPosition]),
+                      separators: separators.filter { $0.key < lastPosition },
+                      grouping: groupingSeparator
+                  )
             else { return nil }
             // The grouped digits fold together; only the decimal separator
             // survives the canonical form: `1.500,5` is `1500.5`.
             canonical = digits
                 .enumerated()
                 .map { offset, digit -> String in
-                    if digit != "/" { return String(digit) }
+                    if digit != "/" {
+                        return String(digit)
+                    }
                     return offset == lastPosition ? "." : ""
                 }
                 .joined()
         } else if separators.count == 1, let only = separators.values.first, only == decimalSeparator {
             canonical = digits.map { $0 == "/" ? "." : String($0) }.joined()
         } else if separators.values.allSatisfy({ $0 == groupingSeparator }),
-            hasCompleteGroups(digits: digits, separators: separators, grouping: groupingSeparator)
+                  hasCompleteGroups(digits: digits, separators: separators, grouping: groupingSeparator)
         {
             canonical = digits.filter { $0 != "/" }.map(String.init).joined()
         } else {
@@ -206,14 +206,14 @@ enum Tokenizer {
     /// no shorter trailing group: `1.500` is a thousand (Brazilian), while
     /// `1.50` is not a valid number in that locale.
     static func hasCompleteGroups(
-        digits: [Character], separators: [Int: Character], grouping: Character
+        digits: [Character], separators: [Int: Character], grouping _: Character
     ) -> Bool {
         let positions = separators.keys.sorted()
         guard !positions.isEmpty else { return false }
         var previous = -1
         for (step, position) in positions.enumerated() {
             let groupLength = position - previous - 1
-            if step > 0 && groupLength != 3 {
+            if step > 0, groupLength != 3 {
                 return false
             }
             previous = position

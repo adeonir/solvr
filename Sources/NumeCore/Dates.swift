@@ -34,12 +34,14 @@ enum Dates {
 
         /// The weekday's index from Monday, the handling offset of the
         /// Monday-based week.
-        var daysFromMonday: Int { rawValue }
+        var daysFromMonday: Int {
+            rawValue
+        }
 
         private static func names(_ weekday: Weekday) -> [String] {
             let full = [
                 "monday", "tuesday", "wednesday", "thursday",
-                "friday", "saturday", "sunday",
+                "friday", "saturday", "sunday"
             ]
             let abbreviations = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
             return [full[weekday.rawValue], abbreviations[weekday.rawValue]]
@@ -51,11 +53,11 @@ enum Dates {
     private static let monthNumbers: [String: Int] = {
         let abbreviations = [
             "jan", "feb", "mar", "apr", "may", "jun",
-            "jul", "aug", "sep", "oct", "nov", "dec",
+            "jul", "aug", "sep", "oct", "nov", "dec"
         ]
         let full = [
             "january", "february", "march", "april", "may", "june",
-            "july", "august", "september", "october", "november", "december",
+            "july", "august", "september", "october", "november", "december"
         ]
         var numbers: [String: Int] = [:]
         for month in 1 ... 12 {
@@ -94,9 +96,9 @@ enum Dates {
     static func isCalendarDate(_ node: Node) -> Bool {
         switch node {
         case .date, .calendarShift:
-            return true
+            true
         default:
-            return false
+            false
         }
     }
 
@@ -216,25 +218,25 @@ extension SheetEvaluator {
     mutating func evaluateDateForm(_ node: Node) throws -> ExpressionValue? {
         let calendar = dateCalendar
         switch node {
-        case .date(let spec):
-            return .date(try Dates.resolve(spec, now: context.now, calendar: calendar))
-        case .daysUntil(let spec):
-            return .difference(
-                try Dates.calendarDays(until: spec, now: context.now, calendar: calendar)
+        case let .date(spec):
+            return try .date(Dates.resolve(spec, now: context.now, calendar: calendar))
+        case let .daysUntil(spec):
+            return try .difference(
+                Dates.calendarDays(until: spec, now: context.now, calendar: calendar)
             )
-        case .weekday(let weekday, let weeks):
-            return .date(
-                try Dates.weekdayDate(weekday, weeks: weeks, now: context.now, calendar: calendar)
+        case let .weekday(weekday, weeks):
+            return try .date(
+                Dates.weekdayDate(weekday, weeks: weeks, now: context.now, calendar: calendar)
             )
-        case .calendarShift(let base, let months):
-            guard case .date(let day) = try evaluateDateForm(base) else {
+        case let .calendarShift(base, months):
+            guard case let .date(day) = try evaluateDateForm(base) else {
                 throw Diagnostic.syntax
             }
             return .date(
                 Dates.calendarShift(day, months: months, calendar: calendar)
             )
-        case .call(let name, let arguments) where name == "fromunix":
-            return .date(try fromunixTimestamp(arguments))
+        case let .call(name, arguments) where name == "fromunix":
+            return try .date(fromunixTimestamp(arguments))
         default:
             return nil
         }
@@ -258,14 +260,13 @@ extension SheetEvaluator {
     /// day, the other forms the day alone (ADK-229).
     func dateDisplay(_ value: ExpressionValue, node: Node) -> String? {
         switch value {
-        case .difference(let days):
+        case let .difference(days):
             return "\(days) \(abs(days) == 1 ? "day" : "days")"
-        case .date(let instant):
-            let showsTimeOfDay: Bool
-            if case .call(let name, _) = node, name == "fromunix" {
-                showsTimeOfDay = true
+        case let .date(instant):
+            let showsTimeOfDay = if case let .call(name, _) = node, name == "fromunix" {
+                true
             } else {
-                showsTimeOfDay = false
+                false
             }
             let formatter = DateFormatter()
             formatter.locale = locale

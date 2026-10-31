@@ -50,8 +50,8 @@ public struct SheetRefresher: Sendable {
     public init(sheetText: String, context: EvaluationContext) {
         self.sheetText = sheetText
         self.context = context
-        self.results = []
-        self.dateDependentIndexes = []
+        results = []
+        dateDependentIndexes = []
         _ = reevaluate(now: context.now)
         dateDependentIndexes = Self.detectDateDependence(
             sheetText: sheetText, context: context
@@ -75,7 +75,7 @@ public struct SheetRefresher: Sendable {
     /// opening, or returning to the app. The trigger carries the current
     /// instant; the text stays untouched.
     @discardableResult
-    public mutating func refresh(_ trigger: SheetRefreshTrigger, now: Date) -> SheetRefreshOutcome {
+    public mutating func refresh(_: SheetRefreshTrigger, now: Date) -> SheetRefreshOutcome {
         reevaluate(now: now)
     }
 

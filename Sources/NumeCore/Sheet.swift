@@ -22,8 +22,8 @@ struct SheetEvaluator {
         let decimal = locale.decimalSeparator?.first ?? "."
         self.context = context
         self.locale = locale
-        self.decimalSeparator = decimal
-        self.groupingSeparator = decimal == "." ? "," : "."
+        decimalSeparator = decimal
+        groupingSeparator = decimal == "." ? "," : "."
     }
 
     mutating func evaluate(_ sheetText: String) -> [ExpressionResult] {
@@ -39,11 +39,10 @@ struct SheetEvaluator {
             return ExpressionResult(kind: .comment)
         }
         let commentStart = rawLine.range(of: "//")?.lowerBound
-        let withoutComment: String
-        if let commentStart {
-            withoutComment = String(rawLine[rawLine.startIndex ..< commentStart])
+        let withoutComment: String = if let commentStart {
+            String(rawLine[rawLine.startIndex ..< commentStart])
         } else {
-            withoutComment = rawLine
+            rawLine
         }
         let line = withoutComment.trimmingCharacters(in: .whitespaces)
 
@@ -135,8 +134,8 @@ struct SheetEvaluator {
             // A function name is never a stray label: the prefix call form
             // parses it with its operand, and stripping would evaluate the
             // bare operand alone (ADK-225).
-            if stripped > 0, case .word(let word) = tokens[stripped - 1],
-                Language.functionNames.contains(word)
+            if stripped > 0, case let .word(word) = tokens[stripped - 1],
+               Language.functionNames.contains(word)
             {
                 continue
             }
@@ -169,7 +168,7 @@ struct SheetEvaluator {
                 firstFailure = firstFailure ?? diagnostic
             } catch ParseError.pending {
                 pendingSeen = true
-            } catch ParseError.pendingAssignment(let name) {
+            } catch let ParseError.pendingAssignment(name) {
                 pendingSeen = true
                 // The deepest attempt names the assignment the line still
                 // means: `compras price =` stays short for `price =`.
@@ -196,28 +195,28 @@ struct SheetEvaluator {
 
     mutating func evaluate(node: Node, overriding override: Units.Override? = nil) throws -> Decimal {
         switch node {
-        case .number(let value):
+        case let .number(value):
             return value
-        case .quantity(let number, let unit):
+        case let .quantity(number, unit):
             // A `rem` or `em` quantity counts its pixels at the shared
             // Settings base, or the expression-local substitute (ADK-227).
             return try Units.quantityValue(
                 of: number, in: unit, pixelBase: Units.pixelBase(in: context, override: override)
             )
-        case .duration(let number, let unit):
+        case let .duration(number, unit):
             // A duration value anchors on the seconds magnitude of its
             // written quantity (ADK-228).
             return try Numeric.multiply(number, unit.factor)
-        case .durationConversion(let inner, _):
+        case let .durationConversion(inner, _):
             // The conversion is representational: the count only shows;
             // the value keeps its seconds magnitude, so chains compose in
             // their written order without rounding (ADK-228).
             return try evaluate(node: inner, overriding: override)
-        case .toTimespan(let inner):
+        case let .toTimespan(inner):
             // The timespan form is representational like the conversion
             // (ADK-228).
             return try evaluate(node: inner, overriding: override)
-        case .conversion(let inner, let target, let localOverride):
+        case let .conversion(inner, target, localOverride):
             let value = try evaluate(node: inner, overriding: localOverride ?? override)
             return try Units.convert(
                 value,
@@ -226,42 +225,42 @@ struct SheetEvaluator {
                 context: context,
                 override: localOverride ?? override
             )
-        case .reference(let name):
+        case let .reference(name):
             return try resolved(name: name)
-        case .unaryMinus(let inner):
+        case let .unaryMinus(inner):
             return try Numeric.subtract(
-                Decimal(0), try evaluate(node: inner, overriding: override)
+                Decimal(0), evaluate(node: inner, overriding: override)
             )
-        case .call(let name, let arguments):
+        case let .call(name, arguments):
             var argumentValues: [Decimal] = []
             for functionArgument in arguments {
-                argumentValues.append(
-                    try evaluate(node: functionArgument, overriding: override)
+                try argumentValues.append(
+                    evaluate(node: functionArgument, overriding: override)
                 )
             }
             return try Functions.apply(name: name, arguments: argumentValues)
-        case .binary(let op, let lhsNode, let rhsNode):
+        case let .binary(op, lhsNode, rhsNode):
             return try evaluateBinary(op, lhsNode, rhsNode, overriding: override)
-        case .representation(let kind, let inner):
+        case let .representation(kind, inner):
             // Inside arithmetic, a conversion contributes its value only;
             // the representation shows when the whole line is the
             // conversion (ADK-222).
             let value = try evaluate(node: inner, overriding: override)
             try Display.validate(value, as: kind)
             return value
-        case .percentShare(let percent, let base):
+        case let .percentShare(percent, base):
             return try Percent.share(
-                try evaluate(node: percent, overriding: override),
-                of: try evaluate(node: base, overriding: override)
+                evaluate(node: percent, overriding: override),
+                of: evaluate(node: base, overriding: override)
             )
-        case .percentOff(let percent, let base):
+        case let .percentOff(percent, base):
             return try Percent.off(
-                try evaluate(node: percent, overriding: override),
-                of: try evaluate(node: base, overriding: override)
+                evaluate(node: percent, overriding: override),
+                of: evaluate(node: base, overriding: override)
             )
-        case .percentPortion(let inner):
-            return try Percent.portion(try evaluate(node: inner, overriding: override))
-        case .assignment(let name, let value):
+        case let .percentPortion(inner):
+            return try Percent.portion(evaluate(node: inner, overriding: override))
+        case let .assignment(name, value):
             do {
                 let result = try evaluate(node: value, overriding: override)
                 let retained = Numeric.retain(result)
@@ -293,9 +292,9 @@ struct SheetEvaluator {
         // composed timespan (ADK-228): a call shows the count in the unit
         // its duration-carrying argument holds, so `round(1 month in
         // days)` returns `30 days`.
-        if case .call(_, let arguments) = node,
-            let argument = arguments.first(where: { Duration.carriesQuantity(of: $0) }),
-            let unit = Duration.representativeUnit(of: argument)
+        if case let .call(_, arguments) = node,
+           let argument = arguments.first(where: { Duration.carriesQuantity(of: $0) }),
+           let unit = Duration.representativeUnit(of: argument)
         {
             return Duration.count(value, in: unit, precision: precision, locale: locale)
         }
@@ -303,11 +302,11 @@ struct SheetEvaluator {
             return durationDisplay
         }
         switch node {
-        case .representation(let kind, _):
+        case let .representation(kind, _):
             return Display.format(value, as: kind, precision: precision, locale: locale)
-        case .quantity(_, let unit):
+        case let .quantity(_, unit):
             return Units.quantityDisplay(value, in: unit, precision: precision, locale: locale)
-        case .conversion(_, let target, _):
+        case let .conversion(_, target, _):
             return Units.display(value, in: target, precision: precision, locale: locale)
         default:
             return Numeric.display(value, precision: precision, locale: locale)
@@ -315,7 +314,7 @@ struct SheetEvaluator {
     }
 
     private mutating func evaluateBinary(
-        _ `operator`: NumericOperator, _ lhsNode: Node, _ rhsNode: Node,
+        _ operator: NumericOperator, _ lhsNode: Node, _ rhsNode: Node,
         overriding override: Units.Override? = nil
     ) throws -> Decimal {
         let lhs = try evaluate(node: lhsNode, overriding: override)
@@ -326,17 +325,21 @@ struct SheetEvaluator {
         case .bitwiseOr: return try Functions.bitwiseOr(lhs, rhs)
         case .subtract:
             // `X - N%` takes the portion N/100 of X off X (ADK-226).
-            if case .percentPortion(let inner) = rhsNode {
+            if case let .percentPortion(inner) = rhsNode {
                 let portion = try evaluate(node: inner)
-                return try Numeric.subtract(lhs, try Percent.share(portion, of: lhs))
+                return try Numeric.subtract(lhs, Percent.share(portion, of: lhs))
             }
             return try Numeric.subtract(lhs, rhs)
         case .multiply: return try Numeric.multiply(lhs, rhs)
         case .divide:
-            if rhs == 0 { throw Diagnostic.divisionByZero }
+            if rhs == 0 {
+                throw Diagnostic.divisionByZero
+            }
             return try Numeric.divide(lhs, by: rhs)
         case .power:
-            if rhs.isNaN { throw Diagnostic.outOfRange }
+            if rhs.isNaN {
+                throw Diagnostic.outOfRange
+            }
             if rhs != Numeric.roundPlain(rhs, scale: 0) {
                 throw Diagnostic.syntax
             }

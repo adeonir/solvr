@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import NumeCore
+import Testing
 
 // Complete-sheet tests for duration quantities (ADK-228). `15 min` is a
 // duration of 15 minutes rather than a minimum-function call, each unit
@@ -134,7 +134,7 @@ struct DurationTests {
     func chainedConversionsKeepTheSecondsValue() {
         let results = evaluate(sheetText: "1500 mins in days in hours", context: context())
         #expect(results[0].diagnostic == nil)
-        #expect(results[0].value == .decimal(90_000))
+        #expect(results[0].value == .decimal(90000))
         #expect(results[0].display == "25 hours")
     }
 
@@ -158,7 +158,7 @@ struct DurationTests {
             context: context(precision: 2)
         )
         #expect(results[0].display == "1,04 days")
-        #expect(results[0].value == .decimal(90_000))
+        #expect(results[0].value == .decimal(90000))
         // The value keeps the seconds magnitude, so the timespan form at
         // low precision still holds the day and the hour (ADK-228).
         #expect(results[2].display == "1 day 1 hour")
@@ -200,9 +200,9 @@ struct DurationTests {
     }
 
     @Test
-    func fractionalSecondsPreserveTheirFraction() {
+    func fractionalSecondsPreserveTheirFraction() throws {
         let conversion = result("90,5 s to timespan")
-        #expect(conversion.value == .decimal(try! Decimal(exact: "90.5")))
+        #expect(try conversion.value == .decimal(Decimal(exact: "90.5")))
         #expect(conversion.display == "1 min 30,5 s")
     }
 
@@ -210,7 +210,7 @@ struct DurationTests {
 
     @Test(arguments: [
         (Date(timeIntervalSince1970: 1_791_926_400), "30 days"), // Oct 2026
-        (Date(timeIntervalSince1970: 1_767_225_600), "30 days"), // Jan 2026
+        (Date(timeIntervalSince1970: 1_767_225_600), "30 days") // Jan 2026
     ])
     func monthConversionsAreClockIndependent(now: Date, _ expected: String) {
         let results = evaluate(

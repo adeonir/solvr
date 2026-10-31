@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import NumeCore
+import Testing
 
 // Complete-sheet tests for calendar dates, calendar-day differences,
 // weekday weeks, calendar-month shifts, and Unix timestamps (ADK-229).
@@ -162,10 +162,10 @@ struct DatesTests {
     }
 
     @Test
-    func daylightSavingShiftKeepsCalendarDays() {
+    func daylightSavingShiftKeepsCalendarDays() throws {
         // The New York daylight-saving transition ends 2026-11-01; the
         // difference through that night still counts whole calendar days.
-        let zone = TimeZone(identifier: "America/New_York")!
+        let zone = try #require(TimeZone(identifier: "America/New_York"))
         let results = evaluate(
             sheetText: "days until 1 Nov 2026\ndays until 2 Nov 2026",
             context: context(
@@ -219,18 +219,18 @@ struct DatesTests {
     // MARK: Unix timestamps in the context time zone
 
     @Test
-    func fromunixCarriesTheInstantAndShowsTheContextZone() {
-        let saoPaulo = TimeZone(identifier: "America/Sao_Paulo")!
+    func fromunixCarriesTheInstantAndShowsTheContextZone() throws {
+        let saoPaulo = try #require(TimeZone(identifier: "America/Sao_Paulo"))
         let result = evaluate(
             sheetText: "fromunix(1446587186)",
             context: context(timeZone: saoPaulo, now: clock("2026-10-30 09:00:00"))
         )[0]
         // The exact UTC instant is the value; the display applies the
         // context's time zone ( São Paulo was at UTC-2 that day).
-        #expect(result.value == .date(Date(timeIntervalSince1970: 1446587186)))
+        #expect(result.value == .date(Date(timeIntervalSince1970: 1_446_587_186)))
         #expect(result.display == "3 November 2015 19:46:26")
 
-        let lisbon = TimeZone(identifier: "Europe/Lisbon")!
+        let lisbon = try #require(TimeZone(identifier: "Europe/Lisbon"))
         let lisbonResult = evaluate(
             sheetText: "fromunix(1446587186)",
             context: context(timeZone: lisbon, now: clock("2026-10-30 09:00:00"))
@@ -255,12 +255,12 @@ struct DatesTests {
     @Test
     func sheetShowsDatesBesideTheirExpressions() {
         let sheet = """
-            # Renewals
-            days until 31 Mar
-            monday in 3 weeks
-            31 Jan + 1 month
-            fromunix(1446587186)
-            """
+        # Renewals
+        days until 31 Mar
+        monday in 3 weeks
+        31 Jan + 1 month
+        fromunix(1446587186)
+        """
         let results = evaluate(
             sheetText: sheet,
             context: context(now: clock("2026-10-30 09:00:00"))
@@ -273,7 +273,7 @@ struct DatesTests {
             "152 days",
             "16 November 2026",
             "28 February 2026",
-            "3 November 2015 19:46:26",
+            "3 November 2015 19:46:26"
         ])
     }
 

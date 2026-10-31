@@ -7,12 +7,12 @@ import Foundation
 enum Percent {
     /// The share of the base that `N` percent names: `52% of 900` is 468.
     static func share(_ percent: Decimal, of base: Decimal) throws -> Decimal {
-        try Numeric.divide(try Numeric.multiply(percent, base), by: 100)
+        try Numeric.divide(Numeric.multiply(percent, base), by: 100)
     }
 
     /// The base with its share of `N` percent taken off: `20% off 80` is 64.
     static func off(_ percent: Decimal, of base: Decimal) throws -> Decimal {
-        try Numeric.subtract(base, try share(percent, of: base))
+        try Numeric.subtract(base, share(percent, of: base))
     }
 
     /// The fraction `N/100` that a bare `N%` stands for in `X - N%`:

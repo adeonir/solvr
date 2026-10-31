@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import NumeCore
+import Testing
 
 // Model-layer tests for the comment shortcut (ADK-231). The shortcut toggles
 // `// ` exactly at the start of the cursor's line or of every selected line:

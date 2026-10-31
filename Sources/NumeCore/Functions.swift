@@ -33,8 +33,8 @@ enum Functions {
         case "fact": return try arityOne(arguments, named: "fact") { try factorial($0) }
         case "sin": return try arityOne(arguments, named: "sin") { try sine(degrees: $0) }
         case "round": return try arityOne(arguments, named: "round") {
-            Numeric.roundPlain($0, scale: 0)
-        }
+                Numeric.roundPlain($0, scale: 0)
+            }
         case "log":
             guard (1 ... 2).contains(arguments.count) else {
                 throw Diagnostic.argumentCount(
@@ -92,9 +92,15 @@ enum Functions {
     /// and the Newton iteration refines quadratically to well within half a
     /// unit in the 34th significant digit without Double pass-through.
     static func sqrt(_ x: Decimal) throws -> Decimal {
-        if x.isNaN { throw Diagnostic.outOfRange }
-        if x < 0 { throw Diagnostic.notARealNumber }
-        if x == 0 { return Decimal(0) }
+        if x.isNaN {
+            throw Diagnostic.outOfRange
+        }
+        if x < 0 {
+            throw Diagnostic.notARealNumber
+        }
+        if x == 0 {
+            return Decimal(0)
+        }
         let magnitude = x < 0 ? -x : x
         let (mantissa, exponent) = Numeric.normalizedParts(of: magnitude)
         var split = exponent.quotientAndRemainder(dividingBy: 2)
@@ -113,7 +119,9 @@ enum Functions {
             let previous = guess
             guess = try Numeric.check((guess + quotient) / 2)
             let delta = guess < previous ? previous - guess : guess - previous
-            if iteration > 6, delta <= guess * rootCutoff { break }
+            if iteration > 6, delta <= guess * rootCutoff {
+                break
+            }
         }
         return guess
     }
@@ -124,11 +132,15 @@ enum Functions {
     /// the product past `fact 84` overflows Decimal and reports Out of
     /// range (ADR-006).
     static func factorial(_ x: Decimal) throws -> Decimal {
-        if x.isNaN { throw Diagnostic.outOfRange }
+        if x.isNaN {
+            throw Diagnostic.outOfRange
+        }
         guard x >= 0, x == Numeric.roundPlain(x, scale: 0) else {
             throw Diagnostic.syntax
         }
-        if x > 1_000_000 { throw Diagnostic.outOfRange }
+        if x > 1_000_000 {
+            throw Diagnostic.outOfRange
+        }
         var product = Decimal(1)
         var step = Decimal(1)
         while step < x {
@@ -144,7 +156,9 @@ enum Functions {
     /// Decimal, the radians come from the 38-digit pi, and the Taylor
     /// series carries the rest (ADR-006).
     static func sine(degrees: Decimal) throws -> Decimal {
-        if degrees.isNaN { throw Diagnostic.outOfRange }
+        if degrees.isNaN {
+            throw Diagnostic.outOfRange
+        }
         let negative = degrees < 0
         var magnitude = negative ? -degrees : degrees
         if magnitude > 360 {
@@ -155,8 +169,12 @@ enum Functions {
             // The division rounds; step the turn count back onto the
             // exact multiple so the remainder keeps its true place.
             let turn = Decimal(360)
-            while floored * turn > magnitude { floored -= 1 }
-            while (floored + 1) * turn <= magnitude { floored += 1 }
+            while floored * turn > magnitude {
+                floored -= 1
+            }
+            while (floored + 1) * turn <= magnitude {
+                floored += 1
+            }
             magnitude -= floored * turn
         }
         let radians = try Numeric.check(magnitude * pi / 180)
@@ -174,7 +192,9 @@ enum Functions {
             let denominator = Decimal(2 * index) * Decimal(2 * index + 1)
             term = try Numeric.check(-term * squared / denominator)
             let magnitude = term < 0 ? -term : term
-            if magnitude < seriesCutoff { break }
+            if magnitude < seriesCutoff {
+                break
+            }
             sum = try Numeric.check(sum + term)
         }
         return sum
@@ -185,7 +205,9 @@ enum Functions {
     /// The logarithm of x to base b on Decimal (ADR-006); the natural
     /// logarithm divides through, so both operands stay on Decimal.
     static func logarithm(_ x: Decimal, base: Decimal) throws -> Decimal {
-        if x.isNaN || base.isNaN { throw Diagnostic.outOfRange }
+        if x.isNaN || base.isNaN {
+            throw Diagnostic.outOfRange
+        }
         guard x > 0, base > 0 else { throw Diagnostic.notARealNumber }
         return try Numeric.divide(naturalLog(x), by: naturalLog(base))
     }
@@ -210,7 +232,9 @@ enum Functions {
         let squared = ratio * ratio
         for index in 1 ... 100 {
             term = try Numeric.check(term * squared / Decimal(2 * index + 1))
-            if term < seriesCutoff { break }
+            if term < seriesCutoff {
+                break
+            }
             sum = try Numeric.check(sum + term)
         }
         var result = try Numeric.check(sum * 2)
@@ -230,13 +254,13 @@ enum Functions {
     /// magnitude range.
     static func bitwiseAnd(_ a: Decimal, _ b: Decimal) throws -> Decimal {
         try combining(a, b, bit: { left, right in left == 1 && right == 1 ? 1 : 0 },
-            negative: { negativeA, negativeB in negativeA && negativeB })
+                      negative: { negativeA, negativeB in negativeA && negativeB })
     }
 
     /// `6 | 3` and `6 or 3` are 7.
     static func bitwiseOr(_ a: Decimal, _ b: Decimal) throws -> Decimal {
         try combining(a, b, bit: { left, right in left == 1 || right == 1 ? 1 : 0 },
-            negative: { negativeA, negativeB in negativeA || negativeB })
+                      negative: { negativeA, negativeB in negativeA || negativeB })
     }
 
     private static func combining(
@@ -245,7 +269,9 @@ enum Functions {
         negative: (Bool, Bool) -> Bool
     ) throws -> Decimal {
         for value in [a, b] {
-            if value.isNaN { throw Diagnostic.outOfRange }
+            if value.isNaN {
+                throw Diagnostic.outOfRange
+            }
             guard value == Numeric.roundPlain(value, scale: 0) else {
                 throw Diagnostic.syntax
             }
@@ -270,7 +296,9 @@ enum Functions {
         var padded = [Int](repeating: 0, count: width)
         let magnitude = value < 0 ? -value : value
         let bits = magnitudeBits(of: value < 0 ? magnitude - 1 : magnitude)
-        for index in 0 ..< min(bits.count, width) { padded[index] = bits[index] }
+        for index in 0 ..< min(bits.count, width) {
+            padded[index] = bits[index]
+        }
         return value < 0 ? padded.map { $0 == 1 ? 0 : 1 } : padded
     }
 
@@ -279,7 +307,9 @@ enum Functions {
     /// so the digits divide down by two.
     private static func magnitudeBits(of value: Decimal) -> [Int] {
         let magnitude = value < 0 ? -value : value
-        if magnitude == 0 { return [] }
+        if magnitude == 0 {
+            return []
+        }
         let (mantissa, exponent) = Numeric.normalizedParts(of: magnitude)
         var digitString = Numeric.normalizedMantissaDigits(of: mantissa)
         if exponent + 1 > digitString.count {
@@ -287,7 +317,7 @@ enum Functions {
                 repeating: "0", count: exponent + 1 - digitString.count
             )
         }
-        var digits = digitString.compactMap { $0.wholeNumberValue }
+        var digits = digitString.compactMap(\.wholeNumberValue)
         var bits: [Int] = []
         while !(digits.count == 1 && digits[0] == 0) {
             var remainder = 0
@@ -297,7 +327,9 @@ enum Functions {
                 quotient.append(part / 2)
                 remainder = part % 2
             }
-            while quotient.count > 1, quotient.first == 0 { quotient.removeFirst() }
+            while quotient.count > 1, quotient.first == 0 {
+                quotient.removeFirst()
+            }
             bits.append(remainder)
             digits = quotient
         }
@@ -322,7 +354,7 @@ enum Functions {
     /// The Decimal a magnitude's bits build back into, most significant
     /// bit first with carries along the decimal digits.
     private static func decimalFromBits(_ bits: [Int]) throws -> Decimal {
-        var decimalDigits: [Int] = [0]
+        var decimalDigits = [0]
         for bit in bits.reversed() {
             var carry = bit
             var next: [Int] = []
@@ -331,7 +363,9 @@ enum Functions {
                 next.append(sum % 10)
                 carry = sum / 10
             }
-            while carry > 0 { next.append(carry % 10); carry /= 10 }
+            while carry > 0 {
+                next.append(carry % 10); carry /= 10
+            }
             decimalDigits = next.reversed()
         }
         let text = decimalDigits.map(String.init).joined()

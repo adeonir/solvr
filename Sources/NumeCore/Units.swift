@@ -32,7 +32,9 @@ struct Unit: Sendable, Equatable {
     /// The `rem` and `em` counts live relative to the shared pixel base:
     /// their quantity values hold the px count the display shows, and
     /// conversions bind through the base (ADK-227).
-    var isRelative: Bool { symbol == "em" || symbol == "rem" }
+    var isRelative: Bool {
+        symbol == "em" || symbol == "rem"
+    }
 }
 
 extension Unit {
@@ -114,8 +116,8 @@ extension Unit {
         dimension: .temperature, symbol: "K", factor: 1, aliases: ["k", "kelvin"]
     )
 
-    // CSS text quantities: pixels, points, and the `rem` and `em` counts
-    // relative to the shared pixel base.
+    /// CSS text quantities: pixels, points, and the `rem` and `em` counts
+    /// relative to the shared pixel base.
     static let pixel = Unit(
         dimension: .text, symbol: "px", factor: 1, aliases: ["px", "pixel", "pixels"]
     )
@@ -138,7 +140,7 @@ enum Units {
         .byte, .kilobyte, .megabyte, .gigabyte, .terabyte,
         .kibibyte, .mebibyte, .gibibyte, .tebibyte,
         .celsius, .fahrenheit, .kelvin,
-        .pixel, .point, .em, .rem,
+        .pixel, .point, .em, .rem
     ]
 
     private static let byAlias: [String: Unit] = {
@@ -158,7 +160,9 @@ enum Units {
 
     /// Every alias any unit accepts; assigning to one is a reserved-name
     /// error (ADK-220).
-    static var reservedNames: Set<String> { Set(byAlias.keys) }
+    static var reservedNames: Set<String> {
+        Set(byAlias.keys)
+    }
 
     /// The celsius offset of degrees kelvin.
     private static let kelvinOffset = try! Decimal(exact: "273.15")
@@ -175,9 +179,9 @@ enum Units {
         /// `rem` and `em` base, pixels per inch the pixel density.
         static func kind(for word: String) -> Kind? {
             switch word.lowercased() {
-            case "px": return .pixelBase
-            case "ppi": return .ppi
-            default: return nil
+            case "px": .pixelBase
+            case "ppi": .ppi
+            default: nil
             }
         }
     }
@@ -185,14 +189,18 @@ enum Units {
     /// The pixel base a quantity or conversion reads: the `at Npx`
     /// substitute, or the shared Settings value (ADK-220).
     static func pixelBase(in context: EvaluationContext, override: Override?) -> Decimal {
-        if let override, override.kind == .pixelBase { return override.value }
+        if let override, override.kind == .pixelBase {
+            return override.value
+        }
         return context.pixelBase
     }
 
     /// The pixel density a conversion reads: the `at N ppi` substitute,
     /// or the shared Settings value (ADK-220).
     static func ppi(in context: EvaluationContext, override: Override?) -> Decimal {
-        if let override, override.kind == .ppi { return override.value }
+        if let override, override.kind == .ppi {
+            return override.value
+        }
         return context.ppi
     }
 
@@ -215,10 +223,10 @@ enum Units {
     /// of a chained conversion.
     static func sourceUnit(of node: Node) -> Unit? {
         switch node {
-        case .quantity(_, let unit): return unit
-        case .unaryMinus(let inner): return sourceUnit(of: inner)
-        case .conversion(_, let target, _): return target
-        default: return nil
+        case let .quantity(_, unit): unit
+        case let .unaryMinus(inner): sourceUnit(of: inner)
+        case let .conversion(_, target, _): target
+        default: nil
         }
     }
 
@@ -242,26 +250,26 @@ enum Units {
         case let (one, other) where one == other:
             switch one {
             case .temperature:
-                return try fromCelsius(try toCelsius(value, from: source), to: target)
+                return try fromCelsius(toCelsius(value, from: source), to: target)
             case .length, .data:
                 return try Numeric.divide(
-                    try Numeric.multiply(value, source.factor), by: target.factor
+                    Numeric.multiply(value, source.factor), by: target.factor
                 )
             case .text:
                 return try fromPx(
-                    try toPx(value, in: source, base: base, ppi: density),
+                    toPx(value, in: source, base: base, ppi: density),
                     to: target, base: base, ppi: density
                 )
             }
         case (.length, .text):
             let px = try Numeric.divide(
-                try Numeric.multiply(try Numeric.multiply(value, source.factor), density),
+                Numeric.multiply(Numeric.multiply(value, source.factor), density),
                 by: Unit.inch.factor
             )
             return try fromPx(px, to: target, base: base, ppi: density)
         case (.text, .length):
             let metres = try Numeric.divide(
-                try Numeric.multiply(try toPx(value, in: source, base: base, ppi: density), Unit.inch.factor),
+                Numeric.multiply(toPx(value, in: source, base: base, ppi: density), Unit.inch.factor),
                 by: density
             )
             return try Numeric.divide(metres, by: target.factor)
@@ -274,10 +282,10 @@ enum Units {
     /// density over 72, and the relative `rem` and `em` counts already
     /// carry their px count through `quantityValue`.
     private static func toPx(
-        _ value: Decimal, in unit: Unit, base: Decimal, ppi: Decimal
+        _ value: Decimal, in unit: Unit, base _: Decimal, ppi: Decimal
     ) throws -> Decimal {
         if unit == .point {
-            return try Numeric.divide(try Numeric.multiply(value, ppi), by: 72)
+            return try Numeric.divide(Numeric.multiply(value, ppi), by: 72)
         }
         return value
     }
@@ -289,7 +297,7 @@ enum Units {
         _ px: Decimal, to unit: Unit, base: Decimal, ppi: Decimal
     ) throws -> Decimal {
         if unit == .point {
-            return try Numeric.divide(try Numeric.multiply(px, 72), by: ppi)
+            return try Numeric.divide(Numeric.multiply(px, 72), by: ppi)
         }
         if unit.isRelative {
             return try Numeric.divide(px, by: base)
@@ -300,16 +308,24 @@ enum Units {
     /// A temperature in degrees celsius, with the affine steps the
     /// Fahrenheit and Kelvin scales carry.
     private static func toCelsius(_ value: Decimal, from unit: Unit) throws -> Decimal {
-        if unit == .celsius { return value }
-        if unit == .kelvin { return try Numeric.subtract(value, kelvinOffset) }
-        return try Numeric.divide(try Numeric.multiply(try Numeric.subtract(value, 32), 5), by: 9)
+        if unit == .celsius {
+            return value
+        }
+        if unit == .kelvin {
+            return try Numeric.subtract(value, kelvinOffset)
+        }
+        return try Numeric.divide(Numeric.multiply(Numeric.subtract(value, 32), 5), by: 9)
     }
 
     /// A degrees-celsius value in the target temperature unit.
     private static func fromCelsius(_ value: Decimal, to unit: Unit) throws -> Decimal {
-        if unit == .celsius { return value }
-        if unit == .kelvin { return try Numeric.add(value, kelvinOffset) }
-        return try Numeric.add(try Numeric.divide(try Numeric.multiply(value, 9), by: 5), 32)
+        if unit == .celsius {
+            return value
+        }
+        if unit == .kelvin {
+            return try Numeric.add(value, kelvinOffset)
+        }
+        return try Numeric.add(Numeric.divide(Numeric.multiply(value, 9), by: 5), 32)
     }
 
     // MARK: Representations

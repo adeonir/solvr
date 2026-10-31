@@ -78,7 +78,7 @@ struct VariableTable {
         if let constant = Constants.values[name] {
             return constant
         }
-        if let value = bindings[name], case .decimal(let number) = value {
+        if let value = bindings[name], case let .decimal(number) = value {
             return number
         }
         if erredNames.contains(name) {

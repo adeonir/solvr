@@ -52,7 +52,7 @@ enum Duration {
         factor: 86400, singular: "day", plural: "days", aliases: ["d", "day", "days"]
     )
     static let week = Unit(
-        factor: 604800, singular: "week", plural: "weeks", aliases: ["week", "weeks"]
+        factor: 604_800, singular: "week", plural: "weeks", aliases: ["week", "weeks"]
     )
     /// A date-free month counts exactly 30 days (ADR-003).
     static let month = Unit(
@@ -66,7 +66,7 @@ enum Duration {
 
     static let allUnits: [Unit] = [
         Duration.second, Duration.minute, Duration.hour, Duration.day,
-        Duration.week, Duration.month, Duration.year,
+        Duration.week, Duration.month, Duration.year
     ]
 
     private static let byAlias: [String: Unit] = {
@@ -157,13 +157,13 @@ extension SheetEvaluator {
     func durationDisplay(of node: Node, for value: Decimal) -> String? {
         let precision = context.displayPrecision
         switch node {
-        case .duration(_, let unit):
+        case let .duration(_, unit):
             return Duration.count(value, in: unit, precision: precision, locale: locale)
-        case .durationConversion(_, let target):
+        case let .durationConversion(_, target):
             return Duration.count(value, in: target, precision: precision, locale: locale)
         case .toTimespan:
             return Duration.timespan(of: value, precision: precision, locale: locale)
-        case .unaryMinus(let inner):
+        case let .unaryMinus(inner):
             return durationDisplay(of: inner, for: value)
         default:
             return nil
@@ -177,16 +177,16 @@ extension Duration {
     /// unit its inner form shows (ADK-228).
     static func representativeUnit(of node: Node) -> Unit? {
         switch node {
-        case .duration(_, let unit):
-            return unit
-        case .durationConversion(_, let target):
-            return target
-        case .toTimespan(let inner):
-            return representativeUnit(of: inner)
-        case .unaryMinus(let inner):
-            return representativeUnit(of: inner)
+        case let .duration(_, unit):
+            unit
+        case let .durationConversion(_, target):
+            target
+        case let .toTimespan(inner):
+            representativeUnit(of: inner)
+        case let .unaryMinus(inner):
+            representativeUnit(of: inner)
         default:
-            return nil
+            nil
         }
     }
 
@@ -196,11 +196,11 @@ extension Duration {
     static func carriesQuantity(of node: Node) -> Bool {
         switch node {
         case .duration, .durationConversion, .toTimespan:
-            return true
-        case .unaryMinus(let inner):
-            return carriesQuantity(of: inner)
+            true
+        case let .unaryMinus(inner):
+            carriesQuantity(of: inner)
         default:
-            return false
+            false
         }
     }
 }

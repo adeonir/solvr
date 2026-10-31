@@ -1,6 +1,6 @@
-import Testing
 import Foundation
 @testable import NumeCore
+import Testing
 
 // Model-layer integration tests for the date-dependent results lifecycle
 // (ADK-230): the refresher keeps a sheet's visible results current through
@@ -93,20 +93,20 @@ struct SheetRefreshTests {
     }
 
     @Test
-    func dateDependenceFollowsTheTypedDateForms() throws {
+    func dateDependenceFollowsTheTypedDateForms() {
         let sheet = """
-            # Renewals
-            compras do mês
-            days until 31 Mar
-            days until 31 Mar 2027
-            31 Mar
-            1 Nov 2026
-            monday in 3 weeks
-            31 Jan + 1 month
-            31 Jan 2027 + 1 month
-            fromunix(1446587186)
-            4 * 5
-            """
+        # Renewals
+        compras do mês
+        days until 31 Mar
+        days until 31 Mar 2027
+        31 Mar
+        1 Nov 2026
+        monday in 3 weeks
+        31 Jan + 1 month
+        31 Jan 2027 + 1 month
+        fromunix(1446587186)
+        4 * 5
+        """
         let refresher = refresher(sheet, now: "2026-10-30 09:00:00")
         #expect(refresher.hasDateDependentResults == true)
         // The no-year forms follow the current date; the explicit years,
@@ -123,7 +123,7 @@ struct SheetRefreshTests {
             now: "2026-10-30 09:00:00"
         )
         let outcome = refresher.refresh(.midnight, now: clock("2026-10-31 00:00:00"))
-        let context = self.context(now: clock("2026-10-31 00:00:00"))
+        let context = context(now: clock("2026-10-31 00:00:00"))
         #expect(outcome.results == evaluate(sheetText: refresher.sheetText, context: context))
     }
 
