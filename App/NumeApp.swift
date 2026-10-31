@@ -123,7 +123,7 @@ private struct SheetEditorView: View {
         autosave?.flush()
         do {
             let sheet = try store.create(title: "Untitled")
-            loadSheets()
+            sheets.insert(sheet, at: 0)
             selectedID = sheet.id
         } catch {
             logger.error("Could not create sheet: \(error.localizedDescription)")
