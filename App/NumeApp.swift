@@ -53,6 +53,8 @@ private extension NSAppearance {
 private struct SheetEditorView: View {
     @State private var coordinator = SheetRefreshCoordinator()
     @State private var sheetText = ""
+    @State private var sheetTitle = ""
+    @FocusState private var titleFocused: Bool
     @State private var sheets: [StoredSheet] = []
     @State private var selectedID: UUID?
     @State private var autosave: SheetAutosave?
@@ -76,13 +78,20 @@ private struct SheetEditorView: View {
                 }
                 .frame(width: 180)
                 Divider()
-                SheetTextView(text: $sheetText, results: coordinator.results.map(SheetLineResult.init)) { updatedText in
-                    sheetText = updatedText
-                    coordinator.sheetTextEdited(updatedText)
-                    guard let id = selectedID, let index = sheets.firstIndex(where: { $0.id == id }) else { return }
-                    let old = sheets.remove(at: index)
-                    sheets.insert(StoredSheet(id: old.id, title: old.title, created: old.created, updated: Date(), text: updatedText), at: 0)
-                    autosave?.edit(id, text: updatedText)
+                VStack(alignment: .leading, spacing: 0) {
+                    TextField("Title", text: $sheetTitle)
+                        .textFieldStyle(.plain)
+                        .focused($titleFocused)
+                        .onSubmit(renameSheet)
+                        .padding()
+                    SheetTextView(text: $sheetText, results: coordinator.results.map(SheetLineResult.init)) { updatedText in
+                        sheetText = updatedText
+                        coordinator.sheetTextEdited(updatedText)
+                        guard let id = selectedID, let index = sheets.firstIndex(where: { $0.id == id }) else { return }
+                        let old = sheets.remove(at: index)
+                        sheets.insert(StoredSheet(id: old.id, title: old.title, created: old.created, updated: Date(), text: updatedText), at: 0)
+                        autosave?.edit(id, text: updatedText)
+                    }
                 }
             }
         }
@@ -104,7 +113,11 @@ private struct SheetEditorView: View {
         .onChange(of: selectedID) { _, id in
             guard let sheet = sheets.first(where: { $0.id == id }) else { return }
             sheetText = sheet.text
+            sheetTitle = sheet.title
             openSheet()
+        }
+        .onChange(of: titleFocused) { _, focused in
+            if !focused { renameSheet() }
         }
         .onDisappear { autosave?.flush(); coordinator.closeSheet() }
     }
@@ -130,6 +143,17 @@ private struct SheetEditorView: View {
             selectedID = sheet.id
         } catch {
             logger.error("Could not create sheet: \(error.localizedDescription)")
+        }
+    }
+
+    private func renameSheet() {
+        guard let id = selectedID, let sheet = sheets.first(where: { $0.id == id }), sheetTitle != sheet.title else { return }
+        do {
+            try store.rename(id, title: sheetTitle)
+            sheets = try store.list().sheets
+        } catch {
+            sheetTitle = sheet.title
+            logger.error("Could not rename sheet: \(error.localizedDescription)")
         }
     }
 
