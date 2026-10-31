@@ -29,6 +29,10 @@ public struct SheetStore: Sendable {
     public let folder: URL
     public init(folder: URL) { self.folder = folder }
 
+    public func delete(_ id: UUID) throws {
+        try FileManager.default.removeItem(at: folder.appending(path: "\(id.uuidString).md"))
+    }
+
     public func create(title: String, now: Date = Date()) throws -> StoredSheet {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let sheet = StoredSheet(id: UUID(), title: title, created: now, updated: now, text: "")

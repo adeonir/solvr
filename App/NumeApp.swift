@@ -58,6 +58,7 @@ private struct SheetEditorView: View {
     @State private var sheets: [StoredSheet] = []
     @State private var selectedID: UUID?
     @State private var autosave: SheetAutosave?
+    @State private var sheetToDelete: StoredSheet?
     private let store = SheetStore(folder: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appending(path: "Nume/Sheets"))
     private let logger = Logger(subsystem: "Nume", category: "SheetStore")
 
@@ -71,6 +72,7 @@ private struct SheetEditorView: View {
                         Text(sheet.title).tag(sheet.id)
                             .contextMenu {
                                 Button("Duplicate") { duplicateSheet(sheet) }
+                                Button("Delete", role: .destructive) { requestDeletion(sheet) }
                             }
                     }
                     Button("New Sheet", action: createSheet)
@@ -100,6 +102,17 @@ private struct SheetEditorView: View {
         .background(WindowChrome())
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .ignoresSafeArea(.container, edges: .top)
+        .alert("Delete \"\(sheetToDelete?.title ?? "")\"?", isPresented: Binding(
+            get: { sheetToDelete != nil },
+            set: { if !$0 { sheetToDelete = nil } }
+        ), presenting: sheetToDelete) { sheet in
+            Button("Delete", role: .destructive) {
+                deleteSheet(sheet)
+            }
+            Button("Cancel", role: .cancel) { sheetToDelete = nil }
+        } message: { _ in
+            Text("This sheet will be removed permanently and cannot be recovered.")
+        }
         .onAppear {
             if autosave == nil {
                 autosave = SheetAutosave(store: store, timer: AppSaveTimer()) { error in
@@ -170,6 +183,35 @@ private struct SheetEditorView: View {
             selectedID = copy.id
         } catch {
             logger.error("Could not duplicate sheet: \(error.localizedDescription)")
+        }
+    }
+
+    private func requestDeletion(_ sheet: StoredSheet) {
+        if UserDefaults.standard.bool(forKey: "confirmedFirstSheetDeletion") {
+            deleteSheet(sheet)
+        } else {
+            sheetToDelete = sheet
+        }
+    }
+
+    private func deleteSheet(_ sheet: StoredSheet) {
+        guard let index = sheets.firstIndex(where: { $0.id == sheet.id }) else { return }
+        autosave?.flush()
+        do {
+            try store.delete(sheet.id)
+            UserDefaults.standard.set(true, forKey: "confirmedFirstSheetDeletion")
+            sheets.remove(at: index)
+            if sheets.isEmpty {
+                let replacement = try store.create(title: "Untitled")
+                sheets = [replacement]
+                selectedID = replacement.id
+            } else if selectedID == sheet.id {
+                selectedID = sheets[min(index, sheets.count - 1)].id
+            }
+            sheetToDelete = nil
+        } catch {
+            logger.error("Could not delete sheet: \(error.localizedDescription)")
+            sheetToDelete = nil
         }
     }
 

@@ -88,3 +88,14 @@ import Testing
     try (copyFile + "Food: 50\n").write(to: copyURL, atomically: true, encoding: .utf8)
     #expect(try String(contentsOf: originalURL, encoding: .utf8) == originalFile)
 }
+
+@Test func deletesSheetFileWithoutRemovingOtherSheets() throws {
+    let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    let store = SheetStore(folder: folder)
+    let deleted = try store.create(title: "Budget")
+    let retained = try store.create(title: "Other")
+    let file = folder.appending(path: "\(deleted.id.uuidString).md")
+    try store.delete(deleted.id)
+    #expect(!FileManager.default.fileExists(atPath: file.path))
+    #expect(try store.list().sheets.map(\.id) == [retained.id])
+}
