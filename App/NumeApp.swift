@@ -448,6 +448,7 @@ private struct SheetLineResult: Equatable {
 
 private enum Metrics {
     nonisolated(unsafe) static let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+    nonisolated(unsafe) static let numberFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
     nonisolated(unsafe) static let headingFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .bold)
     static let lineHeight: CGFloat = 26
     static let sidePadding: CGFloat = 24
@@ -649,16 +650,19 @@ private final class ShortcutTextView: NSTextView {
 
         for (index, line) in lines.enumerated() {
             let numberAttributes: [NSAttributedString.Key: Any] = [
-                .font: Metrics.font,
+                .font: Metrics.numberFont,
                 .foregroundColor: index == activeLine ? Palette.lineNumberActive : Palette.lineNumber
             ]
             let number = "\(index + 1)" as NSString
             let numberSize = number.size(withAttributes: numberAttributes)
-            let top = line.rect.minY + line.baseline - Metrics.font.ascender
             number.draw(
-                at: NSPoint(x: Metrics.sidePadding + Metrics.numberColumn - numberSize.width, y: top),
+                at: NSPoint(
+                    x: Metrics.sidePadding + Metrics.numberColumn - numberSize.width,
+                    y: line.rect.minY + (Metrics.lineHeight - numberSize.height) / 2
+                ),
                 withAttributes: numberAttributes
             )
+            let top = line.rect.minY + line.baseline - Metrics.font.ascender
 
             guard index < lineResults.count, !lineResults[index].text.isEmpty else { continue }
             let result = lineResults[index]
@@ -698,7 +702,7 @@ private final class ShortcutTextView: NSTextView {
         }
         if source.length == 0 || source.hasSuffix("\n") {
             var rect = layoutManager.extraLineFragmentRect
-            if rect.isEmpty {
+            if source.length == 0 || rect.isEmpty {
                 rect = NSRect(x: 0, y: CGFloat(fragments.count) * Metrics.lineHeight, width: 0, height: Metrics.lineHeight)
             }
             rect.origin.x += origin.x
