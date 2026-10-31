@@ -48,7 +48,7 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
   - An expression's explicit base leaves the shared Settings value and other expressions unchanged.
 - FR-36 The total of a sheet sums the results of its expressions. The total leaves out the results it cannot add, such as a temperature among money results. A sheet with a date among its results shows no total.
 - FR-38 An expression that cannot be calculated shows a short message that names the cause in place of its result, on the same line as the expression, in the error color of the theme. The other expressions of the sheet keep their results. An expression that depends on an invalid expression shows that it depends on an error. An incomplete expression shows no message.
-- FR-5 Precision sets the number of decimal places of each result and of the total, from 1 to 10.
+- FR-5 Precision sets the number of decimal places of each result and of the total, from 1 to 10. The precision of a cryptocurrency result, and of a total in a cryptocurrency, is set apart, from 5 to 15, with a default of 10.
 - FR-6 The app converts currencies and cryptocurrencies with exchange rates that update over the internet.
 - FR-7 The app converts time zones by abbreviation and by city name.
 - FR-35 A sheet can be created.

@@ -24,7 +24,7 @@ The author and other Mac users with the same use cases; sheets and expression re
 
 - The total sums expression results and leaves out results it cannot add, such as a temperature among money results.
 - A sheet with a date among its results shows no total.
-- Precision sets decimal places for every result and the total, from 1 to 10.
+- Precision sets decimal places for every result and the total, from 1 to 10. The precision of a cryptocurrency result, and of a total in a cryptocurrency, is set apart, from 5 to 15, with a default of 10.
 
 ## Open questions
 

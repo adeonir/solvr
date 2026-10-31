@@ -16,6 +16,10 @@ _Avoid_: calculation, formula, line
 A name that an expression in a sheet gives a value, as in `price = 8`. Later expressions in the same sheet use the name in place of the value, and a name used before its first definition is an error.
 _Avoid_: constant, field, parameter
 
+**Reserved name**:
+A name that Nume keeps for its language and that a variable cannot take, such as `min`, `pi`, `and`, a unit, a currency, or a cryptocurrency. Assigning to one is an error.
+_Avoid_: keyword, reserved word, protected name
+
 **Heading**:
 A line of a sheet that starts with one to six `#` markers and a space, and titles a part of the sheet. Nume does not evaluate it and gives it no result.
 _Avoid_: title, section, header
