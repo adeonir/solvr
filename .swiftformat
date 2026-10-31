@@ -1,0 +1,6 @@
+--swiftversion 6.0
+--indent 4
+--linebreaks lf
+--commas inline
+--semicolons inline
+--trimwhitespace always
