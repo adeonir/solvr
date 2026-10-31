@@ -18,11 +18,11 @@ Users can recover sheets from Recently Deleted before automatic permanent remova
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume sheets, folders, and Recently Deleted.
+The author and other Mac users with the same use cases; sheets, folders, and Recently Deleted.
 
 ## Constraints
 
-- One Recently Deleted holds deleted sheets from all folders for 30 days, after which Nume removes the sheets permanently.
+- One Recently Deleted holds deleted sheets from all folders for 30 days, after which the app removes the sheets permanently.
 - Before expiry, users can recover sheets or delete them permanently.
 - Recovery restores the previous folder when that folder still exists; otherwise the sheet belongs to no folder.
 

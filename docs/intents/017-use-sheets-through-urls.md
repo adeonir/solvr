@@ -18,7 +18,7 @@ Users can open a sheet, create a sheet with given text, and append given text to
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume sheets and applications that open URLs.
+The author and other Mac users with the same use cases; sheets and applications that open URLs.
 
 ## Constraints
 

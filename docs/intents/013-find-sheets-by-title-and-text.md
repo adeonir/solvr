@@ -18,7 +18,7 @@ Users can find sheets by searching their titles and text.
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume sheets and search.
+The author and other Mac users with the same use cases; sheets and search.
 
 ## Constraints
 

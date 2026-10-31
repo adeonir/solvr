@@ -18,7 +18,7 @@ Users can read a sheet total and choose the number of decimal places for individ
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume sheets and expression results.
+The author and other Mac users with the same use cases; sheets and expression results.
 
 ## Constraints
 

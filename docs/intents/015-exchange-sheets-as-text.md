@@ -18,7 +18,7 @@ Users can export expressions and results as text and import that text while pres
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume sheets and text files.
+The author and other Mac users with the same use cases; sheets and text files.
 
 ## Constraints
 

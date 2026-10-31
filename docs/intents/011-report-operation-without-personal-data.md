@@ -6,7 +6,7 @@ created: 2026-10-29
 updated: 2026-10-29
 ---
 
-# Intent: Report Nume operation without personal data
+# Intent: Report operation without personal data
 
 ## Problem
 
@@ -14,11 +14,11 @@ External data sources can fail or change, and the author wants visibility into f
 
 ## Proposed outcome
 
-Nume sends crash reports, errors, and usage data without personal data, and users can turn all telemetry off together.
+The app sends crash reports, errors, and usage data without personal data, and users can turn all telemetry off together.
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume.
+The author and other Mac users with the same use cases; the app.
 
 ## Constraints
 

@@ -18,7 +18,7 @@ Users can write expressions, variables, and comments in a sheet and get correct 
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume and macOS regional settings.
+The author and other Mac users with the same use cases; macOS regional settings.
 
 ## Constraints
 

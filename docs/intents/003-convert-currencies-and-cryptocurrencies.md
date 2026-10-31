@@ -18,7 +18,7 @@ Users can convert currencies and cryptocurrencies using exchange rates that upda
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume and the external exchange rate source.
+The author and other Mac users with the same use cases; the external exchange rate source.
 
 ## Constraints
 

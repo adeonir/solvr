@@ -18,7 +18,7 @@ Users can group sheets in named folders, move sheets into and out of folders, re
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume sheets and folders.
+The author and other Mac users with the same use cases; sheets and folders.
 
 ## Constraints
 

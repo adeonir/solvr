@@ -18,7 +18,7 @@ Users can choose an installed monospaced font and adjust its size and line heigh
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume sheets and fonts installed on the Mac.
+The author and other Mac users with the same use cases; sheets and fonts installed on the Mac.
 
 ## Constraints
 

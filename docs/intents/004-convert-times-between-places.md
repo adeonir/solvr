@@ -18,7 +18,7 @@ Users can convert times by time zone abbreviation, city name, and city abbreviat
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume and the external city time zone data source.
+The author and other Mac users with the same use cases; the external city time zone data source.
 
 ## Constraints
 

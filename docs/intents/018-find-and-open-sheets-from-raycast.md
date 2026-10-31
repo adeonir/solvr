@@ -10,19 +10,19 @@ updated: 2026-10-29
 
 ## Problem
 
-The author wants to find and open Nume sheets through Raycast. A specific problem with the current workflow is not stated.
+The author wants to find and open sheets through Raycast. A specific problem with the current workflow is not stated.
 
 ## Proposed outcome
 
-Users can search sheets in Raycast and open a selected sheet in Nume.
+Users can search sheets in Raycast and open a selected sheet in the app.
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume sheets and Raycast.
+The author and other Mac users with the same use cases; sheets and Raycast.
 
 ## Constraints
 
-- Raycast integration supports searching sheets and opening a sheet in Nume.
+- Raycast integration supports searching sheets and opening a sheet in the app.
 
 ## Open questions
 

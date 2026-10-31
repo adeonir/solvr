@@ -14,11 +14,11 @@ The author wants light and dark appearances and selectable themes. A specific pr
 
 ## Proposed outcome
 
-Users can choose a mode and a theme for the whole Nume window, including following macOS appearance automatically.
+Users can choose a mode and a theme for the whole window, including following macOS appearance automatically.
 
 ## Affected users and systems
 
-The author and other Mac users with the same use cases; Nume and macOS appearance.
+The author and other Mac users with the same use cases; macOS appearance.
 
 ## Constraints
 
