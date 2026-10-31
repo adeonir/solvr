@@ -24,3 +24,26 @@ import Testing
     #expect(result.skipped.count == 1)
     #expect(try String(contentsOf: file, encoding: .utf8) == "not frontmatter")
 }
+
+@Test func duplicatesSheetWithIndependentFile() throws {
+    let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    let store = SheetStore(folder: folder)
+    let original = try store.create(title: "Budget", now: Date(timeIntervalSince1970: 1))
+    let originalURL = folder.appending(path: "\(original.id.uuidString).md")
+    let originalFile = try String(contentsOf: originalURL, encoding: .utf8) + "Rent: 100\n"
+    try originalFile.write(to: originalURL, atomically: true, encoding: .utf8)
+    let time = Date(timeIntervalSince1970: 20)
+    let copy = try store.duplicate(id: original.id, now: time)
+    #expect(copy.id != original.id)
+    #expect(copy.title == "Budget")
+    #expect(copy.text == "Rent: 100\n")
+    #expect(copy.created == time)
+    #expect(copy.updated == time)
+    let listed = try store.list().sheets
+    #expect(listed.map(\.id) == [copy.id, original.id])
+    #expect(listed.first == copy)
+    let copyURL = folder.appending(path: "\(copy.id.uuidString).md")
+    let copyFile = try String(contentsOf: copyURL, encoding: .utf8)
+    try (copyFile + "Food: 50\n").write(to: copyURL, atomically: true, encoding: .utf8)
+    #expect(try String(contentsOf: originalURL, encoding: .utf8) == originalFile)
+}
