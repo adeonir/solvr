@@ -23,6 +23,10 @@ private enum Palette {
     static let result = dynamic(light: 0x0062CC, dark: 0x4DA3FF)
     static let error = dynamic(light: 0xD70015, dark: 0xFF453A)
     static let caret = dynamic(light: 0x007AFF, dark: 0x0A84FF)
+    static let sidebar = dynamic(light: 0xF2F2F4, dark: 0x232326)
+    static let sidebarSelection = dynamic(light: 0xE1E1E5, dark: 0x303033)
+    static let tertiaryText = dynamic(light: 0x8E8E93, dark: 0x7C7C82)
+    static let secondaryText = dynamic(light: 0x636368, dark: 0xA1A1A6)
     static let activeLine = NSColor(name: nil) { appearance in
         appearance.isDark ? NSColor(white: 1, alpha: 0.06) : NSColor(white: 0, alpha: 0.05)
     }
@@ -63,37 +67,40 @@ private struct SheetEditorView: View {
     private let logger = Logger(subsystem: "Nume", category: "SheetStore")
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Room for the title bar, which draws over the content.
-            Color.clear.frame(height: 52)
-            HStack(spacing: 0) {
-                VStack {
-                    List(sheets, selection: $selectedID) { sheet in
-                        Text(sheet.title).tag(sheet.id)
-                            .contextMenu {
-                                Button("Duplicate") { duplicateSheet(sheet) }
-                                Button("Delete", role: .destructive) { requestDeletion(sheet) }
-                            }
+        HStack(spacing: 0) {
+            sidebar
+            VStack(alignment: .leading, spacing: 0) {
+                // The title bar row, centered on the window buttons, which draw over the content.
+                HStack {
+                    Spacer()
+                    Button(action: createSheet) {
+                        Image(systemName: "square.and.pencil")
+                            .font(.system(size: 15))
+                            .frame(width: 32, height: 28)
+                            .contentShape(Rectangle())
                     }
-                    Button("New Sheet", action: createSheet)
-                        .padding()
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color(nsColor: Palette.secondaryText))
+                    .help("New Sheet")
+                    .accessibilityLabel("New Sheet")
                 }
-                .frame(width: 180)
-                Divider()
-                VStack(alignment: .leading, spacing: 0) {
-                    TextField("Title", text: $sheetTitle)
-                        .textFieldStyle(.plain)
-                        .focused($titleFocused)
-                        .onSubmit(renameSheet)
-                        .padding()
-                    SheetTextView(text: $sheetText, results: coordinator.results.map(SheetLineResult.init)) { updatedText in
-                        sheetText = updatedText
-                        coordinator.sheetTextEdited(updatedText)
-                        guard let id = selectedID, let index = sheets.firstIndex(where: { $0.id == id }) else { return }
-                        let old = sheets.remove(at: index)
-                        sheets.insert(StoredSheet(id: old.id, title: old.title, created: old.created, updated: Date(), text: updatedText), at: 0)
-                        autosave?.edit(id, text: updatedText)
-                    }
+                .padding(.leading, 8)
+                .padding(.trailing, 10)
+                .frame(height: 52)
+                TextField("Title", text: $sheetTitle)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 22, weight: .bold))
+                    .focused($titleFocused)
+                    .onSubmit(renameSheet)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
+                SheetTextView(text: $sheetText, results: coordinator.results.map(SheetLineResult.init)) { updatedText in
+                    sheetText = updatedText
+                    coordinator.sheetTextEdited(updatedText)
+                    guard let id = selectedID, let index = sheets.firstIndex(where: { $0.id == id }) else { return }
+                    let old = sheets.remove(at: index)
+                    sheets.insert(StoredSheet(id: old.id, title: old.title, created: old.created, updated: Date(), text: updatedText), at: 0)
+                    autosave?.edit(id, text: updatedText)
                 }
             }
         }
@@ -134,6 +141,84 @@ private struct SheetEditorView: View {
             if !focused { renameSheet() }
         }
         .onDisappear { autosave?.flush(); coordinator.closeSheet() }
+    }
+
+    /// The sidebar, full height and flush with the window edge, like the Finder,
+    /// with room at the top for the window buttons.
+    private var sidebar: some View {
+        VStack(spacing: 0) {
+            Color.clear.frame(height: 52)
+            ScrollView {
+                LazyVStack(spacing: 4) {
+                    ForEach(sheets) { sheet in
+                        sidebarRow(sheet)
+                    }
+                }
+                .padding(.horizontal, 8)
+            }
+        }
+        .frame(width: 212)
+        .frame(maxHeight: .infinity)
+        .background(Color(nsColor: Palette.sidebar))
+    }
+
+    private func sidebarRow(_ sheet: StoredSheet) -> some View {
+        Button {
+            selectedID = sheet.id
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(sheet.title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color(nsColor: Palette.text))
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    Text(Self.stamp(of: sheet.updated))
+                        .font(.system(size: 11))
+                        .monospacedDigit()
+                        .foregroundStyle(Color(nsColor: Palette.tertiaryText))
+                }
+                Text(Self.preview(of: sheet.text))
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color(nsColor: Palette.secondaryText))
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                selectedID == sheet.id ? Color(nsColor: Palette.sidebarSelection) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 8)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button("Duplicate") { duplicateSheet(sheet) }
+            Button("Delete", role: .destructive) { requestDeletion(sheet) }
+        }
+    }
+
+    private static let timeFormat: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+
+    private static let dateFormat: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yy"
+        return formatter
+    }()
+
+    private static func stamp(of date: Date) -> String {
+        (Calendar.current.isDateInToday(date) ? timeFormat : dateFormat).string(from: date)
+    }
+
+    private static func preview(of text: String) -> String {
+        let line = text.split(separator: "\n", omittingEmptySubsequences: true)
+            .first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        return line.map(String.init) ?? "No content"
     }
 
     private func loadSheets() {
@@ -248,21 +333,64 @@ private final class AppSaveTimer: SheetSaveTimer {
 }
 
 /// Lets the window background show through the title bar, so the title bar
-/// has the color of the sheet. The title "Nume" stays drawn.
+/// has the color of the sheet. The title is hidden, and the window buttons sit
+/// lower and farther from the edge, like the Finder.
 private struct WindowChrome: NSViewRepresentable {
-    func makeNSView(context _: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async { [weak view] in
-            guard let window = view?.window else { return }
-            window.titlebarAppearsTransparent = true
-            window.titlebarSeparatorStyle = .none
-            window.styleMask.insert(.fullSizeContentView)
-            window.backgroundColor = Palette.background
-        }
-        return view
+    func makeNSView(context _: Context) -> ChromeView {
+        ChromeView()
     }
 
-    func updateNSView(_: NSView, context _: Context) {}
+    func updateNSView(_: ChromeView, context _: Context) {}
+}
+
+@MainActor
+private final class ChromeView: NSView {
+    private static let titleBarHeight: CGFloat = 52
+    private static let buttonInset: CGFloat = 19
+    private static let buttonSpacing: CGFloat = 23
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard let window else { return }
+        configure()
+        DispatchQueue.main.async { [weak self] in self?.configure() }
+        for name in [NSWindow.didResizeNotification, NSWindow.didEndLiveResizeNotification, NSWindow.didExitFullScreenNotification] {
+            NotificationCenter.default.addObserver(forName: name, object: window, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.placeWindowButtons() }
+            }
+        }
+    }
+
+    /// Runs twice: SwiftUI sets the window up after this view is attached.
+    private func configure() {
+        guard let window else { return }
+        window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
+        window.titleVisibility = .hidden
+        window.styleMask.insert(.fullSizeContentView)
+        window.backgroundColor = Palette.background
+        placeWindowButtons()
+    }
+
+    /// The system puts the window buttons back at its own position on every
+    /// resize, so this runs again then.
+    private func placeWindowButtons() {
+        guard let window, !window.styleMask.contains(.fullScreen),
+              let bar = window.standardWindowButton(.closeButton)?.superview,
+              let container = bar.superview
+        else { return }
+        let height = Self.titleBarHeight
+        container.frame = NSRect(x: 0, y: window.frame.height - height, width: container.frame.width, height: height)
+        bar.frame = container.bounds
+        let types: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+        for (index, type) in types.enumerated() {
+            guard let button = window.standardWindowButton(type) else { continue }
+            button.setFrameOrigin(NSPoint(
+                x: Self.buttonInset + CGFloat(index) * Self.buttonSpacing,
+                y: (height - button.frame.height) / 2
+            ))
+        }
+    }
 }
 
 /// What the editor draws beside a line: a result, an error message, or nothing.
