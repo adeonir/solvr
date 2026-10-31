@@ -1,7 +1,7 @@
 ---
 id: "014"
 name: sync-sheets-and-folders
-status: draft
+status: accepted
 created: 2026-10-29
 updated: 2026-10-29
 ---

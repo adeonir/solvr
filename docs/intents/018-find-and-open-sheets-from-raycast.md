@@ -1,7 +1,7 @@
 ---
 id: "018"
 name: find-and-open-sheets-from-raycast
-status: draft
+status: accepted
 created: 2026-10-29
 updated: 2026-10-29
 ---

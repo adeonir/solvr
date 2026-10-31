@@ -1,7 +1,7 @@
 ---
 id: "017"
 name: use-sheets-through-urls
-status: draft
+status: accepted
 created: 2026-10-29
 updated: 2026-10-29
 ---

@@ -1,7 +1,7 @@
 ---
 id: "007"
 name: choose-window-appearance
-status: draft
+status: accepted
 created: 2026-10-29
 updated: 2026-10-30
 ---

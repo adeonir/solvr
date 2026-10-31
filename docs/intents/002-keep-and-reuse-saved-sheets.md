@@ -1,7 +1,7 @@
 ---
 id: "002"
 name: keep-and-reuse-saved-sheets
-status: draft
+status: done
 created: 2026-10-29
 updated: 2026-10-30
 ---

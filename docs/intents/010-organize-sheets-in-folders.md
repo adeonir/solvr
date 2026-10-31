@@ -1,7 +1,7 @@
 ---
 id: "010"
 name: organize-sheets-in-folders
-status: draft
+status: accepted
 created: 2026-10-29
 updated: 2026-10-29
 ---

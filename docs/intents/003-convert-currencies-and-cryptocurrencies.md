@@ -1,7 +1,7 @@
 ---
 id: "003"
 name: convert-currencies-and-cryptocurrencies
-status: draft
+status: accepted
 created: 2026-10-29
 updated: 2026-10-29
 ---

@@ -1,7 +1,7 @@
 ---
 id: "001"
 name: calculate-everyday-expressions
-status: draft
+status: done
 created: 2026-10-29
 updated: 2026-10-30
 ---

@@ -1,7 +1,7 @@
 ---
 id: "009"
 name: install-and-stay-updated
-status: draft
+status: accepted
 created: 2026-10-29
 updated: 2026-10-29
 ---

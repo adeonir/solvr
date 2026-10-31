@@ -1,7 +1,7 @@
 ---
 id: "012"
 name: recover-deleted-sheets
-status: draft
+status: accepted
 created: 2026-10-29
 updated: 2026-10-29
 ---

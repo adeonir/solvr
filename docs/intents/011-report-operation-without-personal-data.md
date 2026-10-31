@@ -1,7 +1,7 @@
 ---
 id: "011"
 name: report-operation-without-personal-data
-status: draft
+status: accepted
 created: 2026-10-29
 updated: 2026-10-29
 ---

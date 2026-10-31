@@ -1,7 +1,7 @@
 ---
 id: "006"
 name: adjust-sheet-typography
-status: draft
+status: accepted
 created: 2026-10-29
 updated: 2026-10-29
 ---
