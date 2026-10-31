@@ -53,8 +53,11 @@ private extension NSAppearance {
 private struct SheetEditorView: View {
     @State private var coordinator = SheetRefreshCoordinator()
     @State private var sheetText = ""
+    @State private var sheetTitle = ""
+    @FocusState private var titleFocused: Bool
     @State private var sheets: [StoredSheet] = []
     @State private var selectedID: UUID?
+    @State private var autosave: SheetAutosave?
     private let store = SheetStore(folder: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appending(path: "Nume/Sheets"))
     private let logger = Logger(subsystem: "Nume", category: "SheetStore")
 
@@ -66,15 +69,29 @@ private struct SheetEditorView: View {
                 VStack {
                     List(sheets, selection: $selectedID) { sheet in
                         Text(sheet.title).tag(sheet.id)
+                            .contextMenu {
+                                Button("Duplicate") { duplicateSheet(sheet) }
+                            }
                     }
                     Button("New Sheet", action: createSheet)
                         .padding()
                 }
                 .frame(width: 180)
                 Divider()
-                SheetTextView(text: $sheetText, results: coordinator.results.map(SheetLineResult.init)) { updatedText in
-                    sheetText = updatedText
-                    coordinator.sheetTextEdited(updatedText)
+                VStack(alignment: .leading, spacing: 0) {
+                    TextField("Title", text: $sheetTitle)
+                        .textFieldStyle(.plain)
+                        .focused($titleFocused)
+                        .onSubmit(renameSheet)
+                        .padding()
+                    SheetTextView(text: $sheetText, results: coordinator.results.map(SheetLineResult.init)) { updatedText in
+                        sheetText = updatedText
+                        coordinator.sheetTextEdited(updatedText)
+                        guard let id = selectedID, let index = sheets.firstIndex(where: { $0.id == id }) else { return }
+                        let old = sheets.remove(at: index)
+                        sheets.insert(StoredSheet(id: old.id, title: old.title, created: old.created, updated: Date(), text: updatedText), at: 0)
+                        autosave?.edit(id, text: updatedText)
+                    }
                 }
             }
         }
@@ -83,14 +100,27 @@ private struct SheetEditorView: View {
         .background(WindowChrome())
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .ignoresSafeArea(.container, edges: .top)
-        .onAppear(perform: loadSheets)
+        .onAppear {
+            if autosave == nil {
+                autosave = SheetAutosave(store: store, timer: AppSaveTimer()) { error in
+                    logger.error("Could not save sheet: \(error.localizedDescription)")
+                }
+            }
+            loadSheets()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { _ in autosave?.flush() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in autosave?.flush() }
         .onChange(of: selectedID) { _, id in
             guard let sheet = sheets.first(where: { $0.id == id }) else { return }
             sheetText = sheet.text
+            sheetTitle = sheet.title
             UserDefaults.standard.set(sheet.id.uuidString, forKey: "lastOpenedSheetID")
             openSheet()
         }
-        .onDisappear { coordinator.closeSheet() }
+        .onChange(of: titleFocused) { _, focused in
+            if !focused { renameSheet() }
+        }
+        .onDisappear { autosave?.flush(); coordinator.closeSheet() }
     }
 
     private func loadSheets() {
@@ -112,12 +142,34 @@ private struct SheetEditorView: View {
     }
 
     private func createSheet() {
+        autosave?.flush()
         do {
             let sheet = try store.create(title: "Untitled")
-            sheets = try store.list().sheets
+            sheets.insert(sheet, at: 0)
             selectedID = sheet.id
         } catch {
             logger.error("Could not create sheet: \(error.localizedDescription)")
+        }
+    }
+
+    private func renameSheet() {
+        guard let id = selectedID, let sheet = sheets.first(where: { $0.id == id }), sheetTitle != sheet.title else { return }
+        do {
+            try store.rename(id, title: sheetTitle)
+            sheets = try store.list().sheets
+        } catch {
+            sheetTitle = sheet.title
+            logger.error("Could not rename sheet: \(error.localizedDescription)")
+        }
+    }
+
+    private func duplicateSheet(_ source: StoredSheet) {
+        do {
+            let copy = try store.duplicate(id: source.id, text: source.id == selectedID ? sheetText : nil)
+            loadSheets()
+            selectedID = copy.id
+        } catch {
+            logger.error("Could not duplicate sheet: \(error.localizedDescription)")
         }
     }
 
@@ -132,6 +184,25 @@ private struct SheetEditorView: View {
                 displayPrecision: 2
             )
         )
+    }
+}
+
+@MainActor
+private final class AppSaveTimer: SheetSaveTimer {
+    private var task: Task<Void, Never>?
+
+    func schedule(afterMilliseconds delay: Int, _ action: @escaping @MainActor () -> Void) {
+        cancel()
+        task = Task {
+            try? await Task.sleep(for: .milliseconds(delay))
+            guard !Task.isCancelled else { return }
+            action()
+        }
+    }
+
+    func cancel() {
+        task?.cancel()
+        task = nil
     }
 }
 
