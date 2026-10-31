@@ -2,7 +2,9 @@ import Foundation
 
 public struct SheetActions {
     private let store: SheetStore
-    public init(store: SheetStore) { self.store = store }
+    public init(store: SheetStore) {
+        self.store = store
+    }
 
     public func rename(_ id: UUID, title: String, sheets: [StoredSheet]) throws -> [StoredSheet] {
         try store.rename(id, title: title)
@@ -14,7 +16,7 @@ public struct SheetActions {
         return result
     }
 
-    public func duplicate(_ id: UUID, sheets: [StoredSheet], selectedID: UUID?) throws -> (sheets: [StoredSheet], copy: StoredSheet) {
+    public func duplicate(_ id: UUID, sheets: [StoredSheet], selectedID _: UUID?) throws -> (sheets: [StoredSheet], copy: StoredSheet) {
         guard let source = sheets.first(where: { $0.id == id }) else { throw SheetActionError.missingSheet }
         let copy = try store.duplicate(id: id, text: source.text)
         return ([copy] + sheets, copy)

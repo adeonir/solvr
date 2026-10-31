@@ -27,7 +27,9 @@ public struct SheetList: Sendable {
 
 public struct SheetStore: Sendable {
     public let folder: URL
-    public init(folder: URL) { self.folder = folder }
+    public init(folder: URL) {
+        self.folder = folder
+    }
 
     public func delete(_ id: UUID) throws {
         try FileManager.default.removeItem(at: folder.appending(path: "\(id.uuidString).md"))
@@ -61,7 +63,7 @@ public struct SheetStore: Sendable {
         guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw StoreError.invalidTitle }
         let file = folder.appending(path: "\(id.uuidString).md")
         let sheet = try read(file)
-        let encodedTitle = String(decoding: try JSONEncoder().encode(title), as: UTF8.self)
+        let encodedTitle = try String(decoding: JSONEncoder().encode(title), as: UTF8.self)
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let content = "---\ntitle: \(encodedTitle)\ncreated: \(formatter.string(from: sheet.created))\nupdated: \(formatter.string(from: now))\n---\n\(sheet.text)"
@@ -71,7 +73,7 @@ public struct SheetStore: Sendable {
     public func duplicate(id: UUID, text: String? = nil, now: Date = Date()) throws -> StoredSheet {
         let source = try read(folder.appending(path: "\(id.uuidString).md"))
         let copy = StoredSheet(id: UUID(), title: source.title, created: now, updated: now, text: text ?? source.text)
-        let encodedTitle = String(decoding: try JSONEncoder().encode(copy.title), as: UTF8.self)
+        let encodedTitle = try String(decoding: JSONEncoder().encode(copy.title), as: UTF8.self)
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let timestamp = formatter.string(from: now)
@@ -86,7 +88,7 @@ public struct SheetStore: Sendable {
         var sheets: [StoredSheet] = []
         var skipped: [SkippedSheet] = []
         for file in files where file.pathExtension == "md" {
-            do { sheets.append(try read(file)) }
+            do { try sheets.append(read(file)) }
             catch { skipped.append(SkippedSheet(url: file, reason: String(describing: error))) }
         }
         sheets.sort { $0.updated == $1.updated ? $0.id.uuidString < $1.id.uuidString : $0.updated > $1.updated }

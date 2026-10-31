@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import NumeCore
+import Testing
 
 @Test func createsAndListsSheets() throws {
     let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)

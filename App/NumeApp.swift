@@ -114,7 +114,11 @@ private struct SheetEditorView: View {
         .ignoresSafeArea(.container, edges: .top)
         .alert("Delete \"\(sheetToDelete?.title ?? "")\"?", isPresented: Binding(
             get: { sheetToDelete != nil },
-            set: { if !$0 { sheetToDelete = nil } }
+            set: {
+                if !$0 {
+                    sheetToDelete = nil
+                }
+            }
         ), presenting: sheetToDelete) { sheet in
             Button("Delete", role: .destructive) {
                 deleteSheet(sheet)
@@ -141,7 +145,9 @@ private struct SheetEditorView: View {
             openSheet()
         }
         .onChange(of: titleFocused) { _, focused in
-            if !focused { renameSheet() }
+            if !focused {
+                renameSheet()
+            }
         }
         .onChange(of: exchangeRates.snapshot) { _, snapshot in
             coordinator.exchangeRatesChanged(snapshot)
@@ -388,8 +394,12 @@ private final class ChromeView: NSView {
         else { return }
         let height = Self.titleBarHeight
         let containerFrame = NSRect(x: 0, y: window.frame.height - height, width: container.frame.width, height: height)
-        if container.frame != containerFrame { container.frame = containerFrame }
-        if bar.frame != container.bounds { bar.frame = container.bounds }
+        if container.frame != containerFrame {
+            container.frame = containerFrame
+        }
+        if bar.frame != container.bounds {
+            bar.frame = container.bounds
+        }
         let types: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
         for (index, type) in types.enumerated() {
             guard let button = window.standardWindowButton(type) else { continue }
@@ -397,7 +407,9 @@ private final class ChromeView: NSView {
                 x: Self.buttonInset + CGFloat(index) * Self.buttonSpacing,
                 y: (height - button.frame.height) / 2
             )
-            if button.frame.origin != origin { button.setFrameOrigin(origin) }
+            if button.frame.origin != origin {
+                button.setFrameOrigin(origin)
+            }
         }
     }
 }
