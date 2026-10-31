@@ -87,6 +87,7 @@ private struct SheetEditorView: View {
         .onChange(of: selectedID) { _, id in
             guard let sheet = sheets.first(where: { $0.id == id }) else { return }
             sheetText = sheet.text
+            UserDefaults.standard.set(sheet.id.uuidString, forKey: "lastOpenedSheetID")
             openSheet()
         }
         .onDisappear { coordinator.closeSheet() }
@@ -99,7 +100,12 @@ private struct SheetEditorView: View {
             for skipped in result.skipped {
                 logger.error("Skipped \(skipped.url.path): \(skipped.reason)")
             }
-            selectedID = sheets.first?.id
+            if sheets.isEmpty {
+                let sheet = try store.create(title: "Untitled")
+                sheets = [sheet]
+            }
+            let lastOpened = UserDefaults.standard.string(forKey: "lastOpenedSheetID").flatMap(UUID.init(uuidString:))
+            selectedID = SheetLaunch.selection(in: sheets.map(\.id), lastOpened: lastOpened)
         } catch {
             logger.error("Could not list sheets: \(error.localizedDescription)")
         }
@@ -108,7 +114,7 @@ private struct SheetEditorView: View {
     private func createSheet() {
         do {
             let sheet = try store.create(title: "Untitled")
-            loadSheets()
+            sheets = try store.list().sheets
             selectedID = sheet.id
         } catch {
             logger.error("Could not create sheet: \(error.localizedDescription)")
