@@ -27,7 +27,9 @@ public struct SheetStore: Sendable {
         let sheet = StoredSheet(id: UUID(), title: title, created: now, updated: now, text: "")
         let titleData = try JSONEncoder().encode(title)
         let encodedTitle = String(decoding: titleData, as: UTF8.self)
-        let timestamp = now.ISO8601Format(.iso8601(timeZone: .gmt, includingFractionalSeconds: true))
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let timestamp = formatter.string(from: now)
         let content = "---\ntitle: \(encodedTitle)\ncreated: \(timestamp)\nupdated: \(timestamp)\n---\n"
         try content.write(to: folder.appending(path: "\(sheet.id.uuidString).md"), atomically: true, encoding: .utf8)
         return sheet
