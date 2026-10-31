@@ -31,7 +31,9 @@ enum Money {
         // matching the calculator's numeric language.
         return (String(fields[0]), String(fields[1]) + "@numbers=latn")
     })
-    static let names = FiatCurrencies.names
+    /// The two cryptocurrencies that have a symbol; their results still show the code.
+    static let cryptoSymbols: [(String, String)] = [("₿", "BTC"), ("Ξ", "ETH")]
+    static let names = FiatCurrencies.names.merging(CryptoCurrencies.names) { fiat, _ in fiat }
 
     static func scanName(at start: String.Index, in line: String) -> (String, String.Index)? {
         var index = start
@@ -54,9 +56,14 @@ enum Money {
     }
 
     static func display(_ value: MonetaryValue, context: EvaluationContext) -> String {
+        let isCrypto = CryptoCurrencies.codes.contains(value.currency)
         let symbol = symbols.first { $0.1 == value.currency }?.0 ?? value.currency
         let locale = Locale(identifier: locales[value.currency] ?? context.localeIdentifier)
-        let precision = FiatCurrencies.byCode[value.currency]?.hasDecimalPlaces == false ? 0 : max(0, context.displayPrecision)
+        let precision = if isCrypto {
+            context.cryptoPrecision
+        } else {
+            FiatCurrencies.byCode[value.currency]?.hasDecimalPlaces == false ? 0 : max(0, context.displayPrecision)
+        }
         let rounded = Numeric.roundPlain(value.amount, scale: precision)
         var number = Numeric.display(rounded, precision: precision, locale: locale)
         if rounded != Numeric.roundPlain(rounded, scale: 0), let separator = locale.decimalSeparator {
@@ -69,7 +76,7 @@ enum Money {
     static func scanLiteral(at start: String.Index, in line: String, locale: Locale) throws -> (MonetaryValue, String.Index)? {
         var index = start
         var code: String?
-        for (symbol, currency) in symbols where line[index...].hasPrefix(symbol) {
+        for (symbol, currency) in symbols + cryptoSymbols where line[index...].hasPrefix(symbol) {
             code = currency
             index = line.index(index, offsetBy: symbol.count)
             while index < line.endIndex, Tokenizer.isBlank(line[index]) {

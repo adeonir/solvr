@@ -169,6 +169,12 @@ struct SheetEvaluator {
                     display: display
                 )
             } catch let lineError as LineError {
+                // A multi-word currency name is reserved as a whole; reading
+                // its first words as a label would define a variable named
+                // by the rest.
+                if case let .reservedName(name) = lineError.diagnostic, Money.names[name.lowercased()] != nil {
+                    return ExpressionResult(kind: .expression, diagnostic: lineError.diagnostic)
+                }
                 firstFailure = firstFailure ?? lineError.diagnostic
             } catch let diagnostic as Diagnostic {
                 firstFailure = firstFailure ?? diagnostic

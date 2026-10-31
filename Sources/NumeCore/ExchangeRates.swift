@@ -13,7 +13,7 @@ public struct ExchangeRateSnapshot: Sendable, Equatable, Codable {
         self.fetchedAt = fetchedAt
     }
 
-    public static let shipped = ExchangeRateSnapshot(base: "USD", rates: FiatCurrencies.shippedRates, fetchedAt: Date(timeIntervalSince1970: 1_793_404_800))
+    public static let shipped = ExchangeRateSnapshot(base: "USD", rates: FiatCurrencies.shippedRates.merging(CryptoCurrencies.shippedRates) { fiat, _ in fiat }, fetchedAt: Date(timeIntervalSince1970: 1_793_404_800))
 
     public func convert(_ value: MonetaryValue, to destination: String) throws -> MonetaryValue {
         let target = destination.uppercased()
