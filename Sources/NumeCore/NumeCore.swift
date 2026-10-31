@@ -17,6 +17,11 @@ public struct EvaluationContext: Sendable, Equatable {
     public var now: Date
     /// Displayed decimal places.
     public var displayPrecision: Int
+    /// Decimal places of a cryptocurrency result, from 5 to 15 (Settings).
+    public var cryptoPrecision: Int {
+        didSet { cryptoPrecision = Self.clampedCryptoPrecision(cryptoPrecision) }
+    }
+
     /// The shared pixel base for `rem` and `em`, in pixels.
     public var pixelBase: Decimal
     /// The default pixel density for point-to-pixel conversion, in ppi.
@@ -30,7 +35,8 @@ public struct EvaluationContext: Sendable, Equatable {
         displayPrecision: Int,
         pixelBase: Decimal = 16,
         ppi: Decimal = 96,
-        exchangeRates: ExchangeRateSnapshot = .shipped
+        exchangeRates: ExchangeRateSnapshot = .shipped,
+        cryptoPrecision: Int = 10
     ) {
         self.localeIdentifier = localeIdentifier
         self.timeZone = timeZone
@@ -39,6 +45,11 @@ public struct EvaluationContext: Sendable, Equatable {
         self.pixelBase = pixelBase
         self.ppi = ppi
         self.exchangeRates = exchangeRates
+        self.cryptoPrecision = Self.clampedCryptoPrecision(cryptoPrecision)
+    }
+
+    private static func clampedCryptoPrecision(_ value: Int) -> Int {
+        min(15, max(5, value))
     }
 }
 
