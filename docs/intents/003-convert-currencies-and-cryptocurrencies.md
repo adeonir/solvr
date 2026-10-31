@@ -22,7 +22,6 @@ The author and other Mac users with the same use cases; the external exchange ra
 
 ## Constraints
 
-- A number written with a currency uses that currency's number format: `$99.99` is 99.99 US dollars. Currency results also use that currency's number format, such as `$89.99`.
 - Exchange rates update over the internet. Without an internet connection, conversions use cached data when available.
 - The external data source can stop working or change. Cached data preserves conversions using the last available data.
 

@@ -40,7 +40,7 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
   - `log` without a base uses base 10, so `log 100` gives `2`. `log` with a base uses that base, so `log 2 (8)` gives `3`.
   - A time zone conversion to a city gives the time in that city. `PST` is the Pacific time zone, including daylight saving time, so `11 am PST in London` gives `18:00` on 26 October 2026.
 - FR-3 The calculation language adds these calculations: the `max` function and the `min` function; city abbreviations, as in `5pm ldn in sf`; `days until`, as in `days until 31 Mar`; and `to timespan`, as in `145 mins to timespan`.
-- FR-4 A number written with a currency uses the number format of that currency, so `$99.99` is 99.99 US dollars. A number written without a currency uses the regional number format of the system, so with the Brazilian format `1.500` is 1500 and `1,500` is 1.5. A result with a currency uses the number format of that currency, as in `$89.99`.
+- FR-4 A number written without a currency uses the regional number format of the system, so with the Brazilian format `1.500` is 1500 and `1,500` is 1.5.
 - FR-37 Settings defines one shared pixel base for `rem` and `em` conversions, with a default of 16 px:
   - Without an explicit base in the expression, both units use the value from Settings. With the default base, `1 rem` displays `16px` and `16px in em` returns `1em`.
   - With the base set to 20 px, `1 rem in px` returns `20px` and `16px in em` returns `0,8em` with Brazilian number formatting.

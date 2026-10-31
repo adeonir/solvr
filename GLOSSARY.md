@@ -40,6 +40,22 @@ _Avoid_: measurement, amount
 The standard of measure that gives a quantity its meaning, such as the metre or the pixel. Each unit accepts exactly its standard abbreviation and its full name singular and plural, as in `ft`, `foot`, and `feet`; no other alias.
 _Avoid_: measure, metric
 
+**Monetary value**:
+A number written with a currency or a cryptocurrency in an expression, as in `$10`, `5 EUR`, or `1 BTC`. Nume converts a monetary value to another currency or cryptocurrency through `in`, as in `10 USD in BRL`.
+_Avoid_: money, price
+
+**Currency**:
+A money that a government issues, such as the US dollar or the Brazilian real, which an expression names by its code or its symbol, as in `USD`, `BRL`, or `$`. A cryptocurrency is not a currency.
+_Avoid_: money, fiat
+
+**Cryptocurrency**:
+A digital asset such as Bitcoin or Ethereum, which an expression names by its code or its symbol, as in `BTC`, `ETH`, or `₿`. A currency is not a cryptocurrency.
+_Avoid_: crypto, coin, token
+
+**Exchange rate**:
+The value of one currency or cryptocurrency in another, as in the reais that one dollar buys. Nume uses it to convert a monetary value.
+_Avoid_: quote, price, cotação
+
 **Duration**:
 A quantity of time, as in `15 min`, whose value counts in seconds and stays independent of any reference date, so a date-free month counts 30 days. A duration converts to another unit through `in`, as in `1500 mins in days`, shown in the destination unit on the sheet's display precision.
 _Avoid_: elapsed time, time span
