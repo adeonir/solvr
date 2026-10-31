@@ -54,7 +54,9 @@ struct FiatCatalogCoverageTests {
             ("1 egyptian pound", "EGP"), ("2 egyptian pounds", "EGP"), ("1 south african rand", "ZAR"), ("2 SOUTH AFRICAN RAND", "ZAR")
         ]
         for (text, code) in cases {
-            #expect(try evaluate(sheetText: text, context: context())[0].value == .monetary(MonetaryValue(amount: #require(try Decimal(string: String(#require(text.first)))), currency: code)), "\(text)")
+            let first = try #require(text.first)
+            let amount = try #require(Decimal(string: String(first)))
+            #expect(evaluate(sheetText: text, context: context())[0].value == .monetary(MonetaryValue(amount: amount, currency: code)), "\(text)")
         }
     }
 
