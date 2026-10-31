@@ -108,6 +108,7 @@ private struct SheetEditorView: View {
         .background(Color(nsColor: Palette.background).ignoresSafeArea())
         .background(WindowChrome())
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        .toolbar(removing: .title)
         .ignoresSafeArea(.container, edges: .top)
         .alert("Delete \"\(sheetToDelete?.title ?? "")\"?", isPresented: Binding(
             get: { sheetToDelete != nil },
@@ -155,6 +156,7 @@ private struct SheetEditorView: View {
                     }
                 }
                 .padding(.horizontal, 8)
+                .background(KnobOpacity())
             }
         }
         .frame(width: 212)
@@ -366,7 +368,6 @@ private final class ChromeView: NSView {
         guard let window else { return }
         window.titlebarAppearsTransparent = true
         window.titlebarSeparatorStyle = .none
-        window.titleVisibility = .hidden
         window.styleMask.insert(.fullSizeContentView)
         window.backgroundColor = Palette.background
         placeWindowButtons()
@@ -380,17 +381,53 @@ private final class ChromeView: NSView {
               let container = bar.superview
         else { return }
         let height = Self.titleBarHeight
-        container.frame = NSRect(x: 0, y: window.frame.height - height, width: container.frame.width, height: height)
-        bar.frame = container.bounds
+        let containerFrame = NSRect(x: 0, y: window.frame.height - height, width: container.frame.width, height: height)
+        if container.frame != containerFrame { container.frame = containerFrame }
+        if bar.frame != container.bounds { bar.frame = container.bounds }
         let types: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
         for (index, type) in types.enumerated() {
             guard let button = window.standardWindowButton(type) else { continue }
-            button.setFrameOrigin(NSPoint(
+            let origin = NSPoint(
                 x: Self.buttonInset + CGFloat(index) * Self.buttonSpacing,
                 y: (height - button.frame.height) / 2
-            ))
+            )
+            if button.frame.origin != origin { button.setFrameOrigin(origin) }
         }
     }
+}
+
+private struct KnobOpacity: NSViewRepresentable {
+    func makeNSView(context _: Context) -> KnobOpacityView {
+        KnobOpacityView()
+    }
+
+    func updateNSView(_: KnobOpacityView, context _: Context) {}
+}
+
+@MainActor
+private final class KnobOpacityView: NSView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        DispatchQueue.main.async { [weak self] in
+            guard let scrollView = self?.enclosingScrollView else { return }
+            DimKnobScroller.install(in: scrollView)
+        }
+    }
+}
+
+private final class DimKnobScroller: NSScroller {
+    static func install(in scrollView: NSScrollView) {
+        guard !(scrollView.verticalScroller is DimKnobScroller) else { return }
+        let scroller = DimKnobScroller()
+        scroller.alphaValue = 0.35
+        scrollView.verticalScroller = scroller
+    }
+
+    override class func scrollerWidth(for _: NSControl.ControlSize, scrollerStyle _: NSScroller.Style) -> CGFloat {
+        12
+    }
+
+    override func drawKnobSlot(in _: NSRect, highlight _: Bool) {}
 }
 
 /// What the editor draws beside a line: a result, an error message, or nothing.
@@ -432,6 +469,7 @@ private struct SheetTextView: NSViewRepresentable {
         let scrollView = NSScrollView()
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
+        DimKnobScroller.install(in: scrollView)
         scrollView.drawsBackground = false
         scrollView.automaticallyAdjustsContentInsets = false
         scrollView.contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: Metrics.bottomPadding, right: 0)
