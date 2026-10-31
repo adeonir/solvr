@@ -135,13 +135,19 @@ struct SheetEvaluator {
             // parses it with its operand, and stripping would evaluate the
             // bare operand alone (ADK-225).
             if stripped > 0, case let .word(word) = tokens[stripped - 1],
-               Language.functionNames.contains(word)
+               Language.functionNames.contains(word) || Money.names[word.lowercased()] != nil
             {
                 continue
             }
             let remaining = Array(tokens[stripped ..< tokens.count])
             do {
                 let node = try Parser.parse(remaining, definedNames: definedNames)
+                if let value = try evaluateMonetary(node) {
+                    if let failure = Numeric.rangeDiagnostic(for: value.amount) {
+                        throw failure
+                    }
+                    return ExpressionResult(kind: .expression, value: .monetary(value), display: Money.display(value, context: context))
+                }
                 // Date forms carry date values and differences, apart
                 // from the numeric magnitudes (ADK-229).
                 if let dateValue = try evaluateDateForm(node) {
@@ -275,7 +281,7 @@ struct SheetEvaluator {
                 variables.fail(name)
                 throw lineError.diagnostic
             }
-        case .date, .daysUntil, .weekday, .calendarShift:
+        case .monetary, .monetaryConversion, .date, .daysUntil, .weekday, .calendarShift:
             // Date forms carry typed values, not magnitudes; they reach
             // the sheet only as a whole line (ADK-229).
             throw Diagnostic.syntax
@@ -350,6 +356,40 @@ struct SheetEvaluator {
 
     mutating func resolved(name: String) throws -> Decimal {
         try variables.resolve(name)
+    }
+
+    /// Typed monetary evaluation; ordinary numeric/date paths remain unchanged.
+    mutating func evaluateMonetary(_ node: Node) throws -> MonetaryValue? {
+        switch node {
+        case let .monetary(value):
+            return MonetaryValue(amount: Numeric.retain(value.amount), currency: value.currency)
+        case let .monetaryConversion(inner, target):
+            guard let value = try evaluateMonetary(inner) else { throw Diagnostic.syntax }
+            return try context.exchangeRates.convert(value, to: target)
+        case let .unaryMinus(inner):
+            guard var value = try evaluateMonetary(inner) else { return nil }
+            value.amount = try Numeric.subtract(0, value.amount)
+            return value
+        case let .reference(name):
+            if case let .monetary(value) = variables.bindings[name] {
+                return value
+            }
+            return nil
+        case let .assignment(name, inner):
+            do {
+                guard let value = try evaluateMonetary(inner) else { return nil }
+                if let failure = Numeric.rangeDiagnostic(for: value.amount) {
+                    throw failure
+                }
+                variables.define(name, .monetary(value))
+                return value
+            } catch {
+                variables.fail(name)
+                throw error
+            }
+        default:
+            return nil
+        }
     }
 }
 

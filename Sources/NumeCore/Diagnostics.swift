@@ -20,10 +20,13 @@ public enum Diagnostic: Error, Equatable, Sendable, Hashable {
     case dependsOnError
     /// A function called with an unexpected number of arguments.
     case argumentCount(function: String, requirement: String)
+    case exchangeRateUnavailable(currency: String)
 
     /// The exact message shown in place of the result.
     public var message: String {
         switch self {
+        case let .exchangeRateUnavailable(currency):
+            "Exchange rate unavailable: \(currency)"
         case .syntax:
             "Invalid syntax"
         case .divisionByZero:

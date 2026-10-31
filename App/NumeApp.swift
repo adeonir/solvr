@@ -5,6 +5,7 @@ import SwiftUI
 
 @main
 struct NumeApp: App {
+    @NSApplicationDelegateAdaptor(NumeApplicationDelegate.self) private var appDelegate
     var body: some Scene {
         WindowGroup("Nume") {
             SheetEditorView()
@@ -55,6 +56,7 @@ private extension NSAppearance {
 
 @MainActor
 private struct SheetEditorView: View {
+    private let exchangeRates = ApplicationExchangeRates.shared.service
     @State private var coordinator = SheetRefreshCoordinator()
     @State private var sheetText = ""
     @State private var sheetTitle = ""
@@ -140,6 +142,9 @@ private struct SheetEditorView: View {
         }
         .onChange(of: titleFocused) { _, focused in
             if !focused { renameSheet() }
+        }
+        .onChange(of: exchangeRates.snapshot) { _, snapshot in
+            coordinator.exchangeRatesChanged(snapshot)
         }
         .onDisappear { autosave?.flush(); coordinator.closeSheet() }
     }
@@ -309,7 +314,8 @@ private struct SheetEditorView: View {
                 localeIdentifier: locale.identifier,
                 timeZone: .current,
                 now: Date(),
-                displayPrecision: 2
+                displayPrecision: 2,
+                exchangeRates: exchangeRates.snapshot
             )
         )
     }

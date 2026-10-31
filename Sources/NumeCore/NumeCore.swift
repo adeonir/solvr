@@ -21,6 +21,7 @@ public struct EvaluationContext: Sendable, Equatable {
     public var pixelBase: Decimal
     /// The default pixel density for point-to-pixel conversion, in ppi.
     public var ppi: Decimal
+    public var exchangeRates: ExchangeRateSnapshot
 
     public init(
         localeIdentifier: String,
@@ -28,7 +29,8 @@ public struct EvaluationContext: Sendable, Equatable {
         now: Date,
         displayPrecision: Int,
         pixelBase: Decimal = 16,
-        ppi: Decimal = 96
+        ppi: Decimal = 96,
+        exchangeRates: ExchangeRateSnapshot = .shipped
     ) {
         self.localeIdentifier = localeIdentifier
         self.timeZone = timeZone
@@ -36,6 +38,7 @@ public struct EvaluationContext: Sendable, Equatable {
         self.displayPrecision = displayPrecision
         self.pixelBase = pixelBase
         self.ppi = ppi
+        self.exchangeRates = exchangeRates
     }
 }
 
@@ -58,6 +61,7 @@ public enum LineKind: Sendable, Equatable {
 /// display representation.
 public enum ExpressionValue: Sendable, Equatable {
     case decimal(Decimal)
+    case monetary(MonetaryValue)
     /// A calendar date, or an instant shown with its time of day
     /// (ADK-229).
     case date(Date)

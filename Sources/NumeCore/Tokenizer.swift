@@ -11,6 +11,7 @@ struct LineError: Error {
 
 enum Token: Equatable, Sendable {
     case number(Decimal)
+    case monetary(MonetaryValue)
     case word(String)
     case plus
     case minus
@@ -48,6 +49,11 @@ enum Tokenizer {
 
         while index < line.endIndex {
             let character = line[index]
+            if let (value, next) = try Money.scanLiteral(at: index, in: line, locale: Locale(identifier: decimalSeparator == "." ? "en_US" : "pt_BR")) {
+                tokens.append(.monetary(value))
+                index = next
+                continue
+            }
             if character.isLetter {
                 let start = index
                 while index < line.endIndex,

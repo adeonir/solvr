@@ -9,6 +9,8 @@ import Foundation
 
 enum Node {
     case number(Decimal)
+    case monetary(MonetaryValue)
+    indirect case monetaryConversion(Node, String)
     case reference(String)
 
     indirect case call(name: String, arguments: [Node])
@@ -135,6 +137,10 @@ struct Parser {
                 break loop
             }
         }
+        while peek() == .in, let match = currencyName(at: position + 1) {
+            position = match.end
+            lhs = .monetaryConversion(lhs, match.code)
+        }
         return lhs
     }
 
@@ -189,6 +195,9 @@ struct Parser {
                 // Implicit multiplication: `2 (3)` multiplies 2 by 3.
                 lhs = try .binary(.multiply, lhs, parsePower(definedNames: definedNames))
             case .in:
+                if currencyName(at: position + 1) != nil {
+                    break loop
+                }
                 // Representation and unit conversions at the tight
                 // multiplicative level: `0b110111011 in hex + 1` adds one
                 // to the value, `10 ft in m` converts the quantity.
@@ -253,6 +262,9 @@ struct Parser {
 
     mutating func parsePrimary(definedNames: Set<String>) throws -> Node {
         switch peek() {
+        case let .monetary(value):
+            position += 1
+            return .monetary(value)
         case let .number(value):
             position += 1
             // The degree marker rides its number: `45°` keeps the value
@@ -505,6 +517,20 @@ struct Parser {
     }
 
     // MARK: Helpers
+
+    private func currencyName(at start: Int) -> (code: String, end: Int)? {
+        var index = start
+        var words: [String] = []
+        var match: (String, Int)?
+        while index < tokens.count, case let .word(word) = tokens[index] {
+            words.append(word.lowercased())
+            index += 1
+            if let code = Money.names[words.joined(separator: " ")] {
+                match = (code, index)
+            }
+        }
+        return match
+    }
 
     private func peek() -> Token {
         position < tokens.count ? tokens[position] : .end
