@@ -54,3 +54,14 @@ import Testing
         #expect(try store.list().sheets.first?.title == "Budget")
     }
 }
+
+@Test func preservesSpecialCharactersInRenamedTitleAfterRestart() throws {
+    let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    let store = SheetStore(folder: folder)
+    let sheet = try store.create(title: "Budget", now: Date(timeIntervalSince1970: 1))
+    try store.rename(sheet.id, title: "  Rent: \"June\"", now: Date(timeIntervalSince1970: 2))
+    let reopened = try SheetStore(folder: folder).list().sheets
+    #expect(reopened.count == 1)
+    #expect(reopened.first?.id == sheet.id)
+    #expect(reopened.first?.title == "  Rent: \"June\"")
+}
