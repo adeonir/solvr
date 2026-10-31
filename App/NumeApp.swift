@@ -68,6 +68,9 @@ private struct SheetEditorView: View {
                 VStack {
                     List(sheets, selection: $selectedID) { sheet in
                         Text(sheet.title).tag(sheet.id)
+                            .contextMenu {
+                                Button("Duplicate") { duplicateSheet(sheet) }
+                            }
                     }
                     Button("New Sheet", action: createSheet)
                         .padding()
@@ -136,6 +139,16 @@ private struct SheetEditorView: View {
         } catch {
             sheetTitle = sheet.title
             logger.error("Could not rename sheet: \(error.localizedDescription)")
+        }
+    }
+
+    private func duplicateSheet(_ source: StoredSheet) {
+        do {
+            let copy = try store.duplicate(id: source.id, text: source.id == selectedID ? sheetText : nil)
+            loadSheets()
+            selectedID = copy.id
+        } catch {
+            logger.error("Could not duplicate sheet: \(error.localizedDescription)")
         }
     }
 

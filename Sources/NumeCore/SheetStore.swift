@@ -46,6 +46,18 @@ public struct SheetStore: Sendable {
         try content.write(to: file, atomically: true, encoding: .utf8)
     }
 
+    public func duplicate(id: UUID, text: String? = nil, now: Date = Date()) throws -> StoredSheet {
+        let source = try read(folder.appending(path: "\(id.uuidString).md"))
+        let copy = StoredSheet(id: UUID(), title: source.title, created: now, updated: now, text: text ?? source.text)
+        let encodedTitle = String(decoding: try JSONEncoder().encode(copy.title), as: UTF8.self)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let timestamp = formatter.string(from: now)
+        let content = "---\ntitle: \(encodedTitle)\ncreated: \(timestamp)\nupdated: \(timestamp)\n---\n\(copy.text)"
+        try content.write(to: folder.appending(path: "\(copy.id.uuidString).md"), atomically: true, encoding: .utf8)
+        return copy
+    }
+
     public func list() throws -> SheetList {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let files = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
