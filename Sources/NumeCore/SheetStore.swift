@@ -6,6 +6,13 @@ public struct StoredSheet: Sendable, Identifiable, Equatable {
     public let created: Date
     public let updated: Date
     public let text: String
+    public init(id: UUID, title: String, created: Date, updated: Date, text: String) {
+        self.id = id
+        self.title = title
+        self.created = created
+        self.updated = updated
+        self.text = text
+    }
 }
 
 public struct SkippedSheet: Sendable {
@@ -33,6 +40,17 @@ public struct SheetStore: Sendable {
         let content = "---\ntitle: \(encodedTitle)\ncreated: \(timestamp)\nupdated: \(timestamp)\n---\n"
         try content.write(to: folder.appending(path: "\(sheet.id.uuidString).md"), atomically: true, encoding: .utf8)
         return sheet
+    }
+
+    public func write(_ id: UUID, text: String, now: Date = Date()) throws {
+        let file = folder.appending(path: "\(id.uuidString).md")
+        let sheet = try read(file)
+        let titleData = try JSONEncoder().encode(sheet.title)
+        let title = String(decoding: titleData, as: UTF8.self)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let content = "---\ntitle: \(title)\ncreated: \(formatter.string(from: sheet.created))\nupdated: \(formatter.string(from: now))\n---\n\(text)"
+        try content.write(to: file, atomically: true, encoding: .utf8)
     }
 
     public func list() throws -> SheetList {
