@@ -1,5 +1,6 @@
 import AppKit
 import NumeCore
+import OSLog
 import SwiftUI
 
 @main
@@ -51,15 +52,30 @@ private extension NSAppearance {
 @MainActor
 private struct SheetEditorView: View {
     @State private var coordinator = SheetRefreshCoordinator()
-    @State private var sheetText = "# Welcome\n2 + 2"
+    @State private var sheetText = ""
+    @State private var sheets: [StoredSheet] = []
+    @State private var selectedID: UUID?
+    private let store = SheetStore(folder: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appending(path: "Nume/Sheets"))
+    private let logger = Logger(subsystem: "Nume", category: "SheetStore")
 
     var body: some View {
         VStack(spacing: 0) {
             // Room for the title bar, which draws over the content.
             Color.clear.frame(height: 52)
-            SheetTextView(text: $sheetText, results: coordinator.results.map(SheetLineResult.init)) { updatedText in
-                sheetText = updatedText
-                coordinator.sheetTextEdited(updatedText)
+            HStack(spacing: 0) {
+                VStack {
+                    List(sheets, selection: $selectedID) { sheet in
+                        Text(sheet.title).tag(sheet.id)
+                    }
+                    Button("New Sheet", action: createSheet)
+                        .padding()
+                }
+                .frame(width: 180)
+                Divider()
+                SheetTextView(text: $sheetText, results: coordinator.results.map(SheetLineResult.init)) { updatedText in
+                    sheetText = updatedText
+                    coordinator.sheetTextEdited(updatedText)
+                }
             }
         }
         .frame(minWidth: 420, minHeight: 300)
@@ -67,8 +83,36 @@ private struct SheetEditorView: View {
         .background(WindowChrome())
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .ignoresSafeArea(.container, edges: .top)
-        .onAppear(perform: openSheet)
+        .onAppear(perform: loadSheets)
+        .onChange(of: selectedID) { _, id in
+            guard let sheet = sheets.first(where: { $0.id == id }) else { return }
+            sheetText = sheet.text
+            openSheet()
+        }
         .onDisappear { coordinator.closeSheet() }
+    }
+
+    private func loadSheets() {
+        do {
+            let result = try store.list()
+            sheets = result.sheets
+            for skipped in result.skipped {
+                logger.error("Skipped \(skipped.url.path): \(skipped.reason)")
+            }
+            selectedID = sheets.first?.id
+        } catch {
+            logger.error("Could not list sheets: \(error.localizedDescription)")
+        }
+    }
+
+    private func createSheet() {
+        do {
+            let sheet = try store.create(title: "Untitled")
+            loadSheets()
+            selectedID = sheet.id
+        } catch {
+            logger.error("Could not create sheet: \(error.localizedDescription)")
+        }
     }
 
     private func openSheet() {
