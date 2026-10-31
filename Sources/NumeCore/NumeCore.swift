@@ -113,3 +113,35 @@ public func evaluate(sheetText: String, context: EvaluationContext) -> [Expressi
     var evaluator = SheetEvaluator(context: context)
     return evaluator.evaluate(sheetText)
 }
+
+/// The sheet total over monetary results (ADK-246): every monetary result
+/// converts into the currency of the last one and sums at full precision.
+/// Results that are not monetary stay out of the sum; a sheet with a date
+/// among its results, or with no monetary result, has no total. A rate the
+/// total needs but lacks shows its diagnostic.
+public func sheetTotal(of results: [ExpressionResult], context: EvaluationContext) -> ExpressionResult? {
+    var monetary: [MonetaryValue] = []
+    for result in results {
+        switch result.value {
+        case let .monetary(value):
+            monetary.append(value)
+        case .date, .difference:
+            return nil
+        case .decimal, .none:
+            continue
+        }
+    }
+    guard let currency = monetary.last?.currency else { return nil }
+    do {
+        var amount = Decimal(0)
+        for value in monetary {
+            amount = try Numeric.add(amount, context.exchangeRates.convert(value, to: currency).amount)
+        }
+        let total = MonetaryValue(amount: Numeric.retain(amount), currency: currency)
+        return ExpressionResult(kind: .expression, value: .monetary(total), display: Money.display(total, context: context))
+    } catch let diagnostic as Diagnostic {
+        return ExpressionResult(kind: .expression, diagnostic: diagnostic)
+    } catch {
+        return ExpressionResult(kind: .expression, diagnostic: .syntax)
+    }
+}

@@ -142,11 +142,23 @@ struct SheetEvaluator {
             let remaining = Array(tokens[stripped ..< tokens.count])
             do {
                 let node = try Parser.parse(remaining, definedNames: definedNames)
-                if let value = try evaluateMonetary(node) {
-                    if let failure = Numeric.rangeDiagnostic(for: value.amount) {
-                        throw failure
+                if let typed = try evaluateMonetary(node) {
+                    switch typed {
+                    case let .money(value):
+                        if let failure = Numeric.rangeDiagnostic(for: value.amount) {
+                            throw failure
+                        }
+                        return ExpressionResult(kind: .expression, value: .monetary(value), display: Money.display(value, context: context))
+                    case let .number(number):
+                        if let failure = Numeric.rangeDiagnostic(for: number) {
+                            throw failure
+                        }
+                        return ExpressionResult(
+                            kind: .expression,
+                            value: .decimal(number),
+                            display: Numeric.display(number, precision: context.displayPrecision, locale: locale)
+                        )
                     }
-                    return ExpressionResult(kind: .expression, value: .monetary(value), display: Money.display(value, context: context))
                 }
                 // Date forms carry date values and differences, apart
                 // from the numeric magnitudes (ADK-229).
@@ -365,30 +377,40 @@ struct SheetEvaluator {
     }
 
     /// Typed monetary evaluation; ordinary numeric/date paths remain unchanged.
-    mutating func evaluateMonetary(_ node: Node) throws -> MonetaryValue? {
+    /// A nil result means the node holds no monetary value, and the numeric
+    /// path evaluates it.
+    mutating func evaluateMonetary(_ node: Node) throws -> TypedValue? {
         switch node {
         case let .monetary(value):
-            return MonetaryValue(amount: Numeric.retain(value.amount), currency: value.currency)
+            return .money(MonetaryValue(amount: Numeric.retain(value.amount), currency: value.currency))
         case let .monetaryConversion(inner, target):
-            guard let value = try evaluateMonetary(inner) else { throw Diagnostic.syntax }
-            return try context.exchangeRates.convert(value, to: target)
+            guard case let .money(value)? = try evaluateMonetary(inner) else { throw Diagnostic.syntax }
+            return try .money(context.exchangeRates.convert(value, to: target))
         case let .unaryMinus(inner):
-            guard var value = try evaluateMonetary(inner) else { return nil }
+            guard let typed = try evaluateMonetary(inner) else { return nil }
+            guard case var .money(value) = typed else { throw Diagnostic.syntax }
             value.amount = try Numeric.subtract(0, value.amount)
-            return value
+            return .money(value)
         case let .reference(name):
             if case let .monetary(value) = variables.bindings[name] {
-                return value
+                return .money(value)
             }
             return nil
+        case let .binary(op, lhsNode, rhsNode):
+            return try evaluateMonetaryBinary(op, lhsNode, rhsNode)
         case let .assignment(name, inner):
             do {
-                guard let value = try evaluateMonetary(inner) else { return nil }
-                if let failure = Numeric.rangeDiagnostic(for: value.amount) {
-                    throw failure
+                guard let typed = try evaluateMonetary(inner) else { return nil }
+                switch typed {
+                case let .money(value):
+                    if let failure = Numeric.rangeDiagnostic(for: value.amount) {
+                        throw failure
+                    }
+                    variables.define(name, .monetary(value))
+                case let .number(number):
+                    variables.define(name, .decimal(number))
                 }
-                variables.define(name, .monetary(value))
-                return value
+                return typed
             } catch {
                 variables.fail(name)
                 throw error
@@ -397,6 +419,51 @@ struct SheetEvaluator {
             return nil
         }
     }
+
+    /// Addition takes the currency of the second value and subtraction that
+    /// of the first, converting the other operand; dividing two monetary
+    /// values converts the second to the currency of the first and gives a
+    /// plain number; multiplying two keeps the currency of the second.
+    private mutating func evaluateMonetaryBinary(
+        _ op: NumericOperator, _ lhsNode: Node, _ rhsNode: Node
+    ) throws -> TypedValue? {
+        let typedLeft = try evaluateMonetary(lhsNode)
+        let typedRight = try evaluateMonetary(rhsNode)
+        if typedLeft == nil, typedRight == nil {
+            return nil
+        }
+        let left = try typedLeft ?? .number(evaluate(node: lhsNode))
+        let right = try typedRight ?? .number(evaluate(node: rhsNode))
+        switch (op, left, right) {
+        case let (.add, .money(lhs), .money(rhs)):
+            let converted = try context.exchangeRates.convert(lhs, to: rhs.currency)
+            return try .money(MonetaryValue(amount: Numeric.retain(Numeric.add(converted.amount, rhs.amount)), currency: rhs.currency))
+        case let (.subtract, .money(lhs), .money(rhs)):
+            let converted = try context.exchangeRates.convert(rhs, to: lhs.currency)
+            return try .money(MonetaryValue(amount: Numeric.retain(Numeric.subtract(lhs.amount, converted.amount)), currency: lhs.currency))
+        case let (.multiply, .money(lhs), .money(rhs)):
+            return try .money(MonetaryValue(amount: Numeric.retain(Numeric.multiply(lhs.amount, rhs.amount)), currency: rhs.currency))
+        case let (.multiply, .money(lhs), .number(rhs)):
+            return try .money(MonetaryValue(amount: Numeric.retain(Numeric.multiply(lhs.amount, rhs)), currency: lhs.currency))
+        case let (.multiply, .number(lhs), .money(rhs)):
+            return try .money(MonetaryValue(amount: Numeric.retain(Numeric.multiply(lhs, rhs.amount)), currency: rhs.currency))
+        case let (.divide, .money(lhs), .money(rhs)):
+            let converted = try context.exchangeRates.convert(rhs, to: lhs.currency)
+            guard converted.amount != 0 else { throw Diagnostic.divisionByZero }
+            return try .number(Numeric.retain(Numeric.divide(lhs.amount, by: converted.amount)))
+        case let (.divide, .money(lhs), .number(rhs)):
+            guard rhs != 0 else { throw Diagnostic.divisionByZero }
+            return try .money(MonetaryValue(amount: Numeric.retain(Numeric.divide(lhs.amount, by: rhs)), currency: lhs.currency))
+        default:
+            throw Diagnostic.syntax
+        }
+    }
+}
+
+/// An intermediate result of an expression that holds a monetary value.
+enum TypedValue: Equatable {
+    case money(MonetaryValue)
+    case number(Decimal)
 }
 
 private extension StringProtocol {
