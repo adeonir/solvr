@@ -73,11 +73,19 @@ _Avoid_: duration, period
 
 **Time-of-day**:
 A clock reading with no date, such as `11am`, `5pm`, or `2:30 pm`, that Nume converts to the clock of another time zone through `in`, as in `11am PST in London`, and shows only as `HH:mm`. A reading that names no time zone is read in the place the conversion names, and the macOS system time zone is the destination.
-_Avoid_: time, hour, clock
+_Avoid_: time, hour
 
 **Time zone**:
 The regional clock rules that Nume names by an abbreviation or a city, as in `PST` or `London`. An abbreviation follows the daylight-saving rules of the region that keeps it, so `PST` covers Pacific daylight saving time; a city resolves through the external city data source and the local cache, and an unknown, ambiguous, or uncached city is an error.
 _Avoid_: offset, UTC offset
+
+**Place**:
+A name an expression writes for a time zone: an abbreviation such as `PST`, or a city such as `London` or `sf`. A time-of-day conversion reads the time in one place and shows it in another, and a conversion that names a single place reads it there and shows the macOS system time zone.
+_Avoid_: location, region, zone name
+
+**City**:
+A place that Nume resolves to a time zone by its name or by a known alias, as `London` for `ldn` and `San Francisco` for `sf`. A name that several cities share is ambiguous, and Nume converts neither.
+_Avoid_: town, municipality, geocoding result
 
 **Pixel base**:
 The shared value in pixels that a sheet's Settings give the `rem` and the `em`, initially 16 pixels. An expression-local override written with `at`, as in `16px in em at 20px`, replaces the base for that expression only.
