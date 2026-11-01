@@ -79,6 +79,9 @@ public enum ExpressionValue: Sendable, Equatable {
     /// A calendar-day difference in whole days, apart from any numeric
     /// magnitude (ADK-229).
     case difference(Int)
+    /// A clock reading such as `11am`, apart from any numeric magnitude
+    /// and from a calendar date (ADK-249).
+    case timeOfDay(TimeOfDay)
 }
 
 /// One line's evaluation outcome: per line a nullable value, its display
@@ -125,7 +128,7 @@ public func sheetTotal(of results: [ExpressionResult], context: EvaluationContex
         switch result.value {
         case let .monetary(value):
             monetary.append(value)
-        case .date, .difference:
+        case .date, .difference, .timeOfDay:
             return nil
         case .decimal, .none:
             continue

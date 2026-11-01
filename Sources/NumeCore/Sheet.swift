@@ -169,6 +169,15 @@ struct SheetEvaluator {
                         display: dateDisplay(dateValue, node: node)
                     )
                 }
+                // Time-of-day forms carry clock readings, apart from the
+                // numeric magnitudes and the calendar dates (ADK-249).
+                if let timeValue = try evaluateTimeOfDayForm(node) {
+                    return ExpressionResult(
+                        kind: .expression,
+                        value: timeValue,
+                        display: timeOfDayDisplay(timeValue)
+                    )
+                }
                 let value = try evaluate(node: node)
                 if let failure = Numeric.rangeDiagnostic(for: value) {
                     return ExpressionResult(kind: .expression, diagnostic: failure)
@@ -299,9 +308,11 @@ struct SheetEvaluator {
                 variables.fail(name)
                 throw lineError.diagnostic
             }
-        case .monetary, .monetaryConversion, .date, .daysUntil, .weekday, .calendarShift:
-            // Date forms carry typed values, not magnitudes; they reach
-            // the sheet only as a whole line (ADK-229).
+        case .monetary, .monetaryConversion, .date, .daysUntil, .weekday, .calendarShift,
+             .timeOfDay, .timeOfDayConversion:
+            // Date and time-of-day forms carry typed values, not
+            // magnitudes; they reach the sheet only as a whole line
+            // (ADK-229, ADK-249).
             throw Diagnostic.syntax
         }
     }

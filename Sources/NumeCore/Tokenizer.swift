@@ -22,6 +22,9 @@ enum Token: Equatable, Sendable {
     case closeParen
     case equals
     case semicolon
+    /// The `:` between the hour and the minute of a clock reading
+    /// (ADK-249).
+    case colon
     case times
     /// The `in` keyword that introduces a representation conversion.
     case `in`
@@ -92,6 +95,7 @@ enum Tokenizer {
             case ")": tokens.append(.closeParen)
             case "=": tokens.append(.equals)
             case ";": tokens.append(.semicolon)
+            case ":": tokens.append(.colon)
             case "%": tokens.append(.percent)
             case "&": tokens.append(.ampersand)
             case "|": tokens.append(.pipe)

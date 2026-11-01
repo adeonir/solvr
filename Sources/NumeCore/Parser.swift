@@ -56,6 +56,12 @@ enum Node {
     /// `<date> + N month(s)` and its negative `... - ...`: a shift in
     /// calendar months (ADK-229).
     indirect case calendarShift(Node, months: Int)
+    /// A clock reading with the place it belongs to: `11am`, `11am PST`;
+    /// no place means the sheet's system time zone (ADK-249).
+    case timeOfDay(TimeOfDay, place: TimeZones.Place?)
+    /// `<time> in <place>`: the same instant shown in the destination
+    /// place's clock (ADK-249).
+    indirect case timeOfDayConversion(Node, target: TimeZones.Place)
 }
 
 enum NumericOperator {
@@ -202,22 +208,28 @@ struct Parser {
                 // multiplicative level: `0b110111011 in hex + 1` adds one
                 // to the value, `10 ft in m` converts the quantity.
                 position += 1
-                guard case let .word(keyword) = peek() else {
-                    throw atEnd ? ParseError.pending : .invalid
-                }
-                if let representation = Display.Representation(keyword: keyword) {
-                    position += 1
-                    lhs = .representation(representation, lhs)
-                } else if let unit = Units.unit(for: keyword) {
-                    position += 1
-                    lhs = try parseConversion(lhs, unit, definedNames: definedNames)
-                } else if let unit = Duration.unit(for: keyword) {
-                    // A duration unit conversion is representational: the
-                    // count shows in the destination unit (ADK-228).
-                    position += 1
-                    lhs = .durationConversion(lhs, unit)
+                // A time-of-day converts into the clock of the place the
+                // line names: `11am PST in London` (ADK-249).
+                if case .timeOfDay = lhs, let target = parsePlace() {
+                    lhs = .timeOfDayConversion(lhs, target: target)
                 } else {
-                    throw ParseError.invalid
+                    guard case let .word(keyword) = peek() else {
+                        throw atEnd ? ParseError.pending : .invalid
+                    }
+                    if let representation = Display.Representation(keyword: keyword) {
+                        position += 1
+                        lhs = .representation(representation, lhs)
+                    } else if let unit = Units.unit(for: keyword) {
+                        position += 1
+                        lhs = try parseConversion(lhs, unit, definedNames: definedNames)
+                    } else if let unit = Duration.unit(for: keyword) {
+                        // A duration unit conversion is representational: the
+                        // count shows in the destination unit (ADK-228).
+                        position += 1
+                        lhs = .durationConversion(lhs, unit)
+                    } else {
+                        throw ParseError.invalid
+                    }
                 }
             case let .word(leading) where leading.lowercased() == "to":
                 // `to timespan` composes the duration representation in
@@ -271,6 +283,12 @@ struct Parser {
             // and the trigonometric forms read degrees (ADK-225).
             if peek() == .degree {
                 position += 1
+            }
+            // A written clock reading keeps its hour and minute as clock
+            // fields, read in the place it names or in the system time
+            // zone (ADK-249).
+            if let time = parseTimeOfDay(starting: value) {
+                return time
             }
             // A unit word straight after its number makes the pair a
             // quantity: `16px` or `2 inches` (ADK-227).
@@ -333,7 +351,7 @@ struct Parser {
                 position -= words.count - match.count // leave stray words for the leftover check
             }
             return .reference(defined?.joined(separator: " ") ?? first)
-        case .minus, .plus, .star, .slash, .caret, .closeParen, .equals, .semicolon, .times, .in, .percent, .end, .ampersand, .pipe, .degree:
+        case .minus, .plus, .star, .slash, .caret, .closeParen, .equals, .semicolon, .colon, .times, .in, .percent, .end, .ampersand, .pipe, .degree:
             throw atEnd ? ParseError.pending : .invalid
         }
     }
@@ -516,6 +534,46 @@ struct Parser {
         return whole
     }
 
+    // MARK: Time-of-day forms (ADK-249)
+
+    /// `<hour>[:<minute>] am|pm` after its hour number is known, with the
+    /// place the reading belongs to when one follows. A non-whole or
+    /// out-of-range hour, a missing minute, or a missing meridiem leaves
+    /// the number to the numeric line logic.
+    private mutating func parseTimeOfDay(starting hour: Decimal) -> Node? {
+        guard let whole = Dates.integer(of: hour) else { return nil }
+        var minute = 0
+        var meridiemIndex = position
+        if peek() == .colon {
+            guard case let .number(value) = peek(1),
+                  let written = Dates.integer(of: value, range: 0 ... 59)
+            else { return nil }
+            minute = written
+            meridiemIndex += 2
+        }
+        guard case let .word(word) = peek(meridiemIndex - position),
+              let meridiem = TimeOfDay.Meridiem(word: word),
+              let time = TimeOfDay(hour: whole, minute: minute, meridiem: meridiem)
+        else { return nil }
+        position = meridiemIndex + 1
+        return .timeOfDay(time, place: parsePlace())
+    }
+
+    /// The place the coming word run names, the longest run first: a time
+    /// zone abbreviation such as `PST`, or a city such as `London` or
+    /// `New York`.
+    private mutating func parsePlace() -> TimeZones.Place? {
+        var words: [String] = []
+        var index = position
+        while index < tokens.count, case let .word(word) = tokens[index] {
+            words.append(word)
+            index += 1
+        }
+        guard let match = TimeZones.place(words: words) else { return nil }
+        position += match.count
+        return match.place
+    }
+
     // MARK: Helpers
 
     private func currencyName(at start: Int) -> (code: String, end: Int)? {
@@ -532,8 +590,9 @@ struct Parser {
         return match
     }
 
-    private func peek() -> Token {
-        position < tokens.count ? tokens[position] : .end
+    private func peek(_ offset: Int = 0) -> Token {
+        let index = position + offset
+        return index < tokens.count ? tokens[index] : .end
     }
 
     private var atEnd: Bool {
