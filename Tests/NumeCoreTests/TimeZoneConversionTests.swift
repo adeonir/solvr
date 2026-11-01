@@ -8,6 +8,14 @@ import Testing
 // EvaluationContext, per ADR-005.
 
 struct TimeZoneConversionTests {
+    /// The city data the fixtures resolve city names against: a lookup reads
+    /// the injected city data, never the network (ADK-250).
+    private let cities = CityTimeZoneSnapshot(entries: [
+        "London": .found(CityRecord(name: "London", country: "United Kingdom", region: "England", timeZoneIdentifier: "Europe/London", population: 8_961_989)),
+        "New York": .found(CityRecord(name: "New York", country: "United States", region: "New York", timeZoneIdentifier: "America/New_York", population: 8_804_190)),
+        "São Paulo": .found(CityRecord(name: "São Paulo", country: "Brazil", region: "São Paulo", timeZoneIdentifier: "America/Sao_Paulo", population: 10_021_295))
+    ])
+
     private func context(
         locale identifier: String = "en_US",
         timeZone: TimeZone = TimeZone(identifier: "America/Sao_Paulo")!,
@@ -17,7 +25,8 @@ struct TimeZoneConversionTests {
             localeIdentifier: identifier,
             timeZone: timeZone,
             now: now,
-            displayPrecision: 2
+            displayPrecision: 2,
+            cityTimeZones: cities
         )
     }
 

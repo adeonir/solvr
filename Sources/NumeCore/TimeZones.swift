@@ -1,8 +1,10 @@
-// TimeZones (ADK-249): time-of-day values, the places a `in` conversion
-// names, and the conversion that shows one place's clock in another's. A
-// written reading anchors on the calendar date its own place keeps, so the
-// place's daylight-saving rules decide the instant, and the result shows
-// the destination clock as `HH:mm` alone.
+// TimeZones (ADK-249, ADK-250): time-of-day values, the places a `in`
+// conversion names, and the conversion that shows one place's clock in
+// another's. A written reading anchors on the calendar date its own place
+// keeps, so the place's daylight-saving rules decide the instant, and the
+// result shows the destination clock as `HH:mm` alone. An abbreviation
+// resolves through Foundation; a city resolves through the injected city
+// data, never through the network.
 
 import Foundation
 
@@ -48,85 +50,81 @@ public struct TimeOfDay: Sendable, Equatable, Hashable {
 }
 
 /// The places a time-of-day conversion names: a time zone abbreviation
-/// such as `PST`, or a city such as `London` (ADK-249).
+/// such as `PST`, or a city such as `London` or `sf` (ADK-249, ADK-250).
 enum TimeZones {
-    /// A place whose local clock rules apply to a reading.
-    struct Place: Sendable, Equatable, Hashable {
-        /// The zone carrying the place's rules, daylight saving included.
-        let timeZone: TimeZone
+    /// A place as the line writes it: an abbreviation Foundation resolves
+    /// at parse time, or a city name the city data resolves during
+    /// evaluation, when the cache is at hand.
+    enum Place: Sendable, Equatable, Hashable {
+        /// The zone an abbreviation names, daylight saving included.
+        case zone(TimeZone)
+        /// A city name or known city abbreviation, unresolved until the
+        /// city data holds an outcome for it.
+        case city(String)
     }
 
     /// The place an abbreviation names, any casing. Foundation resolves the
     /// abbreviation to the region that keeps it, so `PST` means Pacific
     /// time with daylight saving, not a fixed offset (ADK-249). nil when
     /// Foundation knows no such abbreviation.
-    static func abbreviation(_ word: String) -> Place? {
+    static func abbreviation(_ word: String) -> TimeZone? {
         guard word.allSatisfy(\.isLetter) else { return nil }
-        return TimeZone(abbreviation: word.uppercased()).map(Place.init(timeZone:))
+        return TimeZone(abbreviation: word.uppercased())
     }
 
-    /// The place the word run spells, the longest run first: an
-    /// abbreviation, or a city name that a known time zone carries.
-    static func place(words: [String]) -> (place: Place, count: Int)? {
+    /// The city name an abbreviation stands for, any casing; a name that no
+    /// abbreviation stands for comes back as written (ADK-250).
+    static func expanded(_ city: String) -> String {
+        CityTimeZones.expanded(city)
+    }
+
+    /// The words that end a place name: the language's connectors, so
+    /// `11am PST in London and 2` keeps its `and 2` outside the place.
+    static let connectorWords: Set<String> = ["and", "or", "to", "of", "off", "as", "at", "until", "timespan"]
+
+    /// The place the word run spells: one abbreviation, or the city the run
+    /// names, the longest run first (ADK-249).
+    static func place(words: [String]) -> Place? {
         guard !words.isEmpty else { return nil }
-        for length in stride(from: words.count, through: 1, by: -1) {
-            let run = Array(words.prefix(length))
-            if run.count == 1, let abbreviation = abbreviation(run[0]) {
-                return (abbreviation, 1)
-            }
-            if let zone = cities[normalize(run.joined(separator: " "))] {
-                return (Place(timeZone: zone), length)
-            }
+        if words.count == 1, let zone = abbreviation(words[0]) {
+            return .zone(zone)
         }
-        return nil
+        return .city(words.joined(separator: " "))
     }
 
-    /// The city names the known time zones carry, keyed by the folded name
-    /// of the zone's own city: `London` names `Europe/London`, `New York`
-    /// names `America/New_York`, `São Paulo` names `America/Sao_Paulo`. A
-    /// name that more than one zone carries stays out, so no conversion
-    /// picks one of them silently.
-    private static let cities: [String: TimeZone] = {
-        var index: [String: TimeZone] = [:]
-        var ambiguous: Set<String> = []
-        for identifier in TimeZone.knownTimeZoneIdentifiers {
-            guard let zone = TimeZone(identifier: identifier),
-                  let city = identifier.split(separator: "/").last
-            else { continue }
-            let name = normalize(String(city).replacingOccurrences(of: "_", with: " "))
-            if index[name] == nil {
-                index[name] = zone
-            } else {
-                ambiguous.insert(name)
+    /// The zone the place keeps: the abbreviation's zone, or the city the
+    /// city data resolved. An unresolved city throws the diagnostic that
+    /// names why (ADK-250).
+    static func zone(of place: Place, cities: CityTimeZoneSnapshot) throws -> TimeZone {
+        switch place {
+        case let .zone(timeZone):
+            return timeZone
+        case let .city(city):
+            guard let outcome = cities.outcome(for: city) else {
+                throw Diagnostic.cityNotCached(name: city)
+            }
+            switch outcome {
+            case let .found(record):
+                guard let timeZone = record.timeZone else {
+                    throw Diagnostic.unknownCity(name: city)
+                }
+                return timeZone
+            case .unknown:
+                throw Diagnostic.unknownCity(name: city)
+            case .ambiguous:
+                throw Diagnostic.ambiguousCity(name: city)
             }
         }
-        for name in ambiguous {
-            index.removeValue(forKey: name)
-        }
-        return index
-    }()
-
-    /// Folds case, diacritics, and the blanks between words, so `São Paulo`
-    /// and `Sao Paulo` name the same place.
-    private static func normalize(_ words: String) -> String {
-        words
-            .folding(
-                options: [.caseInsensitive, .diacriticInsensitive],
-                locale: Locale(identifier: "en_US_POSIX")
-            )
-            .split(whereSeparator: \.isWhitespace)
-            .joined(separator: " ")
-            .lowercased()
     }
 
     /// The instant the written reading has in its place, on the calendar
     /// date that place keeps for `now`: the reading anchors on the place's
     /// own date, so the place's daylight rules decide the offset (ADK-249).
     /// Foundation resolves a nonexistent or a repeated local time.
-    static func instant(of time: TimeOfDay, in place: Place, now: Date) -> Date? {
+    static func instant(of time: TimeOfDay, in timeZone: TimeZone, now: Date) -> Date? {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "en_US_POSIX")
-        calendar.timeZone = place.timeZone
+        calendar.timeZone = timeZone
         var parts = calendar.dateComponents([.year, .month, .day], from: now)
         parts.hour = time.hour
         parts.minute = time.minute
@@ -135,9 +133,9 @@ enum TimeZones {
     }
 
     /// The clock reading `instant` shows in the place.
-    static func reading(of instant: Date, in place: Place) throws -> TimeOfDay {
+    static func reading(of instant: Date, in timeZone: TimeZone) throws -> TimeOfDay {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = place.timeZone
+        calendar.timeZone = timeZone
         let parts = calendar.dateComponents([.hour, .minute], from: instant)
         guard let time = TimeOfDay(hour: parts.hour ?? 0, minute: parts.minute ?? 0) else {
             throw Diagnostic.syntax
@@ -158,36 +156,37 @@ extension SheetEvaluator {
     mutating func evaluateTimeOfDayForm(_ node: Node) throws -> ExpressionValue? {
         switch node {
         case let .timeOfDay(time, named):
-            return try .timeOfDay(reading(of: time, in: place(named)))
+            return try .timeOfDay(reading(of: time, in: zone(of: named)))
         case let .timeOfDayConversion(source, target):
             guard case let .timeOfDay(time, named) = source else {
                 throw Diagnostic.syntax
             }
-            let system = TimeZones.Place(timeZone: context.timeZone)
-            let origin = place(named ?? target)
+            let origin = try zone(of: named ?? target)
+            let destination = named == nil ? context.timeZone : try zone(of: target)
             guard let instant = TimeZones.instant(
                 of: time, in: origin, now: context.now
             ) else {
                 throw Diagnostic.syntax
             }
-            return try .timeOfDay(TimeZones.reading(of: instant, in: named == nil ? system : target))
+            return try .timeOfDay(TimeZones.reading(of: instant, in: destination))
         default:
             return nil
         }
     }
 
-    /// The place a reading belongs to: the place it names, or the sheet's
-    /// system time zone when it names none.
-    private func place(_ named: TimeZones.Place?) -> TimeZones.Place {
-        named ?? TimeZones.Place(timeZone: context.timeZone)
+    /// The zone of the place the line names: the abbreviation's or city's
+    /// own zone, or the sheet's system time zone when it names none.
+    private func zone(of named: TimeZones.Place?) throws -> TimeZone {
+        guard let named else { return context.timeZone }
+        return try TimeZones.zone(of: named, cities: context.cityTimeZones)
     }
 
     /// The clock reading the written reading shows in its own place.
-    private func reading(of time: TimeOfDay, in place: TimeZones.Place) throws -> TimeOfDay {
-        guard let instant = TimeZones.instant(of: time, in: place, now: context.now) else {
+    private func reading(of time: TimeOfDay, in timeZone: TimeZone) throws -> TimeOfDay {
+        guard let instant = TimeZones.instant(of: time, in: timeZone, now: context.now) else {
             throw Diagnostic.syntax
         }
-        return try TimeZones.reading(of: instant, in: place)
+        return try TimeZones.reading(of: instant, in: timeZone)
     }
 
     /// The representation a time-of-day result shows: the clock alone, in

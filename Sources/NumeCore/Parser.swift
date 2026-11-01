@@ -559,19 +559,21 @@ struct Parser {
         return .timeOfDay(time, place: parsePlace())
     }
 
-    /// The place the coming word run names, the longest run first: a time
-    /// zone abbreviation such as `PST`, or a city such as `London` or
-    /// `New York`.
+    /// The place the coming word run names: one time zone abbreviation such
+    /// as `PST`, or a city such as `London`, `New York`, or `sf`, whose zone
+    /// the city data resolves during evaluation (ADK-249, ADK-250).
     private mutating func parsePlace() -> TimeZones.Place? {
         var words: [String] = []
         var index = position
-        while index < tokens.count, case let .word(word) = tokens[index] {
+        while index < tokens.count, case let .word(word) = tokens[index],
+              !TimeZones.connectorWords.contains(word.lowercased())
+        {
             words.append(word)
             index += 1
         }
-        guard let match = TimeZones.place(words: words) else { return nil }
-        position += match.count
-        return match.place
+        guard let place = TimeZones.place(words: words) else { return nil }
+        position = index
+        return place
     }
 
     // MARK: Helpers

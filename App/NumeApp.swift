@@ -57,6 +57,7 @@ private extension NSAppearance {
 @MainActor
 private struct SheetEditorView: View {
     private let exchangeRates = ApplicationExchangeRates.shared.service
+    private let cityTimeZones = ApplicationCityTimeZones.shared.service
     @State private var coordinator = SheetRefreshCoordinator()
     @State private var sheetText = ""
     @State private var sheetTitle = ""
@@ -151,6 +152,14 @@ private struct SheetEditorView: View {
         }
         .onChange(of: exchangeRates.snapshot) { _, snapshot in
             coordinator.exchangeRatesChanged(snapshot)
+        }
+        .onChange(of: cityTimeZones.snapshot) { _, snapshot in
+            coordinator.cityTimeZonesChanged(snapshot)
+        }
+        // A city the visible results could not resolve yet goes to the shared
+        // city data service; the fresh city data reaches the results above.
+        .onChange(of: coordinator.uncachedCityNames) { _, names in
+            ApplicationCityTimeZones.shared.resolve(names)
         }
         .onDisappear { autosave?.flush(); coordinator.closeSheet() }
     }
@@ -321,7 +330,8 @@ private struct SheetEditorView: View {
                 timeZone: .current,
                 now: Date(),
                 displayPrecision: 2,
-                exchangeRates: exchangeRates.snapshot
+                exchangeRates: exchangeRates.snapshot,
+                cityTimeZones: cityTimeZones.snapshot
             )
         )
     }

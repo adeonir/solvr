@@ -79,11 +79,30 @@ public struct SheetRefresher: Sendable {
         reevaluate(now: now)
     }
 
+    /// The city names the visible results could not resolve because the
+    /// city data held no outcome for them yet (ADK-250); the application
+    /// looks them up and hands the fresh data back.
+    public var uncachedCityNames: Set<String> {
+        Set(results.compactMap { result in
+            guard case let .cityNotCached(name) = result.diagnostic else { return nil }
+            return name
+        })
+    }
+
     // MARK: Reevaluation
 
     @discardableResult
     public mutating func update(exchangeRates: ExchangeRateSnapshot, now: Date) -> SheetRefreshOutcome {
         context.exchangeRates = exchangeRates
+        return reevaluate(now: now)
+    }
+
+    /// Fresh city data reaches the visible results without a text edit
+    /// (ADK-250): a city resolved after the sheet opened turns its error
+    /// into a clock.
+    @discardableResult
+    public mutating func update(cityTimeZones: CityTimeZoneSnapshot, now: Date) -> SheetRefreshOutcome {
+        context.cityTimeZones = cityTimeZones
         return reevaluate(now: now)
     }
 

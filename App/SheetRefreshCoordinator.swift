@@ -19,6 +19,10 @@ final class SheetRefreshCoordinator: NSObject {
     /// their expressions; the changed indexes of each trigger stay on the
     /// outcome the app refreshes from.
     private(set) var results: [ExpressionResult] = []
+    /// The city names the visible results could not resolve because the
+    /// city data held no answer for them yet (ADK-250). The view looks them
+    /// up through the shared city data service.
+    private(set) var uncachedCityNames: Set<String> = []
 
     @ObservationIgnored private var refresher: SheetRefresher?
     @ObservationIgnored private var midnightTimer: Timer?
@@ -30,7 +34,7 @@ final class SheetRefreshCoordinator: NSObject {
     func openSheet(_ sheetText: String, in evaluationContext: EvaluationContext) {
         let refresher = SheetRefresher(sheetText: sheetText, context: evaluationContext)
         self.refresher = refresher
-        results = refresher.results
+        publish(refresher.results)
         scheduleMidnightTimer()
         observeWorkspace()
     }
@@ -39,20 +43,27 @@ final class SheetRefreshCoordinator: NSObject {
     /// so a line edited away loses its result immediately.
     func sheetTextEdited(_ newSheetText: String) {
         guard let outcome = refresher?.update(sheetText: newSheetText, now: Date()) else { return }
-        results = outcome.results
+        publish(outcome.results)
         scheduleMidnightTimer()
     }
 
     func exchangeRatesChanged(_ snapshot: ExchangeRateSnapshot) {
         guard let outcome = refresher?.update(exchangeRates: snapshot, now: Date()) else { return }
-        results = outcome.results
+        publish(outcome.results)
+    }
+
+    /// Fresh city data reaches the visible results without a text edit
+    /// (ADK-250).
+    func cityTimeZonesChanged(_ snapshot: CityTimeZoneSnapshot) {
+        guard let outcome = refresher?.update(cityTimeZones: snapshot, now: Date()) else { return }
+        publish(outcome.results)
     }
 
     /// The sheet closed; the coordinator releases the sheet's refresher
     /// and the local-midnight timer.
     func closeSheet() {
         refresher = nil
-        results = []
+        publish([])
         midnightTimer?.invalidate()
         midnightTimer = nil
     }
@@ -117,7 +128,14 @@ final class SheetRefreshCoordinator: NSObject {
 
     private func fire(_ trigger: SheetRefreshTrigger) {
         guard refresher != nil, let outcome = refresher?.refresh(trigger, now: Date()) else { return }
-        results = outcome.results
+        publish(outcome.results)
+    }
+
+    /// Hands the fresh results to the view, with the cities they could not
+    /// resolve yet so the view can look them up (ADK-250).
+    private func publish(_ fresh: [ExpressionResult]) {
+        results = fresh
+        uncachedCityNames = refresher?.uncachedCityNames ?? []
     }
 }
 

@@ -27,6 +27,9 @@ public struct EvaluationContext: Sendable, Equatable {
     /// The default pixel density for point-to-pixel conversion, in ppi.
     public var ppi: Decimal
     public var exchangeRates: ExchangeRateSnapshot
+    /// The city data a time-of-day conversion by city name resolves
+    /// against (ADK-250).
+    public var cityTimeZones: CityTimeZoneSnapshot
 
     public init(
         localeIdentifier: String,
@@ -36,6 +39,7 @@ public struct EvaluationContext: Sendable, Equatable {
         pixelBase: Decimal = 16,
         ppi: Decimal = 96,
         exchangeRates: ExchangeRateSnapshot = .shipped,
+        cityTimeZones: CityTimeZoneSnapshot = .empty,
         cryptoPrecision: Int = 10
     ) {
         self.localeIdentifier = localeIdentifier
@@ -45,6 +49,7 @@ public struct EvaluationContext: Sendable, Equatable {
         self.pixelBase = pixelBase
         self.ppi = ppi
         self.exchangeRates = exchangeRates
+        self.cityTimeZones = cityTimeZones
         self.cryptoPrecision = Self.clampedCryptoPrecision(cryptoPrecision)
     }
 
