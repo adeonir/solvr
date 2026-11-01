@@ -99,6 +99,9 @@ public struct ExpressionResult: Sendable, Equatable {
     public let display: String?
     /// What failed, or nil when the line has a result or has none to show.
     public let diagnostic: Diagnostic?
+    /// The unit a quantity line carries: its own unit, or the destination
+    /// of a conversion (ADK-253). Nil for every other result.
+    let unit: Unit?
 
     public init(
         kind: LineKind,
@@ -106,10 +109,21 @@ public struct ExpressionResult: Sendable, Equatable {
         display: String? = nil,
         diagnostic: Diagnostic? = nil
     ) {
+        self.init(kind: kind, value: value, display: display, diagnostic: diagnostic, unit: nil)
+    }
+
+    init(
+        kind: LineKind,
+        value: ExpressionValue?,
+        display: String?,
+        diagnostic: Diagnostic?,
+        unit: Unit?
+    ) {
         self.kind = kind
         self.value = value
         self.display = display
         self.diagnostic = diagnostic
+        self.unit = unit
     }
 }
 

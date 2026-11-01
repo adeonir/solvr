@@ -258,4 +258,37 @@ struct UnitConversionTests {
         let result = evaluate(sheetText: source, context: context())[0]
         #expect(result.diagnostic?.message == message)
     }
+
+    // MARK: Retained units
+
+    @Test
+    func bareQuantityRetainsItsUnitAndDisplaysUnchanged() {
+        let result = evaluate(sheetText: "10 ft", context: context())[0]
+        #expect(result.unit == .foot)
+        #expect(result.value == .decimal(10))
+        #expect(result.display == "10 ft")
+    }
+
+    @Test
+    func conversionRetainsItsDestinationUnit() {
+        let result = evaluate(sheetText: "10 ft in m", context: context(locale: "en_US", precision: 3))[0]
+        #expect(result.unit == .metre)
+        #expect(result.display == "3.048 m")
+    }
+
+    @Test
+    func negatedQuantityRetainsItsUnit() {
+        #expect(evaluate(sheetText: "-10 ft", context: context())[0].unit == .foot)
+    }
+
+    @Test(arguments: [
+        "10 ft + 2 ft",
+        "10 ft * 2",
+        "x = 10 ft",
+    ])
+    func arithmeticAndAssignmentDoNotRetainAUnit(_ source: String) {
+        let result = evaluate(sheetText: source, context: context())[0]
+        #expect(result.unit == nil)
+        #expect(result.diagnostic == nil)
+    }
 }

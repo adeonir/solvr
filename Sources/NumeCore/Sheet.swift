@@ -194,7 +194,9 @@ struct SheetEvaluator {
                 return ExpressionResult(
                     kind: .expression,
                     value: .decimal(retained),
-                    display: display
+                    display: display,
+                    diagnostic: nil,
+                    unit: Units.sourceUnit(of: node)
                 )
             } catch let lineError as LineError {
                 // A multi-word currency name is reserved as a whole; reading
