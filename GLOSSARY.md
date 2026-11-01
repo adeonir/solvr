@@ -71,6 +71,14 @@ _Avoid_: elapsed time, time span
 The composed form of a duration that `to timespan` shows, as in `145 mins to timespan` showing `2 hours 25 min`, with one sign over the whole duration and preserved fractions. It remains convertible to a numeric unit quantity through `in`.
 _Avoid_: duration, period
 
+**Time-of-day**:
+A clock reading with no date, such as `11am`, `5pm`, or `2:30 pm`, that Nume converts to the clock of another time zone through `in`, as in `11am PST in London`, and shows only as `HH:mm`. A reading that names no time zone is read in the place the conversion names, and the macOS system time zone is the destination.
+_Avoid_: time, hour, clock
+
+**Time zone**:
+The regional clock rules that Nume names by an abbreviation or a city, as in `PST` or `London`. An abbreviation follows the daylight-saving rules of the region that keeps it, so `PST` covers Pacific daylight saving time; a city resolves through the external city data source and the local cache, and an unknown, ambiguous, or uncached city is an error.
+_Avoid_: offset, UTC offset
+
 **Pixel base**:
 The shared value in pixels that a sheet's Settings give the `rem` and the `em`, initially 16 pixels. An expression-local override written with `at`, as in `16px in em at 20px`, replaces the base for that expression only.
 _Avoid_: rem size, font size
