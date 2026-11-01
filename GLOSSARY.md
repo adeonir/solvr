@@ -17,7 +17,7 @@ A name that an expression in a sheet gives a value, as in `price = 8`. Later exp
 _Avoid_: constant, field, parameter
 
 **Reserved name**:
-A name that Nume keeps for its language and that a variable cannot take, such as `min`, `pi`, `and`, a unit, a currency, or a cryptocurrency. Assigning to one is an error.
+A name that Nume keeps for its language and that a variable cannot take, such as `min`, `pi`, `and`, a unit or a currency. Assigning to one is an error.
 _Avoid_: keyword, reserved word, protected name
 
 **Heading**:
@@ -45,19 +45,22 @@ The standard of measure that gives a quantity its meaning, such as the metre or 
 _Avoid_: measure, metric
 
 **Monetary value**:
-A number written with a currency or a cryptocurrency in an expression, as in `$10`, `5 EUR`, or `1 BTC`. Nume converts a monetary value to another currency or cryptocurrency through `in`, as in `10 USD in BRL`.
-_Avoid_: money, price
+A number written with a currency in an expression, as in `$10`, `5 EUR`, or `1 BTC`. Nume converts a monetary value to another currency through `in`, as in `10 USD in BRL`.
+_Avoid_: price
 
 **Currency**:
-A money that a government issues, such as the US dollar or the Brazilian real, which an expression names by its code or its symbol, as in `USD`, `BRL`, or `$`. A cryptocurrency is not a currency.
-_Avoid_: money, fiat
+A unit of value that an expression names by its code or its symbol, as in `USD`, `BRL`, `BTC`, or `$`. A currency is either fiat or crypto.
+_Avoid_: money
 
-**Cryptocurrency**:
-A digital asset such as Bitcoin or Ethereum, which an expression names by its code or its symbol, as in `BTC`, `ETH`, or `₿`. A currency is not a cryptocurrency.
-_Avoid_: crypto, coin, token
+**Fiat**:
+A currency that a government issues, such as the US dollar or the Brazilian real, named by its code or its symbol, as in `USD`, `BRL`, or `$`.
+
+**Crypto**:
+A currency that exists as a digital asset, such as Bitcoin or Ethereum, named by its code or its symbol, as in `BTC`, `ETH`, or `₿`.
+_Avoid_: coin, token
 
 **Exchange rate**:
-The value of one currency or cryptocurrency in another, as in the reais that one dollar buys. Nume uses it to convert a monetary value.
+The value of one currency in another, as in the reais that one dollar buys. Nume uses it to convert a monetary value.
 _Avoid_: quote, price, cotação
 
 **Duration**:

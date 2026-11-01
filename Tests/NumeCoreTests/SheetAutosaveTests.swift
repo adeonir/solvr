@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import NumeCore
+import Testing
 
 @Test @MainActor func savesOnlyAfterHalfASecond() throws {
     let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
@@ -41,7 +41,11 @@ import Testing
         deadline = now + delay
         self.action = action
     }
-    func cancel() { action = nil }
+
+    func cancel() {
+        action = nil
+    }
+
     func advance(milliseconds: Int) {
         now += milliseconds
         if now >= deadline, let action {

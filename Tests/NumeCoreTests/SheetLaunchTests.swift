@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import NumeCore
+import Testing
 
 @Test func launchSelectsLastOpenedSheet() {
     let first = UUID()

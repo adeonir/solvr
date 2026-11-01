@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import NumeCore
+import Testing
 
 private func edited(_ sheet: StoredSheet, text: String) -> StoredSheet {
     StoredSheet(id: sheet.id, title: sheet.title, created: sheet.created, updated: sheet.updated, text: text)

@@ -81,6 +81,12 @@ public struct SheetRefresher: Sendable {
 
     // MARK: Reevaluation
 
+    @discardableResult
+    public mutating func update(exchangeRates: ExchangeRateSnapshot, now: Date) -> SheetRefreshOutcome {
+        context.exchangeRates = exchangeRates
+        return reevaluate(now: now)
+    }
+
     private mutating func reevaluate(now: Date) -> SheetRefreshOutcome {
         context.now = now
         let fresh = evaluate(sheetText: sheetText, context: context)

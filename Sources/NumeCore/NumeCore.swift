@@ -17,10 +17,16 @@ public struct EvaluationContext: Sendable, Equatable {
     public var now: Date
     /// Displayed decimal places.
     public var displayPrecision: Int
+    /// Decimal places of a cryptocurrency result, from 5 to 15 (Settings).
+    public var cryptoPrecision: Int {
+        didSet { cryptoPrecision = Self.clampedCryptoPrecision(cryptoPrecision) }
+    }
+
     /// The shared pixel base for `rem` and `em`, in pixels.
     public var pixelBase: Decimal
     /// The default pixel density for point-to-pixel conversion, in ppi.
     public var ppi: Decimal
+    public var exchangeRates: ExchangeRateSnapshot
 
     public init(
         localeIdentifier: String,
@@ -28,7 +34,9 @@ public struct EvaluationContext: Sendable, Equatable {
         now: Date,
         displayPrecision: Int,
         pixelBase: Decimal = 16,
-        ppi: Decimal = 96
+        ppi: Decimal = 96,
+        exchangeRates: ExchangeRateSnapshot = .shipped,
+        cryptoPrecision: Int = 10
     ) {
         self.localeIdentifier = localeIdentifier
         self.timeZone = timeZone
@@ -36,6 +44,12 @@ public struct EvaluationContext: Sendable, Equatable {
         self.displayPrecision = displayPrecision
         self.pixelBase = pixelBase
         self.ppi = ppi
+        self.exchangeRates = exchangeRates
+        self.cryptoPrecision = Self.clampedCryptoPrecision(cryptoPrecision)
+    }
+
+    private static func clampedCryptoPrecision(_ value: Int) -> Int {
+        min(15, max(5, value))
     }
 }
 
@@ -58,6 +72,7 @@ public enum LineKind: Sendable, Equatable {
 /// display representation.
 public enum ExpressionValue: Sendable, Equatable {
     case decimal(Decimal)
+    case monetary(MonetaryValue)
     /// A calendar date, or an instant shown with its time of day
     /// (ADK-229).
     case date(Date)
@@ -97,4 +112,36 @@ public struct ExpressionResult: Sendable, Equatable {
 public func evaluate(sheetText: String, context: EvaluationContext) -> [ExpressionResult] {
     var evaluator = SheetEvaluator(context: context)
     return evaluator.evaluate(sheetText)
+}
+
+/// The sheet total over monetary results (ADK-246): every monetary result
+/// converts into the currency of the last one and sums at full precision.
+/// Results that are not monetary stay out of the sum; a sheet with a date
+/// among its results, or with no monetary result, has no total. A rate the
+/// total needs but lacks shows its diagnostic.
+public func sheetTotal(of results: [ExpressionResult], context: EvaluationContext) -> ExpressionResult? {
+    var monetary: [MonetaryValue] = []
+    for result in results {
+        switch result.value {
+        case let .monetary(value):
+            monetary.append(value)
+        case .date, .difference:
+            return nil
+        case .decimal, .none:
+            continue
+        }
+    }
+    guard let currency = monetary.last?.currency else { return nil }
+    do {
+        var amount = Decimal(0)
+        for value in monetary {
+            amount = try Numeric.add(amount, context.exchangeRates.convert(value, to: currency).amount)
+        }
+        let total = MonetaryValue(amount: Numeric.retain(amount), currency: currency)
+        return ExpressionResult(kind: .expression, value: .monetary(total), display: Money.display(total, context: context))
+    } catch let diagnostic as Diagnostic {
+        return ExpressionResult(kind: .expression, diagnostic: diagnostic)
+    } catch {
+        return ExpressionResult(kind: .expression, diagnostic: .syntax)
+    }
 }

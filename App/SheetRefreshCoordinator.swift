@@ -43,6 +43,11 @@ final class SheetRefreshCoordinator: NSObject {
         scheduleMidnightTimer()
     }
 
+    func exchangeRatesChanged(_ snapshot: ExchangeRateSnapshot) {
+        guard let outcome = refresher?.update(exchangeRates: snapshot, now: Date()) else { return }
+        results = outcome.results
+    }
+
     /// The sheet closed; the coordinator releases the sheet's refresher
     /// and the local-midnight timer.
     func closeSheet() {
