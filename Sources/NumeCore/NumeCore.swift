@@ -136,34 +136,97 @@ public func evaluate(sheetText: String, context: EvaluationContext) -> [Expressi
     return evaluator.evaluate(sheetText)
 }
 
-/// The sheet total over monetary results (ADK-246): every monetary result
-/// converts into the currency of the last one and sums at full precision.
-/// Results that are not monetary stay out of the sum; a sheet with a date
-/// among its results, or with no monetary result, has no total. A rate the
-/// total needs but lacks shows its diagnostic.
+/// The sheet total (ADK-246, ADK-254). The last eligible result with an
+/// explicit unit or currency selects the group; every eligible result in that
+/// group adds to the total, and plain numbers join it without selecting it.
+/// The total takes the group's selecting unit or currency and sums at full
+/// precision. A calendar date or time of day among the eligible results, a
+/// missing rate, or a sum out of range shows no total.
 public func sheetTotal(of results: [ExpressionResult], context: EvaluationContext) -> ExpressionResult? {
-    var monetary: [MonetaryValue] = []
-    for result in results {
+    let eligible = results.filter { $0.diagnostic == nil && $0.value != nil }
+    guard !eligible.isEmpty else { return nil }
+    let hasClockOrDate = eligible.contains { result in
         switch result.value {
-        case let .monetary(value):
-            monetary.append(value)
-        case .date, .difference, .timeOfDay:
+        case .date?, .timeOfDay?: true
+        default: false
+        }
+    }
+    guard !hasClockOrDate else { return nil }
+    return try? totalOfGroup(of: eligible, context: context)
+}
+
+/// The unit or currency a result selects a group with. A CSS relative unit
+/// selects nothing: its stored count is not in its own unit (ADK-253).
+private enum TotalGroup {
+    case currency(String)
+    case unit(Unit)
+
+    init?(_ result: ExpressionResult) {
+        if case let .monetary(value)? = result.value {
+            self = .currency(value.currency)
+        } else if let unit = result.unit, !unit.isRelative {
+            self = .unit(unit)
+        } else {
             return nil
-        case .decimal, .none:
-            continue
         }
     }
-    guard let currency = monetary.last?.currency else { return nil }
-    do {
-        var amount = Decimal(0)
-        for value in monetary {
-            amount = try Numeric.add(amount, context.exchangeRates.convert(value, to: currency).amount)
+}
+
+private func totalOfGroup(of eligible: [ExpressionResult], context: EvaluationContext) throws -> ExpressionResult? {
+    guard let group = eligible.compactMap(TotalGroup.init).last else {
+        let sum = try sum(eligible.compactMap { plainAmount($0.value) })
+        let precision = context.displayPrecision
+        return ExpressionResult(
+            kind: .expression,
+            value: .decimal(Numeric.retain(sum)),
+            display: Numeric.display(Numeric.roundPlain(sum, scale: precision), precision: precision, locale: Locale(identifier: context.localeIdentifier))
+        )
+    }
+    switch group {
+    case let .currency(currency):
+        var amounts: [Decimal] = []
+        for result in eligible {
+            if case let .monetary(value)? = result.value {
+                try amounts.append(context.exchangeRates.convert(value, to: currency).amount)
+            } else if result.unit == nil, let amount = plainAmount(result.value) {
+                amounts.append(amount)
+            }
         }
-        let total = MonetaryValue(amount: Numeric.retain(amount), currency: currency)
+        let sum = try sum(amounts)
+        let total = MonetaryValue(amount: Numeric.retain(sum), currency: currency)
         return ExpressionResult(kind: .expression, value: .monetary(total), display: Money.display(total, context: context))
-    } catch let diagnostic as Diagnostic {
-        return ExpressionResult(kind: .expression, diagnostic: diagnostic)
-    } catch {
-        return ExpressionResult(kind: .expression, diagnostic: .syntax)
+    case let .unit(target):
+        var amounts: [Decimal] = []
+        for result in eligible {
+            if case let .decimal(number)? = result.value, let unit = result.unit, !unit.isRelative, unit.dimension == target.dimension {
+                try amounts.append(Units.convert(number, from: unit, to: target, context: context, override: nil))
+            } else if result.unit == nil, let amount = plainAmount(result.value) {
+                amounts.append(amount)
+            }
+        }
+        let sum = try sum(amounts)
+        let retained = Numeric.retain(sum)
+        let precision = context.displayPrecision
+        return ExpressionResult(
+            kind: .expression,
+            value: .decimal(retained),
+            display: Units.display(Numeric.roundPlain(retained, scale: precision), in: target, precision: precision, locale: Locale(identifier: context.localeIdentifier)),
+            diagnostic: nil,
+            unit: target
+        )
     }
+}
+
+private func plainAmount(_ value: ExpressionValue?) -> Decimal? {
+    switch value {
+    case let .decimal(number)?: number
+    case let .difference(days)?: Decimal(days)
+    default: nil
+    }
+}
+
+private func sum(_ amounts: [Decimal]) throws -> Decimal {
+    let total = try amounts.reduce(Decimal(0)) { try Numeric.add($0, $1) }
+    guard Numeric.rangeDiagnostic(for: total) == nil else { throw Diagnostic.outOfRange }
+    return total
 }
