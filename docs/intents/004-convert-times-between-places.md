@@ -1,9 +1,9 @@
 ---
 id: "004"
 name: convert-times-between-places
-status: accepted
+status: done
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-01
 ---
 
 # Intent: Convert times between places
