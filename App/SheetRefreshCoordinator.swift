@@ -1,10 +1,12 @@
 // The application side of the date-dependent results lifecycle (ADK-230).
 // One coordinator owns the refresher for the open sheet and translates the
 // real system events into the model layer's reevaluation triggers: an edit,
-// local midnight in the system time zone, sheet opening, and returning to
-// the app. The coordinator never evaluates — it supplies the system's
-// clock and events, and the reevaluation stays in the NumeCore refresher,
-// where the model-layer integration tests inject controlled ones instead.
+// local midnight in the system time zone, sheet opening, returning to the
+// app, and the next daylight-saving transition of a time zone a visible
+// conversion uses (ADK-251). The coordinator never evaluates — it supplies
+// the system's clock and events, and the reevaluation stays in the
+// NumeCore refresher, where the model-layer integration tests inject
+// controlled ones instead.
 
 import AppKit
 import Foundation
@@ -26,16 +28,19 @@ final class SheetRefreshCoordinator: NSObject {
 
     @ObservationIgnored private var refresher: SheetRefresher?
     @ObservationIgnored private var midnightTimer: Timer?
+    @ObservationIgnored private var transitionTimer: Timer?
     @ObservationIgnored private var observingWorkspace = false
 
     /// Opening a sheet evaluates it immediately — the opening evaluation
     /// counts as the sheet-opening trigger — and starts the local-midnight
-    /// observation, which matters only when a result follows the clock.
+    /// and daylight-saving observations, which matter only when a result
+    /// follows the clock.
     func openSheet(_ sheetText: String, in evaluationContext: EvaluationContext) {
         let refresher = SheetRefresher(sheetText: sheetText, context: evaluationContext)
         self.refresher = refresher
         publish(refresher.results)
         scheduleMidnightTimer()
+        scheduleTransitionTimer()
         observeWorkspace()
     }
 
@@ -45,6 +50,7 @@ final class SheetRefreshCoordinator: NSObject {
         guard let outcome = refresher?.update(sheetText: newSheetText, now: Date()) else { return }
         publish(outcome.results)
         scheduleMidnightTimer()
+        scheduleTransitionTimer()
     }
 
     func exchangeRatesChanged(_ snapshot: ExchangeRateSnapshot) {
@@ -53,19 +59,23 @@ final class SheetRefreshCoordinator: NSObject {
     }
 
     /// Fresh city data reaches the visible results without a text edit
-    /// (ADK-250).
+    /// (ADK-250), and the zones the new conversions use begin following
+    /// their daylight-saving transitions (ADK-251).
     func cityTimeZonesChanged(_ snapshot: CityTimeZoneSnapshot) {
         guard let outcome = refresher?.update(cityTimeZones: snapshot, now: Date()) else { return }
         publish(outcome.results)
+        scheduleTransitionTimer()
     }
 
     /// The sheet closed; the coordinator releases the sheet's refresher
-    /// and the local-midnight timer.
+    /// and the local-midnight and daylight-saving timers.
     func closeSheet() {
         refresher = nil
         publish([])
         midnightTimer?.invalidate()
         midnightTimer = nil
+        transitionTimer?.invalidate()
+        transitionTimer = nil
     }
 
     /// Whether any visible result follows the clock, so a fresh context
@@ -104,6 +114,15 @@ final class SheetRefreshCoordinator: NSObject {
         }
     }
 
+    /// A time zone a visible conversion uses reached its next
+    /// daylight-saving transition (ADK-251).
+    @objc private func transitionFell(_: Timer) {
+        MainActor.assumeIsolated {
+            fire(.daylightSavingTransition)
+            scheduleTransitionTimer()
+        }
+    }
+
     private func scheduleMidnightTimer() {
         midnightTimer?.invalidate()
         midnightTimer = nil
@@ -126,9 +145,33 @@ final class SheetRefreshCoordinator: NSObject {
         RunLoop.main.add(timer, forMode: .common)
     }
 
+    /// The earliest next transition of the zones the visible conversions
+    /// use; the revisits the triggers force keep it current, so a timer
+    /// missed while the Mac slept leaves no stale clock.
+    private func scheduleTransitionTimer() {
+        transitionTimer?.invalidate()
+        transitionTimer = nil
+        guard let refresher,
+              let transition = refresher.nextDaylightSavingTransition(after: Date())
+        else { return }
+        let timer = Timer(
+            fireAt: transition,
+            interval: 0,
+            target: self,
+            selector: #selector(transitionFell(_:)),
+            userInfo: nil,
+            repeats: false
+        )
+        transitionTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
     private func fire(_ trigger: SheetRefreshTrigger) {
         guard refresher != nil, let outcome = refresher?.refresh(trigger, now: Date()) else { return }
         publish(outcome.results)
+        // A reevaluation at any trigger can move the zones and the next
+        // transition they schedule (ADK-251).
+        scheduleTransitionTimer()
     }
 
     /// Hands the fresh results to the view, with the cities they could not

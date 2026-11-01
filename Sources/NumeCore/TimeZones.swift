@@ -142,6 +142,17 @@ enum TimeZones {
         }
         return time
     }
+
+    /// The time zones the sheet's visible conversions use (ADK-251): one
+    /// evaluation collects the source and destination zone of every
+    /// converted line, resolved as the sheet's city data resolves them. A
+    /// line that could not convert uses no zone, so a place that never
+    /// resolved schedules no transition.
+    static func used(inSheetText sheetText: String, context: EvaluationContext) -> Set<TimeZone> {
+        var evaluator = SheetEvaluator(context: context)
+        _ = evaluator.evaluate(sheetText)
+        return evaluator.convertedTimeZones
+    }
 }
 
 // MARK: The sheet's time-of-day forms
@@ -168,7 +179,12 @@ extension SheetEvaluator {
             ) else {
                 throw Diagnostic.syntax
             }
-            return try .timeOfDay(TimeZones.reading(of: instant, in: destination))
+            let converted = try TimeZones.reading(of: instant, in: destination)
+            // The conversion follows the daylight-saving rules of both
+            // zones, so it keeps following the next transition of either
+            // (ADK-251).
+            convertedTimeZones.formUnion([origin, destination])
+            return .timeOfDay(converted)
         default:
             return nil
         }

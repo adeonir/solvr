@@ -10,6 +10,9 @@ struct SheetEvaluator {
     let context: EvaluationContext
     /// The variable bindings the sheet has defined so far (ADK-223).
     var variables = VariableTable()
+    /// The time zones the visible conversions use, collected as the
+    /// evaluation resolves them (ADK-251).
+    var convertedTimeZones: Set<TimeZone> = []
 
     let locale: Locale
     let decimalSeparator: Character
