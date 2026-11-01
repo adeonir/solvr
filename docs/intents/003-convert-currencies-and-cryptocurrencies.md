@@ -1,9 +1,9 @@
 ---
 id: "003"
 name: convert-currencies-and-cryptocurrencies
-status: accepted
+status: done
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-01
 ---
 
 # Intent: Convert currencies and cryptocurrencies
