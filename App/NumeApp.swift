@@ -134,6 +134,11 @@ private struct SheetEditorView: View {
                     logger.error("Could not save sheet: \(error.localizedDescription)")
                 }
             }
+            // Cities the results cannot resolve reach the shared service on
+            // every trigger, so a lookup that failed while offline is retried.
+            coordinator.requestCityData = { names in
+                ApplicationCityTimeZones.shared.resolve(names)
+            }
             loadSheets()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { _ in autosave?.flush() }

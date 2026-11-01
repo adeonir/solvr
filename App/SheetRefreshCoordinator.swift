@@ -31,6 +31,13 @@ final class SheetRefreshCoordinator: NSObject {
     @ObservationIgnored private var transitionTimer: Timer?
     @ObservationIgnored private var observingWorkspace = false
 
+    /// Asks the shared city data service for a lookup of the cities the
+    /// visible results still cannot resolve. The view sets it; every trigger
+    /// but an edit asks again, so a city whose earlier lookup failed turns
+    /// from an error into a clock once the connection comes back. The
+    /// service throttles repeat lookups itself.
+    @ObservationIgnored var requestCityData: ((Set<String>) -> Void)?
+
     /// Opening a sheet evaluates it immediately — the opening evaluation
     /// counts as the sheet-opening trigger — and starts the local-midnight
     /// and daylight-saving observations, which matter only when a result
@@ -172,6 +179,9 @@ final class SheetRefreshCoordinator: NSObject {
         // A reevaluation at any trigger can move the zones and the next
         // transition they schedule (ADK-251).
         scheduleTransitionTimer()
+        // An edit already asked for its cities; a clock or app trigger asks
+        // again, so a failed city lookup is retried without a text change.
+        requestCityData?(uncachedCityNames)
     }
 
     /// Hands the fresh results to the view, with the cities they could not
