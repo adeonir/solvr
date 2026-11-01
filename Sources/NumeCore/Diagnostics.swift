@@ -21,12 +21,26 @@ public enum Diagnostic: Error, Equatable, Sendable, Hashable {
     /// A function called with an unexpected number of arguments.
     case argumentCount(function: String, requirement: String)
     case exchangeRateUnavailable(currency: String)
+    /// The city data has no place of that name (ADK-250).
+    case unknownCity(name: String)
+    /// The city name means more than one place, so no conversion picks one
+    /// silently (ADK-250).
+    case ambiguousCity(name: String)
+    /// The city was never looked up and the connection is unavailable
+    /// (ADK-250).
+    case cityNotCached(name: String)
 
     /// The exact message shown in place of the result.
     public var message: String {
         switch self {
         case let .exchangeRateUnavailable(currency):
             "Exchange rate unavailable: \(currency)"
+        case let .unknownCity(name):
+            "Unknown city: \(name)"
+        case let .ambiguousCity(name):
+            "Ambiguous city: \(name)"
+        case let .cityNotCached(name):
+            "City not cached: \(name)"
         case .syntax:
             "Invalid syntax"
         case .divisionByZero:

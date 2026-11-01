@@ -1,15 +1,15 @@
-# Nume
+# Glossary
 
-Nume is a text calculator for the Mac. This glossary defines the words that the product, its documents, and its code use for the same concepts.
+A text calculator for the Mac. This glossary defines the words that the product, its documents, and its code use for the same concepts.
 
 ## Language
 
 **Sheet**:
-A saved, named page of text in Nume that holds expressions, variables, headings, comments, and text lines, in a format close to Markdown. Variables and earlier expressions in a sheet keep their meaning until someone deletes them.
+A saved, named page of text that holds expressions, variables, headings, comments, and text lines, in a format close to Markdown. Variables and earlier expressions in a sheet keep their meaning until someone deletes them.
 _Avoid_: note, calculation, document, file
 
 **Expression**:
-One line of a sheet that Nume evaluates to a result.
+One line of a sheet that evaluates to a result.
 _Avoid_: calculation, formula, line
 
 **Variable**:
@@ -17,27 +17,27 @@ A name that an expression in a sheet gives a value, as in `price = 8`. Later exp
 _Avoid_: constant, field, parameter
 
 **Reserved name**:
-A name that Nume keeps for its language and that a variable cannot take, such as `min`, `pi`, `and`, a unit or a currency. Assigning to one is an error.
+A name kept for the language that a variable cannot take, such as `min`, `pi`, `and`, a unit or a currency. Assigning to one is an error.
 _Avoid_: keyword, reserved word, protected name
 
 **Heading**:
-A line of a sheet that starts with one to six `#` markers and a space, and titles a part of the sheet. Nume does not evaluate it and gives it no result.
+A line of a sheet that starts with one to six `#` markers and a space, and titles a part of the sheet. It is not evaluated and gives no result.
 _Avoid_: title, section, header
 
 **Comment**:
-Text in a sheet that starts with `//`, either as a whole line or after an expression, and that Nume does not evaluate. A heading is not a comment.
+Text in a sheet that starts with `//`, either as a whole line or after an expression, and that is not evaluated. A heading is not a comment.
 _Avoid_: note, annotation
 
 **Label**:
-Words at the start of an expression, before its first number or known name, that Nume ignores when the rest of the line is a valid expression, as in `compras 2 + 3`.
+Words at the start of an expression, before its first number or known name, that are ignored when the rest of the line is a valid expression, as in `compras 2 + 3`.
 _Avoid_: caption, tag, prefix
 
 **Text line**:
-A line of a sheet with no number, operator, `=`, or known name. Nume does not evaluate it, and it shows no result and no message.
+A line of a sheet with no number, operator, `=`, or known name. It is not evaluated, and it shows no result and no message.
 _Avoid_: plain text, note
 
 **Quantity**:
-A number written with its unit in an expression, as in `10 ft` or `100 F`. Nume converts a quantity to another unit through `in`, as in `10 ft in m`, and shows the result beside the expression in the destination unit.
+A number written with its unit in an expression, as in `10 ft` or `100 F`. A quantity converts to another unit through `in`, as in `10 ft in m`, and shows the result beside the expression in the destination unit.
 _Avoid_: measurement, amount
 
 **Unit**:
@@ -45,7 +45,7 @@ The standard of measure that gives a quantity its meaning, such as the metre or 
 _Avoid_: measure, metric
 
 **Monetary value**:
-A number written with a currency in an expression, as in `$10`, `5 EUR`, or `1 BTC`. Nume converts a monetary value to another currency through `in`, as in `10 USD in BRL`.
+A number written with a currency in an expression, as in `$10`, `5 EUR`, or `1 BTC`. A monetary value converts to another currency through `in`, as in `10 USD in BRL`.
 _Avoid_: price
 
 **Currency**:
@@ -60,7 +60,7 @@ A currency that exists as a digital asset, such as Bitcoin or Ethereum, named by
 _Avoid_: coin, token
 
 **Exchange rate**:
-The value of one currency in another, as in the reais that one dollar buys. Nume uses it to convert a monetary value.
+The value of one currency in another, as in the reais that one dollar buys. It converts a monetary value into another currency.
 _Avoid_: quote, price, cotação
 
 **Duration**:
@@ -70,6 +70,22 @@ _Avoid_: elapsed time, time span
 **Timespan**:
 The composed form of a duration that `to timespan` shows, as in `145 mins to timespan` showing `2 hours 25 min`, with one sign over the whole duration and preserved fractions. It remains convertible to a numeric unit quantity through `in`.
 _Avoid_: duration, period
+
+**Time-of-day**:
+A clock reading with no date, such as `11am`, `5pm`, or `2:30 pm`, that converts to the clock of another time zone through `in`, as in `11am PST in London`, and shows only as `HH:mm`. A reading that names no time zone is read in the place the conversion names, and the macOS system time zone is the destination.
+_Avoid_: time, hour
+
+**Time zone**:
+The regional clock rules named by an abbreviation or a city, as in `PST` or `London`. An abbreviation follows the daylight-saving rules of the region that keeps it, so `PST` covers Pacific daylight saving time; a city resolves through the external city data source and the local cache, and an unknown, ambiguous, or uncached city is an error.
+_Avoid_: offset, UTC offset
+
+**Place**:
+A name an expression writes for a time zone: an abbreviation such as `PST`, or a city such as `London` or `sf`. A time-of-day conversion reads the time in one place and shows it in another, and a conversion that names a single place reads it there and shows the macOS system time zone.
+_Avoid_: location, region, zone name
+
+**City**:
+A place resolved to a time zone by its name or by a known alias, as `London` for `ldn` and `San Francisco` for `sf`. A name that several cities share is ambiguous, and neither converts.
+_Avoid_: town, municipality, geocoding result
 
 **Pixel base**:
 The shared value in pixels that a sheet's Settings give the `rem` and the `em`, initially 16 pixels. An expression-local override written with `at`, as in `16px in em at 20px`, replaces the base for that expression only.
@@ -100,7 +116,7 @@ A visible result whose value follows the sheet's date and changes as that date c
 _Avoid_: time-sensitive result
 
 **Reevaluation trigger**:
-An application event that asks a sheet's results to recalculate: an edit, local midnight in the system time zone, the sheet opening, and returning to the app.
+An application event that asks a sheet's results to recalculate: an edit, local midnight in the system time zone, the sheet opening, returning to the app, and the next daylight-saving transition of a time zone a result uses.
 _Avoid_: refresh request, invalidation
 
 **Folder**:
@@ -112,17 +128,17 @@ The place that holds deleted sheets until they are recovered or removed permanen
 _Avoid_: trash, bin, deleted items
 
 **Mode**:
-The light or dark appearance of Nume: Light, Dark, or Auto. Auto follows the appearance of macOS.
+The light or dark appearance of the app: Light, Dark, or Auto. Auto follows the appearance of macOS.
 _Avoid_: appearance mode
 
 **Theme**:
-A named set of colors for the whole window of Nume. Each theme is light or dark, and only the themes that match the current mode are available.
+A named set of colors for the whole window. Each theme is light or dark, and only the themes that match the current mode are available.
 _Avoid_: color scheme, palette, skin
 
 **Telemetry**:
-The data that Nume sends about its own operation: crash reports, errors, and usage data. The Telemetry option controls all of this data together.
+The data sent about the app's own operation: crash reports, errors, and usage data. The Telemetry option controls all of this data together.
 _Avoid_: analytics, tracking, error tracker
 
 **Anonymization**:
-The replacement of each real name and each real number in sheet text by a false value of the same type and format, so the expression can still be calculated. Nume keeps no link between a false value and the real value.
+The replacement of each real name and each real number in sheet text by a false value of the same type and format, so the expression can still be calculated. No link is kept between a false value and the real value.
 _Avoid_: masking, redaction, pseudonymization

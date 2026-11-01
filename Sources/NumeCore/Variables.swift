@@ -19,7 +19,7 @@ enum Language {
     /// forms cannot spell a name.
     static let operatorNames: Set<String> = ["and", "or", "times"]
     static var reservedNames: Set<String> {
-        functionNames.union(constantNames).union(operatorNames).union(Units.reservedNames).union(Money.names.keys).union(["to", "at", "until", "of", "off", "as", "timespan", "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "sept", "oct", "nov", "dec"])
+        functionNames.union(constantNames).union(operatorNames).union(Units.reservedNames).union(Money.names.keys).union(["to", "at", "until", "of", "off", "as", "timespan", "am", "pm", "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "sept", "oct", "nov", "dec"])
     }
 }
 

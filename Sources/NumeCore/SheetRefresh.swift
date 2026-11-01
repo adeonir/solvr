@@ -1,6 +1,7 @@
 // SheetRefresh (ADK-230): keeps a sheet's visible results current through
 // the reevaluation triggers the application supplies — an edit, local
-// midnight, sheet opening, and returning to the app. The clock arrives
+// midnight, sheet opening, returning to the app, and a daylight-saving
+// transition of a time zone a conversion uses (ADK-251). The clock arrives
 // with every trigger; nothing here reads the process clock (ADR-005), so
 // the same lifecycle runs for the app and the integration tests. The
 // triggers themselves stay outside the evaluator: a refresh only repeats
@@ -16,6 +17,9 @@ public enum SheetRefreshTrigger: Sendable, Equatable {
     case sheetOpening
     /// The user returned to the app.
     case returningToApp
+    /// A source or destination time zone of a visible conversion reached
+    /// its next daylight-saving transition (ADK-251).
+    case daylightSavingTransition
 }
 
 /// The outcome of one refresh: the visible results, parallel to the
@@ -38,11 +42,35 @@ public struct SheetRefresher: Sendable {
     /// The lines whose results depend on the current date; the empty set
     /// when nothing on the sheet follows the clock.
     public private(set) var dateDependentIndexes: Set<Int>
+    /// The time zones the visible time-of-day conversions use, source and
+    /// destination (ADK-251); the empty set when no visible result converts
+    /// a time between zones.
+    public private(set) var conversionTimeZones: Set<TimeZone>
+    /// The cities the visible time-of-day conversions name (ADK-250),
+    /// whether resolved, unknown, ambiguous, or never looked up; the
+    /// application keeps each one's city data current from this set.
+    public private(set) var cityNames: Set<String>
 
     /// Whether any visible result depends on the current date, so local
     /// midnight and the return-to-app recheck matter for it.
     public var hasDateDependentResults: Bool {
         !dateDependentIndexes.isEmpty
+    }
+
+    /// Whether any visible result follows a time zone's daylight-saving
+    /// rules, so that zone's next transition needs a reevaluation.
+    public var hasTimeZoneDependentResults: Bool {
+        !conversionTimeZones.isEmpty
+    }
+
+    /// The first instant after `instant` at which a time zone a visible
+    /// conversion uses changes its offset, or nil when no zone it uses
+    /// changes again (ADK-251). The earliest transition decides, so a
+    /// conversion between two zones follows whichever moves first.
+    public func nextDaylightSavingTransition(after instant: Date) -> Date? {
+        conversionTimeZones
+            .compactMap { $0.nextDaylightSavingTimeTransition(after: instant) }
+            .min()
     }
 
     /// Opens the sheet: the immediate first evaluation counts as the
@@ -52,6 +80,8 @@ public struct SheetRefresher: Sendable {
         self.context = context
         results = []
         dateDependentIndexes = []
+        conversionTimeZones = []
+        cityNames = []
         _ = reevaluate(now: context.now)
         dateDependentIndexes = Self.detectDateDependence(
             sheetText: sheetText, context: context
@@ -72,11 +102,21 @@ public struct SheetRefresher: Sendable {
     }
 
     /// Reevaluation by a lifecycle trigger — local midnight, sheet
-    /// opening, or returning to the app. The trigger carries the current
-    /// instant; the text stays untouched.
+    /// opening, returning to the app, or a daylight-saving transition. The
+    /// trigger carries the current instant; the text stays untouched.
     @discardableResult
     public mutating func refresh(_: SheetRefreshTrigger, now: Date) -> SheetRefreshOutcome {
         reevaluate(now: now)
+    }
+
+    /// The city names the visible results could not resolve because the
+    /// city data held no outcome for them yet (ADK-250); the application
+    /// looks them up and hands the fresh data back.
+    public var uncachedCityNames: Set<String> {
+        Set(results.compactMap { result in
+            guard case let .cityNotCached(name) = result.diagnostic else { return nil }
+            return name
+        })
     }
 
     // MARK: Reevaluation
@@ -84,6 +124,15 @@ public struct SheetRefresher: Sendable {
     @discardableResult
     public mutating func update(exchangeRates: ExchangeRateSnapshot, now: Date) -> SheetRefreshOutcome {
         context.exchangeRates = exchangeRates
+        return reevaluate(now: now)
+    }
+
+    /// Fresh city data reaches the visible results without a text edit
+    /// (ADK-250): a city resolved after the sheet opened turns its error
+    /// into a clock.
+    @discardableResult
+    public mutating func update(cityTimeZones: CityTimeZoneSnapshot, now: Date) -> SheetRefreshOutcome {
+        context.cityTimeZones = cityTimeZones
         return reevaluate(now: now)
     }
 
@@ -101,7 +150,30 @@ public struct SheetRefresher: Sendable {
             changedIndexes.formUnion(fresh.indices)
         }
         results = fresh
+        // A conversion follows both zones it names, so its transitions
+        // steer the next reevaluation (ADK-251), and the cities it names
+        // steer the city data lookup (ADK-250). A sheet without a visible
+        // time-of-day result uses no zone and no city.
+        let places = fresh.contains(where: Self.usesPlace)
+            ? TimeZones.used(inSheetText: sheetText, context: context)
+            : TimeZones.SheetPlaces()
+        conversionTimeZones = places.zones
+        cityNames = places.cities
         return SheetRefreshOutcome(results: fresh, changedIndexes: changedIndexes)
+    }
+
+    /// Whether a visible result comes from a time-of-day form, so the sheet
+    /// uses the time zones and cities that form names.
+    private static func usesPlace(_ result: ExpressionResult) -> Bool {
+        if case .timeOfDay = result.value {
+            return true
+        }
+        switch result.diagnostic {
+        case .unknownCity, .ambiguousCity, .cityNotCached:
+            return true
+        default:
+            return false
+        }
     }
 
     // MARK: Date-dependence detection
