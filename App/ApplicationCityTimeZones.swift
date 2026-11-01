@@ -15,9 +15,11 @@ final class ApplicationCityTimeZones {
         )
     }
 
-    /// Looks up the cities the open sheet could not resolve yet. The cache
-    /// keeps the last usable answer, so an offline app keeps converting the
-    /// cities it resolved before.
+    /// Keeps the city data of the cities the open sheet names current. A city
+    /// the cache lacks is looked up, and a cached city is looked up again so
+    /// a successful fetch replaces its entry; the cache keeps the last
+    /// usable answer, so an offline app keeps converting the cities it
+    /// resolved before.
     func resolve(_ cities: Set<String>) {
         guard !cities.isEmpty else { return }
         Task {

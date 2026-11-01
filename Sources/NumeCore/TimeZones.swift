@@ -143,15 +143,25 @@ enum TimeZones {
         return time
     }
 
-    /// The time zones the sheet's visible conversions use (ADK-251): one
-    /// evaluation collects the source and destination zone of every
-    /// converted line, resolved as the sheet's city data resolves them. A
-    /// line that could not convert uses no zone, so a place that never
-    /// resolved schedules no transition.
-    static func used(inSheetText sheetText: String, context: EvaluationContext) -> Set<TimeZone> {
+    /// The places the sheet's visible time-of-day conversions use (ADK-250,
+    /// ADK-251): the zones they follow and the city names they resolve.
+    struct SheetPlaces: Sendable, Equatable {
+        var zones: Set<TimeZone> = []
+        var cities: Set<String> = []
+    }
+
+    /// The places the sheet's visible conversions use (ADK-250, ADK-251):
+    /// one evaluation collects the source and destination zone of every
+    /// converted line and the city names the lines write, resolved as the
+    /// sheet's city data resolves them. A line that could not convert uses
+    /// no zone, so a place that never resolved schedules no transition.
+    static func used(inSheetText sheetText: String, context: EvaluationContext) -> SheetPlaces {
         var evaluator = SheetEvaluator(context: context)
         _ = evaluator.evaluate(sheetText)
-        return evaluator.convertedTimeZones
+        return SheetPlaces(
+            zones: evaluator.convertedTimeZones,
+            cities: evaluator.convertedCities
+        )
     }
 }
 
@@ -191,9 +201,14 @@ extension SheetEvaluator {
     }
 
     /// The zone of the place the line names: the abbreviation's or city's
-    /// own zone, or the sheet's system time zone when it names none.
-    private func zone(of named: TimeZones.Place?) throws -> TimeZone {
+    /// own zone, or the sheet's system time zone when it names none. A city
+    /// the line names is collected for the city data (ADK-250), so the
+    /// application can look it up and keep its entry current.
+    private mutating func zone(of named: TimeZones.Place?) throws -> TimeZone {
         guard let named else { return context.timeZone }
+        if case let .city(city) = named {
+            convertedCities.insert(city)
+        }
         return try TimeZones.zone(of: named, cities: context.cityTimeZones)
     }
 

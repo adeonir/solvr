@@ -21,10 +21,10 @@ final class SheetRefreshCoordinator: NSObject {
     /// their expressions; the changed indexes of each trigger stay on the
     /// outcome the app refreshes from.
     private(set) var results: [ExpressionResult] = []
-    /// The city names the visible results could not resolve because the
-    /// city data held no answer for them yet (ADK-250). The view looks them
-    /// up through the shared city data service.
-    private(set) var uncachedCityNames: Set<String> = []
+    /// The cities the visible time-of-day conversions name (ADK-250). The
+    /// view keeps their city data current through the shared service, and a
+    /// city whose lookup failed is asked for again on the next trigger.
+    private(set) var cityNames: Set<String> = []
 
     @ObservationIgnored private var refresher: SheetRefresher?
     @ObservationIgnored private var midnightTimer: Timer?
@@ -180,15 +180,16 @@ final class SheetRefreshCoordinator: NSObject {
         // transition they schedule (ADK-251).
         scheduleTransitionTimer()
         // An edit already asked for its cities; a clock or app trigger asks
-        // again, so a failed city lookup is retried without a text change.
-        requestCityData?(uncachedCityNames)
+        // again, so a city whose lookup failed is retried without a text
+        // change and a cached city is refreshed when the source answers.
+        requestCityData?(cityNames)
     }
 
-    /// Hands the fresh results to the view, with the cities they could not
-    /// resolve yet so the view can look them up (ADK-250).
+    /// Hands the fresh results to the view, with the cities they name, so
+    /// the view can look up and refresh their city data (ADK-250).
     private func publish(_ fresh: [ExpressionResult]) {
         results = fresh
-        uncachedCityNames = refresher?.uncachedCityNames ?? []
+        cityNames = refresher?.cityNames ?? []
     }
 }
 

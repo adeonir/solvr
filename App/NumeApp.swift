@@ -161,9 +161,10 @@ private struct SheetEditorView: View {
         .onChange(of: cityTimeZones.snapshot) { _, snapshot in
             coordinator.cityTimeZonesChanged(snapshot)
         }
-        // A city the visible results could not resolve yet goes to the shared
-        // city data service; the fresh city data reaches the results above.
-        .onChange(of: coordinator.uncachedCityNames) { _, names in
+        // The cities the visible results name go to the shared city data
+        // service, which looks up a city the cache lacks and refreshes one
+        // it holds; the fresh city data reaches the results above.
+        .onChange(of: coordinator.cityNames) { _, names in
             ApplicationCityTimeZones.shared.resolve(names)
         }
         .onDisappear { autosave?.flush(); coordinator.closeSheet() }

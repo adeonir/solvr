@@ -13,6 +13,10 @@ struct SheetEvaluator {
     /// The time zones the visible conversions use, collected as the
     /// evaluation resolves them (ADK-251).
     var convertedTimeZones: Set<TimeZone> = []
+    /// The city names the visible conversions use, collected as the
+    /// evaluation resolves them (ADK-250), whether or not the city data
+    /// holds an outcome for each.
+    var convertedCities: Set<String> = []
 
     let locale: Locale
     let decimalSeparator: Character

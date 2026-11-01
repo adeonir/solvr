@@ -293,12 +293,38 @@ struct CityTimeZoneTests {
 
     @MainActor
     @Test
-    func aResolvedCityIsNotLookedUpAgain() async {
+    func aCachedCityIsLookedUpAgainAndItsEntryReplaced() async {
+        let cache = MemoryCityCache(snapshot: cities)
+        let source = ControlledCitySource()
+        await source.answer("London", with: [record("London", "Europe/Paris")])
+        let service = CityTimeZoneService(source: source, cache: cache)
+        await service.resolve(["London"], now: instant)
+        #expect(await source.queries == ["London"])
+        #expect(service.snapshot.outcome(for: "London") == .found(record("London", "Europe/Paris")))
+    }
+
+    @MainActor
+    @Test
+    func aCachedCityIsNotLookedUpAgainBeforeTheRecheckInterval() async {
         let cache = MemoryCityCache(snapshot: cities)
         let source = ControlledCitySource()
         let service = CityTimeZoneService(source: source, cache: cache)
         await service.resolve(["London"], now: instant)
-        #expect(await source.queries.isEmpty)
+        await service.resolve(["London"], now: instant.addingTimeInterval(60))
+        #expect(await source.queries == ["London"])
+        await service.resolve(["London"], now: instant.addingTimeInterval(1800))
+        #expect(await source.queries == ["London", "London"])
+    }
+
+    @MainActor
+    @Test
+    func aFailedRefreshKeepsTheCachedEntry() async {
+        let cache = MemoryCityCache(snapshot: cities)
+        let source = ControlledCitySource()
+        let service = CityTimeZoneService(source: source, cache: cache)
+        await source.failNext()
+        await service.resolve(["London"], now: instant)
+        #expect(service.snapshot == cities)
     }
 
     @MainActor
@@ -357,6 +383,20 @@ struct CityTimeZoneTests {
     func aResolvedCityLeavesNothingToLookUp() {
         let refresher = SheetRefresher(sheetText: "5pm London in Tokyo", context: context(now: november))
         #expect(refresher.uncachedCityNames.isEmpty)
+    }
+
+    @Test
+    func cityNamesCoverEveryCityTheVisibleConversionsUse() {
+        let refresher = SheetRefresher(sheetText: "5pm London in Tokyo", context: context(now: november))
+        #expect(refresher.cityNames == ["London", "Tokyo"])
+    }
+
+    @Test
+    func anUnresolvedCityIsStillACityName() {
+        var context = context(now: november)
+        context.cityTimeZones = .empty
+        let refresher = SheetRefresher(sheetText: "5pm London in Tokyo", context: context)
+        #expect(refresher.cityNames == ["London"])
     }
 }
 

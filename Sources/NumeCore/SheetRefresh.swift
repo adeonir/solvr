@@ -46,6 +46,10 @@ public struct SheetRefresher: Sendable {
     /// destination (ADK-251); the empty set when no visible result converts
     /// a time between zones.
     public private(set) var conversionTimeZones: Set<TimeZone>
+    /// The cities the visible time-of-day conversions name (ADK-250),
+    /// whether resolved, unknown, ambiguous, or never looked up; the
+    /// application keeps each one's city data current from this set.
+    public private(set) var cityNames: Set<String>
 
     /// Whether any visible result depends on the current date, so local
     /// midnight and the return-to-app recheck matter for it.
@@ -77,6 +81,7 @@ public struct SheetRefresher: Sendable {
         results = []
         dateDependentIndexes = []
         conversionTimeZones = []
+        cityNames = []
         _ = reevaluate(now: context.now)
         dateDependentIndexes = Self.detectDateDependence(
             sheetText: sheetText, context: context
@@ -146,19 +151,29 @@ public struct SheetRefresher: Sendable {
         }
         results = fresh
         // A conversion follows both zones it names, so its transitions
-        // steer the next reevaluation (ADK-251). A sheet without a visible
-        // time-of-day result uses no zone.
-        conversionTimeZones = fresh.contains(where: Self.showsTimeOfDay)
+        // steer the next reevaluation (ADK-251), and the cities it names
+        // steer the city data lookup (ADK-250). A sheet without a visible
+        // time-of-day result uses no zone and no city.
+        let places = fresh.contains(where: Self.usesPlace)
             ? TimeZones.used(inSheetText: sheetText, context: context)
-            : []
+            : TimeZones.SheetPlaces()
+        conversionTimeZones = places.zones
+        cityNames = places.cities
         return SheetRefreshOutcome(results: fresh, changedIndexes: changedIndexes)
     }
 
-    private static func showsTimeOfDay(_ result: ExpressionResult) -> Bool {
+    /// Whether a visible result comes from a time-of-day form, so the sheet
+    /// uses the time zones and cities that form names.
+    private static func usesPlace(_ result: ExpressionResult) -> Bool {
         if case .timeOfDay = result.value {
             return true
         }
-        return false
+        switch result.diagnostic {
+        case .unknownCity, .ambiguousCity, .cityNotCached:
+            return true
+        default:
+            return false
+        }
     }
 
     // MARK: Date-dependence detection

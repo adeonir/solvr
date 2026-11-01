@@ -50,11 +50,14 @@ public final class CityTimeZoneService {
         snapshot = (try? cache.load()) ?? .empty
     }
 
-    /// Looks up every city the cache holds no outcome for yet, then
-    /// publishes the cache. A city asked for during a running lookup joins
-    /// that lookup instead of being dropped. A failed lookup keeps the old
-    /// cache and does not retry until the recheck interval passes, so a
-    /// sheet that keeps changing its text does not keep asking.
+    /// Keeps the city data current for the cities the visible results name,
+    /// then publishes the cache. A city already in the cache is looked up
+    /// again, so a successful fetch replaces its entry; the cached entry
+    /// keeps converting only while the source is unreachable or a fetch
+    /// fails (NFR-2). A city asked for during a running lookup joins that
+    /// lookup instead of being dropped. A retry waits for the recheck
+    /// interval, so a sheet that keeps changing its text does not keep
+    /// asking.
     public func resolve(_ cities: Set<String>, now: Date) async {
         pending.formUnion(cities)
         guard !isUpdating else { return }
@@ -66,9 +69,7 @@ public final class CityTimeZoneService {
             var resolved = snapshot
             var failed = false
             for city in batch {
-                guard snapshot.outcome(for: city) == nil,
-                      !isRecentlyAttempted(city, now: now)
-                else { continue }
+                guard !isRecentlyAttempted(city, now: now) else { continue }
                 let query = CityTimeZones.expanded(city)
                 attempts[CityTimeZones.folded(query)] = now
                 do {
