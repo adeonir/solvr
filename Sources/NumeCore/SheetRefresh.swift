@@ -127,6 +127,15 @@ public struct SheetRefresher: Sendable {
         return reevaluate(now: now)
     }
 
+    /// A precision change from Settings reaches the visible results at
+    /// once, with the sheet text untouched (ADK-255).
+    @discardableResult
+    public mutating func update(displayPrecision: Int, cryptoPrecision: Int, now: Date) -> SheetRefreshOutcome {
+        context.displayPrecision = displayPrecision
+        context.cryptoPrecision = cryptoPrecision
+        return reevaluate(now: now)
+    }
+
     /// Fresh city data reaches the visible results without a text edit
     /// (ADK-250): a city resolved after the sheet opened turns its error
     /// into a clock.

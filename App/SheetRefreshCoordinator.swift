@@ -74,6 +74,17 @@ final class SheetRefreshCoordinator: NSObject {
         scheduleTransitionTimer()
     }
 
+    /// A precision change from Settings reaches the open sheet at once; the
+    /// sheet text stays untouched (ADK-255).
+    func precisionChanged(displayPrecision: Int, cryptoPrecision: Int) {
+        guard let outcome = refresher?.update(
+            displayPrecision: displayPrecision,
+            cryptoPrecision: cryptoPrecision,
+            now: Date()
+        ) else { return }
+        publish(outcome.results)
+    }
+
     /// The sheet closed; the coordinator releases the sheet's refresher
     /// and the local-midnight and daylight-saving timers.
     func closeSheet() {

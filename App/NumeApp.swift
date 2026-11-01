@@ -11,6 +11,10 @@ struct NumeApp: App {
             SheetEditorView()
         }
         .defaultSize(width: 648, height: 498)
+
+        Settings {
+            PrecisionSettingsView()
+        }
     }
 }
 
@@ -59,6 +63,8 @@ private struct SheetEditorView: View {
     private let exchangeRates = ApplicationExchangeRates.shared.service
     private let cityTimeZones = ApplicationCityTimeZones.shared.service
     @State private var coordinator = SheetRefreshCoordinator()
+    @AppStorage(PrecisionSettingsView.generalKey) private var generalPrecision = PrecisionSetting.generalDefault
+    @AppStorage(PrecisionSettingsView.cryptoKey) private var cryptoPrecision = PrecisionSetting.cryptoDefault
     @State private var sheetText = ""
     @State private var sheetTitle = ""
     @FocusState private var titleFocused: Bool
@@ -160,6 +166,12 @@ private struct SheetEditorView: View {
         }
         .onChange(of: cityTimeZones.snapshot) { _, snapshot in
             coordinator.cityTimeZonesChanged(snapshot)
+        }
+        .onChange(of: [generalPrecision, cryptoPrecision]) { _, _ in
+            coordinator.precisionChanged(
+                displayPrecision: storedPrecision.general,
+                cryptoPrecision: storedPrecision.crypto
+            )
         }
         // The cities the visible results name go to the shared city data
         // service, which looks up a city the cache lacks and refreshes one
@@ -335,10 +347,20 @@ private struct SheetEditorView: View {
                 localeIdentifier: locale.identifier,
                 timeZone: .current,
                 now: Date(),
-                displayPrecision: 2,
+                displayPrecision: storedPrecision.general,
                 exchangeRates: exchangeRates.snapshot,
-                cityTimeZones: cityTimeZones.snapshot
+                cityTimeZones: cityTimeZones.snapshot,
+                cryptoPrecision: storedPrecision.crypto
             )
+        )
+    }
+
+    /// The Settings precision values, within their ranges even when the
+    /// stored preference is not (ADK-255).
+    private var storedPrecision: (general: Int, crypto: Int) {
+        (
+            PrecisionSetting.stored(generalPrecision, in: PrecisionSetting.generalRange, default: PrecisionSetting.generalDefault),
+            PrecisionSetting.stored(cryptoPrecision, in: PrecisionSetting.cryptoRange, default: PrecisionSetting.cryptoDefault)
         )
     }
 }
