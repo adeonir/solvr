@@ -108,7 +108,7 @@ A visible result whose value follows the sheet's date and changes as that date c
 _Avoid_: time-sensitive result
 
 **Reevaluation trigger**:
-An application event that asks a sheet's results to recalculate: an edit, local midnight in the system time zone, the sheet opening, and returning to the app.
+An application event that asks a sheet's results to recalculate: an edit, local midnight in the system time zone, the sheet opening, returning to the app, and the next daylight-saving transition of a time zone a result uses.
 _Avoid_: refresh request, invalidation
 
 **Folder**:
