@@ -63,6 +63,12 @@ public struct SheetRefresher: Sendable {
         !conversionTimeZones.isEmpty
     }
 
+    /// The sheet total's display text at the current precision, or nil when
+    /// no total is available (ADK-256). The line results stay as they are.
+    public var total: String? {
+        sheetTotal(of: results, context: context)?.display
+    }
+
     /// The first instant after `instant` at which a time zone a visible
     /// conversion uses changes its offset, or nil when no zone it uses
     /// changes again (ADK-251). The earliest transition decides, so a

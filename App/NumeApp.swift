@@ -111,6 +111,15 @@ private struct SheetEditorView: View {
                     sheets.insert(StoredSheet(id: old.id, title: old.title, created: old.created, updated: Date(), text: updatedText), at: 0)
                     autosave?.edit(id, text: updatedText)
                 }
+                // The sheet total sits centered below the content and is absent when no total is available (ADK-256).
+                if let total = coordinator.total {
+                    Text(total)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color(nsColor: Palette.text))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .accessibilityLabel("Total \(total)")
+                }
             }
         }
         .frame(minWidth: 420, minHeight: 300)
