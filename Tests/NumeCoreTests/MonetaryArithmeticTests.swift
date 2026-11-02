@@ -253,6 +253,42 @@ struct MonetaryArithmeticTests {
         #expect(pixels?.display == "32px")
     }
 
+    @Test func relativeArithmeticCountsItsUnit() {
+        let ctx = context()
+        #expect(evaluate(sheetText: "2 rem + 1 rem", context: ctx)[0].display == "48")
+        let rem = sheetTotal(of: evaluate(sheetText: "2 rem + 1 rem", context: ctx), context: ctx)
+        #expect(rem?.value == .decimal(3))
+        #expect(rem?.display == "3rem")
+        let em = sheetTotal(of: evaluate(sheetText: "2 em + 1 em", context: ctx), context: ctx)
+        #expect(em?.value == .decimal(3))
+        #expect(em?.display == "3em")
+    }
+
+    @Test func plainNumbersJoinTimeAndRelativeArithmetic() {
+        let ctx = context()
+        #expect(evaluate(sheetText: "2 hours + 30", context: ctx)[0].display == "7,230")
+        let time = sheetTotal(of: evaluate(sheetText: "2 hours + 30", context: ctx), context: ctx)
+        #expect(time?.display == "2.01 hours")
+        let rem = sheetTotal(of: evaluate(sheetText: "2 rem + 30", context: ctx), context: ctx)
+        #expect(rem?.value == .decimal(decimal("3.875")))
+        #expect(rem?.display == "3.88rem")
+        let em = sheetTotal(of: evaluate(sheetText: "2 em + 30", context: ctx), context: ctx)
+        #expect(em?.display == "3.88em")
+    }
+
+    @Test func localPixelBaseConversionTotalsAtTheSharedBase() {
+        let ctx = context()
+        #expect(evaluate(sheetText: "16px in rem at 20px", context: ctx)[0].display == "0.8rem")
+        let single = sheetTotal(of: evaluate(sheetText: "16px in rem at 20px", context: ctx), context: ctx)
+        #expect(single?.value == .decimal(1))
+        #expect(single?.display == "1rem")
+        let mixed = sheetTotal(of: evaluate(sheetText: "16px in rem at 20px\n1 rem", context: ctx), context: ctx)
+        #expect(mixed?.value == .decimal(2))
+        #expect(mixed?.display == "2rem")
+        let em = sheetTotal(of: evaluate(sheetText: "16px in em at 20px", context: ctx), context: ctx)
+        #expect(em?.display == "1em")
+    }
+
     @Test func cssRelativeValuesCountTheirOwnUnit() {
         let ctx = context()
         #expect(evaluate(sheetText: "1 rem", context: ctx)[0].value == .decimal(1))

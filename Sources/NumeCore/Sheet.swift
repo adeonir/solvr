@@ -433,28 +433,30 @@ struct SheetEvaluator {
     }
 
     /// The value a numeric result stores, in its measure's unit (ADK-254). A
-    /// bare `rem` or `em` quantity evaluates to its pixels at the shared base
-    /// (ADK-227), so it divides by that base; a conversion already holds its
-    /// own count.
+    /// `rem` or `em` result evaluates to pixels at the shared base (ADK-227),
+    /// so it divides by that base. A conversion holds its count at its own
+    /// `at` base, so it scales to the shared base first.
     func storedValue(_ value: Decimal, of node: Node) throws -> Decimal {
+        guard case let .unit(unit)? = measure(of: node), unit.isRelative else {
+            return value
+        }
         var bare = node
         while case let .unaryMinus(inner) = bare {
             bare = inner
         }
-        guard case let .quantity(_, unit) = bare, unit.isRelative else {
-            return value
+        if case let .conversion(_, _, localOverride) = bare {
+            let localBase = Units.pixelBase(in: context, override: localOverride)
+            guard localBase != context.pixelBase else { return value }
+            return try Numeric.divide(Numeric.multiply(value, localBase), by: context.pixelBase)
         }
         return try Numeric.divide(value, by: context.pixelBase)
     }
 
     /// Two time quantities keep the right operand's time unit, since their
-    /// values both hold seconds.
+    /// values both hold seconds. A plain operand joins a time or relative
+    /// unit by addition or subtraction, since its value sits in the same
+    /// seconds or pixels as the quantity's.
     private func combinedMeasure(_ op: NumericOperator, _ lhs: Measure?, _ rhs: Measure?) -> Measure? {
-        // Arithmetic on relative values stays out of totals: its pixels do
-        // not hold a count of the operand's own unit.
-        if isRelative(lhs) || isRelative(rhs) {
-            return nil
-        }
         switch (op, lhs, rhs) {
         case let (.add, left?, right?), let (.subtract, left?, right?):
             if left == right {
@@ -465,10 +467,7 @@ struct SheetEvaluator {
             }
             return nil
         case let (.add, measure?, nil), let (.subtract, measure?, nil), let (.subtract, nil, measure?), let (.add, nil, measure?):
-            if case let .unit(unit) = measure, !unit.isRelative {
-                return measure
-            }
-            return nil
+            return measure
         case let (.multiply, measure?, nil), let (.multiply, nil, measure?), let (.divide, measure?, nil):
             return measure
         default:
