@@ -194,9 +194,10 @@ struct SheetEvaluator {
                 }
                 let retained = Numeric.retain(value)
                 let display = representation(of: node, for: retained)
+                let stored = try Numeric.retain(storedValue(retained, of: node))
                 return ExpressionResult(
                     kind: .expression,
-                    value: .decimal(retained),
+                    value: .decimal(stored),
                     display: display,
                     diagnostic: nil,
                     unit: Units.sourceUnit(of: node),
@@ -420,9 +421,29 @@ struct SheetEvaluator {
         }
     }
 
+    /// The value a numeric result stores, in its measure's unit (ADK-254). A
+    /// bare `rem` or `em` quantity evaluates to its pixels at the shared base
+    /// (ADK-227), so it divides by that base; a conversion already holds its
+    /// own count.
+    func storedValue(_ value: Decimal, of node: Node) throws -> Decimal {
+        var bare = node
+        while case let .unaryMinus(inner) = bare {
+            bare = inner
+        }
+        guard case let .quantity(_, unit) = bare, unit.isRelative else {
+            return value
+        }
+        return try Numeric.divide(value, by: context.pixelBase)
+    }
+
     /// Two time quantities keep the right operand's time unit, since their
     /// values both hold seconds.
     private func combinedMeasure(_ op: NumericOperator, _ lhs: Measure?, _ rhs: Measure?) -> Measure? {
+        // Arithmetic on relative values stays out of totals: its pixels do
+        // not hold a count of the operand's own unit.
+        if isRelative(lhs) || isRelative(rhs) {
+            return nil
+        }
         switch (op, lhs, rhs) {
         case let (.add, left?, right?), let (.subtract, left?, right?):
             if left == right {
@@ -442,6 +463,13 @@ struct SheetEvaluator {
         default:
             return nil
         }
+    }
+
+    private func isRelative(_ measure: Measure?) -> Bool {
+        if case let .unit(unit)? = measure {
+            return unit.isRelative
+        }
+        return false
     }
 
     /// A calendar-day difference counts its days (ADK-254).

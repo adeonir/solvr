@@ -240,6 +240,27 @@ struct MonetaryArithmeticTests {
         #expect(reversed?.display == "1.08 days")
     }
 
+    @Test func cssRelativeTotalsSumThroughTheSharedPixelBase() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "1 em\n1 rem", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(2))
+        #expect(total?.display == "2rem")
+        let mixed = sheetTotal(of: evaluate(sheetText: "16px\n1 rem", context: ctx), context: ctx)
+        #expect(mixed?.value == .decimal(2))
+        #expect(mixed?.display == "2rem")
+        let pixels = sheetTotal(of: evaluate(sheetText: "1 rem\n16px", context: ctx), context: ctx)
+        #expect(pixels?.value == .decimal(32))
+        #expect(pixels?.display == "32px")
+    }
+
+    @Test func cssRelativeValuesCountTheirOwnUnit() {
+        let ctx = context()
+        #expect(evaluate(sheetText: "1 rem", context: ctx)[0].value == .decimal(1))
+        #expect(evaluate(sheetText: "1 rem", context: ctx)[0].measure == .unit(.rem))
+        #expect(evaluate(sheetText: "16px in em", context: ctx)[0].value == .decimal(1))
+        #expect(evaluate(sheetText: "16px in em", context: ctx)[0].measure == .unit(.em))
+    }
+
     @Test func timeQuantitiesSkipIncompatibleMoney() {
         let ctx = context()
         let total = sheetTotal(of: evaluate(sheetText: "5 USD\n2 hours\n3 hours", context: ctx), context: ctx)

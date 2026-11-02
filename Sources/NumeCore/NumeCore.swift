@@ -250,6 +250,12 @@ private func amount(of result: ExpressionResult, in target: Measure, context: Ev
     }
     switch (target, result.measure, result.value) {
     case let (.unit(target), .unit(source)?, .decimal(number)?) where source.dimension == target.dimension:
+        // A `rem` or `em` conversion counts its own unit, so its count reads
+        // through the shared pixel base before conversion (ADK-254).
+        if source.isRelative {
+            let pixels = try Numeric.multiply(number, context.pixelBase)
+            return try Units.convert(pixels, from: .pixel, to: target, context: context, override: nil)
+        }
         return try Units.convert(number, from: source, to: target, context: context, override: nil)
     case let (.time(target), .time?, .decimal(seconds)?):
         return try Numeric.divide(seconds, by: target.factor)
