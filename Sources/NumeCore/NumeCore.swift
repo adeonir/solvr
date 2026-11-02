@@ -156,16 +156,16 @@ public func evaluate(sheetText: String, context: EvaluationContext) -> [Expressi
 /// result compatible with that group adds to the total, and plain numbers
 /// join it without selecting it. The total takes the group's selecting unit
 /// or currency and sums at full precision. A calendar date or time of day
-/// among the eligible results, a missing rate, or a sum out of range shows no
-/// total.
+/// among the eligible results, a missing rate, a line out of range, or a sum
+/// out of range shows no total.
 public func sheetTotal(of results: [ExpressionResult], context: EvaluationContext) -> ExpressionResult? {
-    let hasMissingRate = results.contains { result in
+    let suppressesTotal = results.contains { result in
         switch result.diagnostic {
-        case .exchangeRateUnavailable?: true
+        case .exchangeRateUnavailable?, .outOfRange?: true
         default: false
         }
     }
-    guard !hasMissingRate else { return nil }
+    guard !suppressesTotal else { return nil }
     let eligible = results.filter { $0.diagnostic == nil && $0.value != nil }
     guard !eligible.isEmpty else { return nil }
     let hasClockOrDate = eligible.contains { result in

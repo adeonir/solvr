@@ -233,6 +233,14 @@ struct MonetaryArithmeticTests {
         #expect(sheetTotal(of: results, context: ctx) == nil)
     }
 
+    @Test func lineOutOfRangeShowsNoTotal() {
+        let ctx = context()
+        let largeKilometers = "1" + String(repeating: "0", count: 125)
+        let results = evaluate(sheetText: "1 km\n\(largeKilometers) km in m", context: ctx)
+        #expect(results[1].diagnostic == .outOfRange)
+        #expect(sheetTotal(of: results, context: ctx) == nil)
+    }
+
     @Test func totalIsNotShownWithADateAmongTheResults() {
         let ctx = context()
         #expect(sheetTotal(of: evaluate(sheetText: "$10\n31 Mar 2027", context: ctx), context: ctx) == nil)
