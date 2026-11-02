@@ -113,12 +113,7 @@ private struct SheetEditorView: View {
                 }
                 // The sheet total sits centered below the content and is absent when no total is available (ADK-256).
                 if let total = coordinator.total {
-                    Text(total)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color(nsColor: Palette.text))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .accessibilityLabel("Total \(total)")
+                    SheetTotalView(total: total)
                 }
             }
         }
@@ -493,6 +488,23 @@ private final class DimKnobScroller: NSScroller {
     }
 
     override func drawKnobSlot(in _: NSRect, highlight _: Bool) {}
+}
+
+/// The sheet total below the content: a labeled value, centered, that darkens on hover.
+private struct SheetTotalView: View {
+    let total: String
+    @State private var isHovered = false
+
+    var body: some View {
+        Text("Total: \(total)")
+            .font(.system(size: 12, weight: isHovered ? .semibold : .regular))
+            .monospacedDigit()
+            .foregroundStyle(Color(nsColor: isHovered ? Palette.text : Palette.secondaryText))
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, minHeight: 48, maxHeight: 48)
+            .onHover { isHovered = $0 }
+            .accessibilityLabel("Total \(total)")
+    }
 }
 
 /// What the editor draws beside a line: a result, an error message, or nothing.
