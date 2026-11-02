@@ -159,6 +159,13 @@ public func evaluate(sheetText: String, context: EvaluationContext) -> [Expressi
 /// among the eligible results, a missing rate, or a sum out of range shows no
 /// total.
 public func sheetTotal(of results: [ExpressionResult], context: EvaluationContext) -> ExpressionResult? {
+    let hasMissingRate = results.contains { result in
+        switch result.diagnostic {
+        case .exchangeRateUnavailable?: true
+        default: false
+        }
+    }
+    guard !hasMissingRate else { return nil }
     let eligible = results.filter { $0.diagnostic == nil && $0.value != nil }
     guard !eligible.isEmpty else { return nil }
     let hasClockOrDate = eligible.contains { result in

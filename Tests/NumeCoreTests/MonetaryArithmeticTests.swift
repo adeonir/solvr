@@ -226,6 +226,13 @@ struct MonetaryArithmeticTests {
         #expect(sheetTotal(of: results, context: ctx) == nil)
     }
 
+    @Test func lineWithAMissingRateShowsNoTotal() {
+        let ctx = context()
+        let results = evaluate(sheetText: "$10\n1 BTC in LTC", context: ctx)
+        #expect(results[1].diagnostic == .exchangeRateUnavailable(currency: "LTC"))
+        #expect(sheetTotal(of: results, context: ctx) == nil)
+    }
+
     @Test func totalIsNotShownWithADateAmongTheResults() {
         let ctx = context()
         #expect(sheetTotal(of: evaluate(sheetText: "$10\n31 Mar 2027", context: ctx), context: ctx) == nil)
