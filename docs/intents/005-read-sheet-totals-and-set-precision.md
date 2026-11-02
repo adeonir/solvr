@@ -1,9 +1,9 @@
 ---
 id: "005"
 name: read-sheet-totals-and-set-precision
-status: accepted
+status: done
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-01
 ---
 
 # Intent: Read sheet totals and set result precision
