@@ -311,7 +311,7 @@ struct SheetEvaluator {
             do {
                 let result = try evaluate(node: value, overriding: override)
                 let retained = Numeric.retain(result)
-                variables.define(name, .decimal(retained))
+                variables.define(name, .decimal(retained), measure: boundMeasure(of: value))
                 return retained
             } catch let diagnostic as Diagnostic {
                 // Neither a stale value nor a silent one: dependents show
@@ -416,9 +416,20 @@ struct SheetEvaluator {
             measure(of: inner)
         case let .binary(op, lhs, rhs):
             combinedMeasure(op, measure(of: lhs), measure(of: rhs))
+        case let .reference(name):
+            variables.measures[name]
+        case let .assignment(_, inner):
+            boundMeasure(of: inner)
         default:
             nil
         }
+    }
+
+    /// The measure a name keeps when bound to a node. A relative value holds
+    /// pixels at evaluation, so a binding keeps none for it (ADK-254).
+    private func boundMeasure(of node: Node) -> Measure? {
+        let measure = measure(of: node)
+        return isRelative(measure) ? nil : measure
     }
 
     /// The value a numeric result stores, in its measure's unit (ADK-254). A

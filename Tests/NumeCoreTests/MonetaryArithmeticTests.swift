@@ -261,6 +261,13 @@ struct MonetaryArithmeticTests {
         #expect(evaluate(sheetText: "16px in em", context: ctx)[0].measure == .unit(.em))
     }
 
+    @Test func assignedQuantitiesTotalThroughTheirReferences() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "x = 10 km\nx * 2", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(30))
+        #expect(total?.display == "30 km")
+    }
+
     @Test func timeQuantitiesSkipIncompatibleMoney() {
         let ctx = context()
         let total = sheetTotal(of: evaluate(sheetText: "5 USD\n2 hours\n3 hours", context: ctx), context: ctx)
