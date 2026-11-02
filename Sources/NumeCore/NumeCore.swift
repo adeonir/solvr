@@ -102,6 +102,11 @@ public struct ExpressionResult: Sendable, Equatable {
     /// The unit a quantity line carries: its own unit, or the destination
     /// of a conversion (ADK-253). Nil for every other result.
     let unit: Unit?
+    /// The quantity the result adds to a sheet total with (ADK-254). Unlike
+    /// `unit`, it also follows arithmetic, assignments, and references, and
+    /// it carries time units for durations, timespans, and calendar-day
+    /// differences.
+    let measure: Measure?
 
     public init(
         kind: LineKind,
@@ -117,14 +122,24 @@ public struct ExpressionResult: Sendable, Equatable {
         value: ExpressionValue?,
         display: String?,
         diagnostic: Diagnostic?,
-        unit: Unit?
+        unit: Unit?,
+        measure: Measure? = nil
     ) {
         self.kind = kind
         self.value = value
         self.display = display
         self.diagnostic = diagnostic
         self.unit = unit
+        self.measure = measure
     }
+}
+
+/// The quantity a result adds to a sheet total with (ADK-254): a unit of
+/// length, data, temperature, or CSS text, or a time unit. Durations and
+/// timespans count their seconds; a calendar-day difference counts its days.
+enum Measure: Sendable, Equatable {
+    case unit(Unit)
+    case time(Duration.Unit)
 }
 
 /// Evaluate the ordered sheet text with the given context. Each line yields
@@ -137,11 +152,12 @@ public func evaluate(sheetText: String, context: EvaluationContext) -> [Expressi
 }
 
 /// The sheet total (ADK-246, ADK-254). The last eligible result with an
-/// explicit unit or currency selects the group; every eligible result in that
-/// group adds to the total, and plain numbers join it without selecting it.
-/// The total takes the group's selecting unit or currency and sums at full
-/// precision. A calendar date or time of day among the eligible results, a
-/// missing rate, or a sum out of range shows no total.
+/// explicit unit, currency, or time unit selects the group; every eligible
+/// result compatible with that group adds to the total, and plain numbers
+/// join it without selecting it. The total takes the group's selecting unit
+/// or currency and sums at full precision. A calendar date or time of day
+/// among the eligible results, a missing rate, or a sum out of range shows no
+/// total.
 public func sheetTotal(of results: [ExpressionResult], context: EvaluationContext) -> ExpressionResult? {
     let eligible = results.filter { $0.diagnostic == nil && $0.value != nil }
     guard !eligible.isEmpty else { return nil }
@@ -155,17 +171,16 @@ public func sheetTotal(of results: [ExpressionResult], context: EvaluationContex
     return try? totalOfGroup(of: eligible, context: context)
 }
 
-/// The unit or currency a result selects a group with. A CSS relative unit
-/// selects nothing: its stored count is not in its own unit (ADK-253).
+/// The currency or quantity a result selects a group with.
 private enum TotalGroup {
     case currency(String)
-    case unit(Unit)
+    case measure(Measure)
 
     init?(_ result: ExpressionResult) {
         if case let .monetary(value)? = result.value {
             self = .currency(value.currency)
-        } else if let unit = result.unit, !unit.isRelative {
-            self = .unit(unit)
+        } else if let measure = result.measure {
+            self = .measure(measure)
         } else {
             return nil
         }
@@ -174,7 +189,7 @@ private enum TotalGroup {
 
 private func totalOfGroup(of eligible: [ExpressionResult], context: EvaluationContext) throws -> ExpressionResult? {
     guard let group = eligible.compactMap(TotalGroup.init).last else {
-        let sum = try sum(eligible.compactMap { plainAmount($0.value) })
+        let sum = try sum(eligible.compactMap(plainAmount))
         let precision = context.displayPrecision
         return ExpressionResult(
             kind: .expression,
@@ -188,41 +203,68 @@ private func totalOfGroup(of eligible: [ExpressionResult], context: EvaluationCo
         for result in eligible {
             if case let .monetary(value)? = result.value {
                 try amounts.append(context.exchangeRates.convert(value, to: currency).amount)
-            } else if result.unit == nil, let amount = plainAmount(result.value) {
+            } else if let amount = plainAmount(result) {
                 amounts.append(amount)
             }
         }
         let sum = try sum(amounts)
         let total = MonetaryValue(amount: Numeric.retain(sum), currency: currency)
         return ExpressionResult(kind: .expression, value: .monetary(total), display: Money.display(total, context: context))
-    case let .unit(target):
+    case let .measure(target):
         var amounts: [Decimal] = []
         for result in eligible {
-            if case let .decimal(number)? = result.value, let unit = result.unit, !unit.isRelative, unit.dimension == target.dimension {
-                try amounts.append(Units.convert(number, from: unit, to: target, context: context, override: nil))
-            } else if result.unit == nil, let amount = plainAmount(result.value) {
+            if let amount = try amount(of: result, in: target, context: context) {
                 amounts.append(amount)
             }
         }
         let sum = try sum(amounts)
         let retained = Numeric.retain(sum)
         let precision = context.displayPrecision
-        return ExpressionResult(
-            kind: .expression,
-            value: .decimal(retained),
-            display: Units.display(Numeric.roundPlain(retained, scale: precision), in: target, precision: precision, locale: Locale(identifier: context.localeIdentifier)),
-            diagnostic: nil,
-            unit: target
-        )
+        let locale = Locale(identifier: context.localeIdentifier)
+        switch target {
+        case let .unit(unit):
+            return ExpressionResult(
+                kind: .expression,
+                value: .decimal(retained),
+                display: Units.display(Numeric.roundPlain(retained, scale: precision), in: unit, precision: precision, locale: locale),
+                diagnostic: nil,
+                unit: unit
+            )
+        case let .time(unit):
+            return ExpressionResult(
+                kind: .expression,
+                value: .decimal(retained),
+                display: Duration.count(sum * unit.factor, in: unit, precision: precision, locale: locale)
+            )
+        }
     }
 }
 
-private func plainAmount(_ value: ExpressionValue?) -> Decimal? {
-    switch value {
-    case let .decimal(number)?: number
-    case let .difference(days)?: Decimal(days)
-    default: nil
+/// A result's count in the group's unit, or nil when the result is not
+/// compatible with the group. Plain numbers count in the group's unit as
+/// they are. A duration counts its seconds and a calendar-day difference its
+/// days, both converted to the group's time unit.
+private func amount(of result: ExpressionResult, in target: Measure, context: EvaluationContext) throws -> Decimal? {
+    if let plain = plainAmount(result) {
+        return plain
     }
+    switch (target, result.measure, result.value) {
+    case let (.unit(target), .unit(source)?, .decimal(number)?) where source.dimension == target.dimension:
+        return try Units.convert(number, from: source, to: target, context: context, override: nil)
+    case let (.time(target), .time?, .decimal(seconds)?):
+        return try Numeric.divide(seconds, by: target.factor)
+    case let (.time(target), .time?, .difference(days)?):
+        return try Numeric.divide(Numeric.multiply(Decimal(days), Duration.day.factor), by: target.factor)
+    default:
+        return nil
+    }
+}
+
+/// The count of a plain result: one with no selecting unit, currency, or
+/// time unit.
+private func plainAmount(_ result: ExpressionResult) -> Decimal? {
+    guard result.measure == nil, case let .decimal(number)? = result.value else { return nil }
+    return number
 }
 
 private func sum(_ amounts: [Decimal]) throws -> Decimal {

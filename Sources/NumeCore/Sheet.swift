@@ -173,7 +173,10 @@ struct SheetEvaluator {
                     return ExpressionResult(
                         kind: .expression,
                         value: dateValue,
-                        display: dateDisplay(dateValue, node: node)
+                        display: dateDisplay(dateValue, node: node),
+                        diagnostic: nil,
+                        unit: nil,
+                        measure: dateMeasure(dateValue)
                     )
                 }
                 // Time-of-day forms carry clock readings, apart from the
@@ -196,7 +199,8 @@ struct SheetEvaluator {
                     value: .decimal(retained),
                     display: display,
                     diagnostic: nil,
-                    unit: Units.sourceUnit(of: node)
+                    unit: Units.sourceUnit(of: node),
+                    measure: measure(of: node)
                 )
             } catch let lineError as LineError {
                 // A multi-word currency name is reserved as a whole; reading
@@ -390,6 +394,62 @@ struct SheetEvaluator {
             let exponent = NSDecimalNumber(decimal: rhs).intValue
             return try Numeric.power(lhs, by: exponent)
         }
+    }
+
+    /// The quantity a numeric node adds to a sheet total with (ADK-254).
+    /// Arithmetic keeps a quantity only where its value stays in that
+    /// quantity's unit: a plain operand joins a unit by addition or
+    /// subtraction only for units that count their own magnitude, and by
+    /// multiplication or division for any unit.
+    func measure(of node: Node) -> Measure? {
+        switch node {
+        case let .quantity(_, unit):
+            .unit(unit)
+        case let .conversion(_, target, _):
+            .unit(target)
+        case let .duration(_, unit):
+            .time(unit)
+        case let .durationConversion(_, target):
+            .time(target)
+        case let .toTimespan(inner), let .unaryMinus(inner):
+            measure(of: inner)
+        case let .binary(op, lhs, rhs):
+            combinedMeasure(op, measure(of: lhs), measure(of: rhs))
+        default:
+            nil
+        }
+    }
+
+    /// Two time quantities keep the right operand's time unit, since their
+    /// values both hold seconds.
+    private func combinedMeasure(_ op: NumericOperator, _ lhs: Measure?, _ rhs: Measure?) -> Measure? {
+        switch (op, lhs, rhs) {
+        case let (.add, left?, right?), let (.subtract, left?, right?):
+            if left == right {
+                return left
+            }
+            if case .time = left, case .time = right {
+                return right
+            }
+            return nil
+        case let (.add, measure?, nil), let (.subtract, measure?, nil), let (.subtract, nil, measure?), let (.add, nil, measure?):
+            if case let .unit(unit) = measure, !unit.isRelative {
+                return measure
+            }
+            return nil
+        case let (.multiply, measure?, nil), let (.multiply, nil, measure?), let (.divide, measure?, nil):
+            return measure
+        default:
+            return nil
+        }
+    }
+
+    /// A calendar-day difference counts its days (ADK-254).
+    private func dateMeasure(_ value: ExpressionValue) -> Measure? {
+        if case .difference = value {
+            return .time(Duration.day)
+        }
+        return nil
     }
 
     mutating func resolved(name: String) throws -> Decimal {

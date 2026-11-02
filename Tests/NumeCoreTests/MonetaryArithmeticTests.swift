@@ -223,4 +223,27 @@ struct MonetaryArithmeticTests {
         let ctx = context()
         #expect(sheetTotal(of: evaluate(sheetText: "$10\n31 Mar 2027", context: ctx), context: ctx) == nil)
     }
+
+    @Test func durationsTotalInTheirTimeUnit() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "2 hours\n3 hours", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(5))
+        #expect(total?.display == "5 hours")
+    }
+
+    @Test func lastExplicitTimeUnitDeterminesTheTimeTotal() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "1 day\n2 hours", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(26))
+        #expect(total?.display == "26 hours")
+        let reversed = sheetTotal(of: evaluate(sheetText: "2 hours\n1 day", context: ctx), context: ctx)
+        #expect(reversed?.display == "1.08 days")
+    }
+
+    @Test func timeQuantitiesSkipIncompatibleMoney() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "5 USD\n2 hours\n3 hours", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(5))
+        #expect(total?.display == "5 hours")
+    }
 }
