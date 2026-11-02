@@ -119,6 +119,13 @@ struct MonetaryArithmeticTests {
         #expect(total?.value == .monetary(MonetaryValue(amount: 30, currency: "USD")))
     }
 
+    @Test func timespanTotalSumsInTheTimeUnitOfTheTimespans() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "2 hours to timespan\n1 hour to timespan", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(3))
+        #expect(total?.display == "3 hours")
+    }
+
     @Test func lengthTotalUsesTheLastExplicitUnit() {
         let ctx = context()
         let forward = sheetTotal(of: evaluate(sheetText: "1 km\n500 m\n20 cm", context: ctx), context: ctx)
