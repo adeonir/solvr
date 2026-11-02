@@ -188,7 +188,7 @@ struct SheetEvaluator {
                         display: timeOfDayDisplay(timeValue)
                     )
                 }
-                let value = try evaluate(node: node)
+                let value = try lineValue(of: node)
                 if let failure = Numeric.rangeDiagnostic(for: value) {
                     return ExpressionResult(kind: .expression, diagnostic: failure)
                 }
@@ -370,8 +370,65 @@ struct SheetEvaluator {
             return Units.quantityDisplay(value, in: unit, precision: precision, locale: locale)
         case let .conversion(_, target, _):
             return Units.display(value, in: target, precision: precision, locale: locale)
+        case .binary:
+            if let unit = Units.sourceUnit(of: node) {
+                return Units.display(value, in: unit, precision: precision, locale: locale)
+            }
+            return Numeric.display(value, precision: precision, locale: locale)
         default:
             return Numeric.display(value, precision: precision, locale: locale)
+        }
+    }
+
+    /// The value a whole line holds. A pixel and relative-count sum holds
+    /// its relative count, so the line shows in that unit (ADK-257).
+    private mutating func lineValue(of node: Node) throws -> Decimal {
+        if case let .binary(op, lhsNode, rhsNode) = node,
+           Units.relativeSumUnit(of: op, lhsNode, rhsNode) != nil
+        {
+            return try relativeSumCount(op, lhsNode, rhsNode, overriding: nil)
+        }
+        return try evaluate(node: node)
+    }
+
+    /// A pixel and relative-count sum adds in the relative unit: each
+    /// operand counts that unit, and a pixel operand converts at the base
+    /// in effect. Its evaluated value is that count in pixels, so an
+    /// enclosing conversion reads the same basis as a bare `rem` quantity
+    /// (ADK-257).
+    private mutating func relativeSumCount(
+        _ op: NumericOperator, _ lhsNode: Node, _ rhsNode: Node,
+        overriding override: Units.Override?
+    ) throws -> Decimal {
+        let lhs = try relativeCount(of: lhsNode, overriding: override)
+        let rhs = try relativeCount(of: rhsNode, overriding: override)
+        return op == .add ? try Numeric.add(lhs, rhs) : try Numeric.subtract(lhs, rhs)
+    }
+
+    /// The count an operand holds in its relative unit (ADK-257).
+    private mutating func relativeCount(
+        of node: Node, overriding override: Units.Override?
+    ) throws -> Decimal {
+        switch node {
+        case let .unaryMinus(inner):
+            return try Numeric.subtract(Decimal(0), relativeCount(of: inner, overriding: override))
+        case let .quantity(number, unit) where unit.isRelative:
+            return number
+        case let .conversion(inner, target, localOverride):
+            let scoped = localOverride ?? override
+            if target.isRelative {
+                if Units.sourceUnit(of: inner)?.isRelative == true {
+                    return try relativeCount(of: inner, overriding: scoped)
+                }
+                return try evaluate(node: node, overriding: override)
+            }
+            let pixels = try evaluate(node: node, overriding: override)
+            return try Numeric.divide(pixels, by: Units.pixelBase(in: context, override: scoped))
+        default:
+            let pixels = try evaluate(node: node, overriding: override)
+            return try Numeric.divide(
+                pixels, by: Units.pixelBase(in: context, override: override)
+            )
         }
     }
 
@@ -379,6 +436,12 @@ struct SheetEvaluator {
         _ operator: NumericOperator, _ lhsNode: Node, _ rhsNode: Node,
         overriding override: Units.Override? = nil
     ) throws -> Decimal {
+        if Units.relativeSumUnit(of: `operator`, lhsNode, rhsNode) != nil {
+            let count = try relativeSumCount(
+                `operator`, lhsNode, rhsNode, overriding: override
+            )
+            return try Numeric.multiply(count, Units.pixelBase(in: context, override: override))
+        }
         let lhs = try evaluate(node: lhsNode, overriding: override)
         let rhs = try evaluate(node: rhsNode, overriding: override)
         switch `operator` {

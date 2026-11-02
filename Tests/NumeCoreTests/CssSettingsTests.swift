@@ -146,4 +146,61 @@ struct CssSettingsTests {
         #expect(results[1].display == "32px")
         #expect(results[2].display == "12 pt")
     }
+
+    // MARK: Pixel and relative-count sums take the relative unit (ADK-257)
+
+    @Test
+    func relativeCountSumsWithAConvertedPixelOperandShowTheRelativeUnit() {
+        let results = evaluate(
+            sheetText: "1 rem + (16px in rem at 20px)\n(16px in rem at 20px) + 1 rem",
+            context: context(locale: "en_US")
+        )
+        for result in results {
+            #expect(result.diagnostic == nil)
+            #expect(result.display == "1.8rem")
+            #expect(result.value == .decimal(Decimal(sign: .plus, exponent: -1, significand: 18)))
+        }
+    }
+
+    @Test(arguments: [
+        ("1 rem + 16px", "1 rem + (16px in rem)"),
+        ("16px + 1 rem", "(16px in rem) + 1 rem"),
+        ("1 em + 16px", "1 em + (16px in em)"),
+    ])
+    func pixelOperandSumsMatchConvertingThePixelFirst(
+        _ direct: String, _ converted: String
+    ) {
+        let injected = context(locale: "en_US", pixelBase: 20)
+        let results = evaluate(sheetText: "\(direct)\n\(converted)", context: injected)
+        #expect(results[0].diagnostic == nil)
+        #expect(results[0].display == results[1].display)
+        #expect(results[0].value == results[1].value)
+        #expect(results[0].display == "1.8" + (direct.contains("rem") ? "rem" : "em"))
+    }
+
+    @Test
+    func pixelOperandSumsUseTheSharedPixelBase() {
+        let results = evaluate(
+            sheetText: "1 rem + 16px\n1 em + 16px",
+            context: context(locale: "en_US")
+        )
+        #expect(results[0].display == "2rem")
+        #expect(results[1].display == "2em")
+    }
+
+    @Test
+    func relativeCountSubtractionWithAPixelOperandShowsTheRelativeUnit() {
+        let result = evaluate(sheetText: "1 rem - 8px", context: context(locale: "en_US"))[0]
+        #expect(result.diagnostic == nil)
+        #expect(result.display == "0.5rem")
+    }
+
+    @Test
+    func pixelOperandSumInsideAConversionUsesTheLocalPixelBase() {
+        let result = evaluate(
+            sheetText: "(1 rem + 16px) in px at 20px", context: context(locale: "en_US")
+        )[0]
+        #expect(result.diagnostic == nil)
+        #expect(result.display == "36px")
+    }
 }
