@@ -173,7 +173,7 @@ struct SheetEvaluator {
                     return ExpressionResult(
                         kind: .expression,
                         value: dateValue,
-                        display: dateDisplay(dateValue, node: node),
+                        display: dateDisplay(dateValue, showsTimeOfDay: showsTimeOfDay(of: node)),
                         diagnostic: nil,
                         unit: nil,
                         measure: dateMeasure(dateValue)
@@ -569,7 +569,7 @@ struct SheetEvaluator {
     }
 
     /// A calendar-day difference counts its days (ADK-254).
-    private func dateMeasure(_ value: ExpressionValue) -> Measure? {
+    func dateMeasure(_ value: ExpressionValue) -> Measure? {
         if case .difference = value {
             return .time(Duration.day)
         }
