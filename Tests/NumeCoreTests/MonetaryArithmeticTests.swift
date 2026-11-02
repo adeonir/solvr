@@ -304,6 +304,44 @@ struct MonetaryArithmeticTests {
         #expect(total?.display == "30 km")
     }
 
+    @Test func relativeAssignmentsAndReferencesTotalInTheirUnit() {
+        let ctx = context()
+        let rem = evaluate(sheetText: "x = 1 rem\nx", context: ctx)
+        #expect(rem[1].display == "16")
+        let remTotal = sheetTotal(of: rem, context: ctx)
+        #expect(remTotal?.value == .decimal(2))
+        #expect(remTotal?.display == "2rem")
+        let arithmetic = sheetTotal(of: evaluate(sheetText: "x = 2 rem + 1 rem\nx * 2", context: ctx), context: ctx)
+        #expect(arithmetic?.value == .decimal(9))
+        #expect(arithmetic?.display == "9rem")
+        let em = sheetTotal(of: evaluate(sheetText: "x = 1 em\nx", context: ctx), context: ctx)
+        #expect(em?.display == "2em")
+    }
+
+    @Test func conversionAssignedToAReferenceTotalsAtTheSharedBase() {
+        let ctx = context()
+        let lines = evaluate(sheetText: "x = 16px in rem at 20px\nx * 2", context: ctx)
+        #expect(lines[1].display == "1.6")
+        let total = sheetTotal(of: lines, context: ctx)
+        #expect(total?.value == .decimal(3))
+        #expect(total?.display == "3rem")
+    }
+
+    @Test func chainedConversionReadsTheCountAtItsOwnBase() {
+        let ctx = context()
+        let chained = evaluate(sheetText: "(16px in rem at 20px) in em", context: ctx)
+        #expect(chained[0].display == "1em")
+        let total = sheetTotal(of: chained, context: ctx)
+        #expect(total?.value == .decimal(1))
+        #expect(total?.display == "1em")
+        let plainChain = sheetTotal(of: evaluate(sheetText: "(16px in rem) in em", context: ctx), context: ctx)
+        #expect(plainChain?.display == "1em")
+        let sameUnit = sheetTotal(of: evaluate(sheetText: "(16px in rem at 20px) in rem", context: ctx), context: ctx)
+        #expect(sameUnit?.display == "1rem")
+        let mixed = sheetTotal(of: evaluate(sheetText: "(16px in rem at 20px) in em\n1 em", context: ctx), context: ctx)
+        #expect(mixed?.display == "2em")
+    }
+
     @Test func timeQuantitiesSkipIncompatibleMoney() {
         let ctx = context()
         let total = sheetTotal(of: evaluate(sheetText: "5 USD\n2 hours\n3 hours", context: ctx), context: ctx)

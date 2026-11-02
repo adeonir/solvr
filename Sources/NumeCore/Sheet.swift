@@ -264,13 +264,26 @@ struct SheetEvaluator {
             // (ADK-228).
             return try evaluate(node: inner, overriding: override)
         case let .conversion(inner, target, localOverride):
-            let value = try evaluate(node: inner, overriding: localOverride ?? override)
+            let effective = localOverride ?? override
+            let value = try evaluate(node: inner, overriding: effective)
+            // A relative count of an inner conversion converts from pixels at
+            // the base it was counted at, so the outer step stays at the
+            // shared base (ADK-254).
+            if let base = countBase(of: inner, overriding: effective) {
+                return try Units.convert(
+                    Numeric.multiply(value, base),
+                    from: .pixel,
+                    to: target,
+                    context: context,
+                    override: effective
+                )
+            }
             return try Units.convert(
                 value,
                 from: Units.sourceUnit(of: inner),
                 to: target,
                 context: context,
-                override: localOverride ?? override
+                override: effective
             )
         case let .reference(name):
             return try resolved(name: name)
@@ -311,7 +324,7 @@ struct SheetEvaluator {
             do {
                 let result = try evaluate(node: value, overriding: override)
                 let retained = Numeric.retain(result)
-                variables.define(name, .decimal(retained), measure: boundMeasure(of: value))
+                variables.define(name, .decimal(retained), measure: measure(of: value), countBase: countBase(of: value))
                 return retained
             } catch let diagnostic as Diagnostic {
                 // Neither a stale value nor a silent one: dependents show
@@ -419,37 +432,44 @@ struct SheetEvaluator {
         case let .reference(name):
             variables.measures[name]
         case let .assignment(_, inner):
-            boundMeasure(of: inner)
+            measure(of: inner)
         default:
             nil
         }
     }
 
-    /// The measure a name keeps when bound to a node. A relative value holds
-    /// pixels at evaluation, so a binding keeps none for it (ADK-254).
-    private func boundMeasure(of node: Node) -> Measure? {
-        let measure = measure(of: node)
-        return isRelative(measure) ? nil : measure
+    /// The pixel base a relative value was counted at, or nil when the value
+    /// holds pixels (ADK-254). A conversion to `rem` or `em` counts at its own
+    /// `at` base, or at the shared base; a chain, an arithmetic result, or a
+    /// reference keeps the base of the count it carries.
+    func countBase(of node: Node, overriding override: Units.Override? = nil) -> Decimal? {
+        switch node {
+        case let .unaryMinus(inner), let .assignment(_, inner):
+            countBase(of: inner, overriding: override)
+        case let .conversion(_, target, localOverride):
+            target.isRelative ? Units.pixelBase(in: context, override: localOverride ?? override) : nil
+        case let .binary(_, lhs, rhs):
+            countBase(of: lhs, overriding: override) ?? countBase(of: rhs, overriding: override)
+        case let .reference(name):
+            variables.countBases[name]
+        default:
+            nil
+        }
     }
 
     /// The value a numeric result stores, in its measure's unit (ADK-254). A
     /// `rem` or `em` result evaluates to pixels at the shared base (ADK-227),
-    /// so it divides by that base. A conversion holds its count at its own
-    /// `at` base, so it scales to the shared base first.
+    /// so it divides by that base. A relative count scales from the base it
+    /// was counted at to the shared base first.
     func storedValue(_ value: Decimal, of node: Node) throws -> Decimal {
         guard case let .unit(unit)? = measure(of: node), unit.isRelative else {
             return value
         }
-        var bare = node
-        while case let .unaryMinus(inner) = bare {
-            bare = inner
+        guard let base = countBase(of: node) else {
+            return try Numeric.divide(value, by: context.pixelBase)
         }
-        if case let .conversion(_, _, localOverride) = bare {
-            let localBase = Units.pixelBase(in: context, override: localOverride)
-            guard localBase != context.pixelBase else { return value }
-            return try Numeric.divide(Numeric.multiply(value, localBase), by: context.pixelBase)
-        }
-        return try Numeric.divide(value, by: context.pixelBase)
+        guard base != context.pixelBase else { return value }
+        return try Numeric.divide(Numeric.multiply(value, base), by: context.pixelBase)
     }
 
     /// Two time quantities keep the right operand's time unit, since their
@@ -473,13 +493,6 @@ struct SheetEvaluator {
         default:
             return nil
         }
-    }
-
-    private func isRelative(_ measure: Measure?) -> Bool {
-        if case let .unit(unit)? = measure {
-            return unit.isRelative
-        }
-        return false
     }
 
     /// A calendar-day difference counts its days (ADK-254).

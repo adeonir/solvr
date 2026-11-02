@@ -56,6 +56,9 @@ struct VariableTable {
     private(set) var erredNames: Set<String> = []
     /// The quantity a name's value counts in, for the names defined with one (ADK-254).
     private(set) var measures: [String: Measure] = [:]
+    /// The pixel base a name's relative value was counted at, for the names
+    /// whose value is a relative count rather than pixels (ADK-254).
+    private(set) var countBases: [String: Decimal] = [:]
 
     /// The names visible for longest-name recognition at the current point
     /// of the sheet.
@@ -64,10 +67,11 @@ struct VariableTable {
     }
 
     /// Defines a name for every later expression in sheet order (ADR-001).
-    mutating func define(_ name: String, _ value: ExpressionValue, measure: Measure? = nil) {
+    mutating func define(_ name: String, _ value: ExpressionValue, measure: Measure? = nil, countBase: Decimal? = nil) {
         bindings[name] = value
         erredNames.remove(name)
         measures[name] = measure
+        countBases[name] = countBase
     }
 
     /// The defining expression erred or never finished: no stale value
@@ -75,6 +79,7 @@ struct VariableTable {
     mutating func fail(_ name: String) {
         bindings.removeValue(forKey: name)
         measures.removeValue(forKey: name)
+        countBases.removeValue(forKey: name)
         erredNames.insert(name)
     }
 
