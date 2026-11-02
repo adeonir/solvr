@@ -237,8 +237,45 @@ extension SheetEvaluator {
             )
         case let .call(name, arguments) where name == "fromunix":
             return try .date(fromunixTimestamp(arguments))
+        case let .assignment(name, inner):
+            // A date or difference assigned to a name keeps its value, so
+            // later lines reference it (ADK-258). A numeric or monetary
+            // value leaves the name to its own evaluation path.
+            do {
+                guard let value = try evaluateDateForm(inner) else { return nil }
+                variables.define(
+                    name, value, measure: dateMeasure(value),
+                    showsTimeOfDay: showsTimeOfDay(of: inner)
+                )
+                return value
+            } catch {
+                variables.fail(name)
+                throw error
+            }
+        case let .reference(name):
+            switch variables.bindings[name] {
+            case .date?, .difference?:
+                return variables.bindings[name]
+            default:
+                return nil
+            }
         default:
             return nil
+        }
+    }
+
+    /// Whether a whole-line form shows the time of day beside its date:
+    /// a `fromunix` value does, and so does a name that holds one (ADK-258).
+    func showsTimeOfDay(of node: Node) -> Bool {
+        switch node {
+        case let .assignment(_, inner):
+            showsTimeOfDay(of: inner)
+        case let .call(name, _):
+            name == "fromunix"
+        case let .reference(name):
+            variables.showsTimeOfDay.contains(name)
+        default:
+            false
         }
     }
 
@@ -258,16 +295,11 @@ extension SheetEvaluator {
     /// The representation beside a date form: the calendar-day
     /// difference, or the date — a Unix timestamp shows its instant of
     /// day, the other forms the day alone (ADK-229).
-    func dateDisplay(_ value: ExpressionValue, node: Node) -> String? {
+    func dateDisplay(_ value: ExpressionValue, showsTimeOfDay: Bool) -> String? {
         switch value {
         case let .difference(days):
             return "\(days) \(abs(days) == 1 ? "day" : "days")"
         case let .date(instant):
-            let showsTimeOfDay = if case let .call(name, _) = node, name == "fromunix" {
-                true
-            } else {
-                false
-            }
             let formatter = DateFormatter()
             formatter.locale = locale
             formatter.timeZone = context.timeZone

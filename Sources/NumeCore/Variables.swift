@@ -54,6 +54,14 @@ struct VariableTable {
     private(set) var bindings: [String: ExpressionValue] = [:]
     /// Names whose defining expression erred or never finished.
     private(set) var erredNames: Set<String> = []
+    /// The quantity a name's value counts in, for the names defined with one (ADK-254).
+    private(set) var measures: [String: Measure] = [:]
+    /// The pixel base a name's relative value was counted at, for the names
+    /// whose value is a relative count rather than pixels (ADK-254).
+    private(set) var countBases: [String: Decimal] = [:]
+    /// The names whose calendar date shows its time of day, as `fromunix`
+    /// values do (ADK-258).
+    private(set) var showsTimeOfDay: Set<String> = []
 
     /// The names visible for longest-name recognition at the current point
     /// of the sheet.
@@ -62,15 +70,28 @@ struct VariableTable {
     }
 
     /// Defines a name for every later expression in sheet order (ADR-001).
-    mutating func define(_ name: String, _ value: ExpressionValue) {
+    mutating func define(
+        _ name: String, _ value: ExpressionValue, measure: Measure? = nil, countBase: Decimal? = nil,
+        showsTimeOfDay: Bool = false
+    ) {
         bindings[name] = value
         erredNames.remove(name)
+        measures[name] = measure
+        countBases[name] = countBase
+        if showsTimeOfDay {
+            self.showsTimeOfDay.insert(name)
+        } else {
+            self.showsTimeOfDay.remove(name)
+        }
     }
 
     /// The defining expression erred or never finished: no stale value
     /// remains available, and dependents show that the dependency erred.
     mutating func fail(_ name: String) {
         bindings.removeValue(forKey: name)
+        measures.removeValue(forKey: name)
+        countBases.removeValue(forKey: name)
+        showsTimeOfDay.remove(name)
         erredNames.insert(name)
     }
 

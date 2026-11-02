@@ -3,6 +3,10 @@ import Foundation
 import Testing
 
 struct MonetaryArithmeticTests {
+    private func decimal(_ text: String) -> Decimal {
+        Decimal(string: text, locale: Locale(identifier: "en_US_POSIX")) ?? .nan
+    }
+
     /// EUR-to-USD at 2 and USD-to-BRL at 5, with a cryptocurrency.
     private func context(_ locale: String = "en_US", cryptoPrecision: Int = 10) -> EvaluationContext {
         var context = EvaluationContext(localeIdentifier: locale, timeZone: TimeZone(secondsFromGMT: 0)!, now: Date(timeIntervalSince1970: 0), displayPrecision: 2)
@@ -100,13 +104,108 @@ struct MonetaryArithmeticTests {
         #expect(reversed?.value == .monetary(MonetaryValue(amount: 20, currency: "USD")))
     }
 
-    @Test func totalIgnoresLinesWithoutAMonetaryResult() {
+    @Test func totalIncludesPlainNumbersInTheSelectedCurrency() {
         let ctx = context()
-        let text = "groceries\n$10\n# Heading\n// note\n2 + 2\n$10 / $5\n$1 + 5 AUD\n5 EUR"
+        let text = "groceries\n$10\n# Heading\n// note\n2 + 2\n$10 / $5\n5 EUR"
         let total = sheetTotal(of: evaluate(sheetText: text, context: ctx), context: ctx)
-        #expect(total?.value == .monetary(MonetaryValue(amount: 10, currency: "EUR")))
-        #expect(sheetTotal(of: evaluate(sheetText: "2 + 2", context: ctx), context: ctx) == nil)
+        #expect(total?.value == .monetary(MonetaryValue(amount: 16, currency: "EUR")))
         #expect(sheetTotal(of: [], context: ctx) == nil)
+        #expect(sheetTotal(of: evaluate(sheetText: "groceries\n// note", context: ctx), context: ctx) == nil)
+    }
+
+    @Test func compatibleTotalSkipsAnIncompatibleTemperature() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "10 USD\n100 C\n20 USD", context: ctx), context: ctx)
+        #expect(total?.value == .monetary(MonetaryValue(amount: 30, currency: "USD")))
+    }
+
+    @Test func timespanTotalSumsInTheTimeUnitOfTheTimespans() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "2 hours to timespan\n1 hour to timespan", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(3))
+        #expect(total?.display == "3 hours")
+    }
+
+    @Test func lengthTotalUsesTheLastExplicitUnit() {
+        let ctx = context()
+        let forward = sheetTotal(of: evaluate(sheetText: "1 km\n500 m\n20 cm", context: ctx), context: ctx)
+        #expect(forward?.value == .decimal(150_020))
+        #expect(forward?.unit?.symbol == "cm")
+        #expect(forward?.display == "150,020 cm")
+        let reversed = sheetTotal(of: evaluate(sheetText: "20 cm\n500 m\n1 km", context: ctx), context: ctx)
+        #expect(reversed?.value == .decimal(decimal("1.5002")))
+        #expect(reversed?.unit?.symbol == "km")
+    }
+
+    @Test func plainNumbersJoinTheSelectedUnitOrCurrency() {
+        let ctx = context()
+        let length = sheetTotal(of: evaluate(sheetText: "5 km\n20\n10", context: ctx), context: ctx)
+        #expect(length?.value == .decimal(35))
+        #expect(length?.unit?.symbol == "km")
+        let money = sheetTotal(of: evaluate(sheetText: "5 USD\n10", context: ctx), context: ctx)
+        #expect(money?.value == .monetary(MonetaryValue(amount: 15, currency: "USD")))
+        let plain = sheetTotal(of: evaluate(sheetText: "2\n3", context: ctx), context: ctx)
+        #expect(plain?.value == .decimal(5))
+        #expect(plain?.unit == nil)
+    }
+
+    @Test func eachResultCountsOnceIncludingReferences() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "x = 10\nx * 2", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(30))
+    }
+
+    @Test func singleAndZeroResultsStillTotal() {
+        let ctx = context()
+        #expect(sheetTotal(of: evaluate(sheetText: "10", context: ctx), context: ctx)?.value == .decimal(10))
+        #expect(sheetTotal(of: evaluate(sheetText: "0", context: ctx), context: ctx)?.value == .decimal(0))
+        #expect(sheetTotal(of: evaluate(sheetText: "10\n-10", context: ctx), context: ctx)?.display == "0")
+    }
+
+    @Test func calendarDifferencesParticipateAsDays() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "days until 31 Mar\n1", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(90))
+    }
+
+    @Test func timeOfDayAmongTheResultsSuppressesTheTotal() {
+        let ctx = context()
+        #expect(sheetTotal(of: evaluate(sheetText: "$10\n9am", context: ctx), context: ctx) == nil)
+    }
+
+    @Test func invalidAndIncompleteResultsAreLeftOut() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "$10\n5 +\nfoo bar", context: ctx), context: ctx)
+        #expect(total?.value == .monetary(MonetaryValue(amount: 10, currency: "USD")))
+    }
+
+    @Test func precisionAffectsDisplayOnly() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "0.004\n0.004\n0.004", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(decimal("0.012")))
+        #expect(total?.display == "0.01")
+    }
+
+    @Test func roundingTiesAwayFromZero() {
+        let ctx = context()
+        #expect(sheetTotal(of: evaluate(sheetText: "0.005", context: ctx), context: ctx)?.display == "0.01")
+        #expect(sheetTotal(of: evaluate(sheetText: "-0.005", context: ctx), context: ctx)?.display == "-0.01")
+    }
+
+    @Test func zeroDecimalCurrencyIgnoresGeneralPrecision() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "1000.4 JPY\n1", context: ctx), context: ctx)
+        #expect(total?.display?.contains(".") == false)
+    }
+
+    @Test func sumOutOfRangeShowsNoTotal() {
+        let ctx = context()
+        let large = decimal("9e126")
+        let results = [
+            ExpressionResult(kind: .expression, value: .decimal(large)),
+            ExpressionResult(kind: .expression, value: .decimal(large))
+        ]
+        #expect(sheetTotal(of: results, context: ctx) == nil)
     }
 
     @Test func totalInACryptocurrencyUsesTheCryptoPrecision() {
@@ -120,15 +219,155 @@ struct MonetaryArithmeticTests {
         #expect(converted?.display == "BTC 1.00002")
     }
 
-    @Test func totalWithoutARateShowsTheCause() {
+    @Test func totalWithoutARateShowsNoTotal() {
         var ctx = context()
         let results = evaluate(sheetText: "$10\n5 EUR", context: ctx)
         ctx.exchangeRates = ExchangeRateSnapshot(base: "USD", rates: [:], fetchedAt: Date(timeIntervalSince1970: 0))
-        #expect(sheetTotal(of: results, context: ctx)?.diagnostic?.message == "Exchange rate unavailable: EUR")
+        #expect(sheetTotal(of: results, context: ctx) == nil)
+    }
+
+    @Test func lineWithAMissingRateShowsNoTotal() {
+        let ctx = context()
+        let results = evaluate(sheetText: "$10\n1 BTC in LTC", context: ctx)
+        #expect(results[1].diagnostic == .exchangeRateUnavailable(currency: "LTC"))
+        #expect(sheetTotal(of: results, context: ctx) == nil)
+    }
+
+    @Test func lineOutOfRangeShowsNoTotal() {
+        let ctx = context()
+        let largeKilometers = "1" + String(repeating: "0", count: 125)
+        let results = evaluate(sheetText: "1 km\n\(largeKilometers) km in m", context: ctx)
+        #expect(results[1].diagnostic == .outOfRange)
+        #expect(sheetTotal(of: results, context: ctx) == nil)
     }
 
     @Test func totalIsNotShownWithADateAmongTheResults() {
         let ctx = context()
         #expect(sheetTotal(of: evaluate(sheetText: "$10\n31 Mar 2027", context: ctx), context: ctx) == nil)
+    }
+
+    @Test func durationsTotalInTheirTimeUnit() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "2 hours\n3 hours", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(5))
+        #expect(total?.display == "5 hours")
+    }
+
+    @Test func lastExplicitTimeUnitDeterminesTheTimeTotal() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "1 day\n2 hours", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(26))
+        #expect(total?.display == "26 hours")
+        let reversed = sheetTotal(of: evaluate(sheetText: "2 hours\n1 day", context: ctx), context: ctx)
+        #expect(reversed?.display == "1.08 days")
+    }
+
+    @Test func cssRelativeTotalsSumThroughTheSharedPixelBase() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "1 em\n1 rem", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(2))
+        #expect(total?.display == "2rem")
+        let mixed = sheetTotal(of: evaluate(sheetText: "16px\n1 rem", context: ctx), context: ctx)
+        #expect(mixed?.value == .decimal(2))
+        #expect(mixed?.display == "2rem")
+        let pixels = sheetTotal(of: evaluate(sheetText: "1 rem\n16px", context: ctx), context: ctx)
+        #expect(pixels?.value == .decimal(32))
+        #expect(pixels?.display == "32px")
+    }
+
+    @Test func relativeArithmeticCountsItsUnit() {
+        let ctx = context()
+        #expect(evaluate(sheetText: "2 rem + 1 rem", context: ctx)[0].display == "48")
+        let rem = sheetTotal(of: evaluate(sheetText: "2 rem + 1 rem", context: ctx), context: ctx)
+        #expect(rem?.value == .decimal(3))
+        #expect(rem?.display == "3rem")
+        let em = sheetTotal(of: evaluate(sheetText: "2 em + 1 em", context: ctx), context: ctx)
+        #expect(em?.value == .decimal(3))
+        #expect(em?.display == "3em")
+    }
+
+    @Test func plainNumbersJoinTimeAndRelativeArithmetic() {
+        let ctx = context()
+        #expect(evaluate(sheetText: "2 hours + 30", context: ctx)[0].display == "7,230")
+        let time = sheetTotal(of: evaluate(sheetText: "2 hours + 30", context: ctx), context: ctx)
+        #expect(time?.display == "2.01 hours")
+        let rem = sheetTotal(of: evaluate(sheetText: "2 rem + 30", context: ctx), context: ctx)
+        #expect(rem?.value == .decimal(decimal("3.875")))
+        #expect(rem?.display == "3.88rem")
+        let em = sheetTotal(of: evaluate(sheetText: "2 em + 30", context: ctx), context: ctx)
+        #expect(em?.display == "3.88em")
+    }
+
+    @Test func localPixelBaseConversionTotalsAtTheSharedBase() {
+        let ctx = context()
+        #expect(evaluate(sheetText: "16px in rem at 20px", context: ctx)[0].display == "0.8rem")
+        let single = sheetTotal(of: evaluate(sheetText: "16px in rem at 20px", context: ctx), context: ctx)
+        #expect(single?.value == .decimal(1))
+        #expect(single?.display == "1rem")
+        let mixed = sheetTotal(of: evaluate(sheetText: "16px in rem at 20px\n1 rem", context: ctx), context: ctx)
+        #expect(mixed?.value == .decimal(2))
+        #expect(mixed?.display == "2rem")
+        let em = sheetTotal(of: evaluate(sheetText: "16px in em at 20px", context: ctx), context: ctx)
+        #expect(em?.display == "1em")
+    }
+
+    @Test func cssRelativeValuesCountTheirOwnUnit() {
+        let ctx = context()
+        #expect(evaluate(sheetText: "1 rem", context: ctx)[0].value == .decimal(1))
+        #expect(evaluate(sheetText: "1 rem", context: ctx)[0].measure == .unit(.rem))
+        #expect(evaluate(sheetText: "16px in em", context: ctx)[0].value == .decimal(1))
+        #expect(evaluate(sheetText: "16px in em", context: ctx)[0].measure == .unit(.em))
+    }
+
+    @Test func assignedQuantitiesTotalThroughTheirReferences() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "x = 10 km\nx * 2", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(30))
+        #expect(total?.display == "30 km")
+    }
+
+    @Test func relativeAssignmentsAndReferencesTotalInTheirUnit() {
+        let ctx = context()
+        let rem = evaluate(sheetText: "x = 1 rem\nx", context: ctx)
+        #expect(rem[1].display == "16")
+        let remTotal = sheetTotal(of: rem, context: ctx)
+        #expect(remTotal?.value == .decimal(2))
+        #expect(remTotal?.display == "2rem")
+        let arithmetic = sheetTotal(of: evaluate(sheetText: "x = 2 rem + 1 rem\nx * 2", context: ctx), context: ctx)
+        #expect(arithmetic?.value == .decimal(9))
+        #expect(arithmetic?.display == "9rem")
+        let em = sheetTotal(of: evaluate(sheetText: "x = 1 em\nx", context: ctx), context: ctx)
+        #expect(em?.display == "2em")
+    }
+
+    @Test func conversionAssignedToAReferenceTotalsAtTheSharedBase() {
+        let ctx = context()
+        let lines = evaluate(sheetText: "x = 16px in rem at 20px\nx * 2", context: ctx)
+        #expect(lines[1].display == "1.6")
+        let total = sheetTotal(of: lines, context: ctx)
+        #expect(total?.value == .decimal(3))
+        #expect(total?.display == "3rem")
+    }
+
+    @Test func chainedConversionReadsTheCountAtItsOwnBase() {
+        let ctx = context()
+        let chained = evaluate(sheetText: "(16px in rem at 20px) in em", context: ctx)
+        #expect(chained[0].display == "1em")
+        let total = sheetTotal(of: chained, context: ctx)
+        #expect(total?.value == .decimal(1))
+        #expect(total?.display == "1em")
+        let plainChain = sheetTotal(of: evaluate(sheetText: "(16px in rem) in em", context: ctx), context: ctx)
+        #expect(plainChain?.display == "1em")
+        let sameUnit = sheetTotal(of: evaluate(sheetText: "(16px in rem at 20px) in rem", context: ctx), context: ctx)
+        #expect(sameUnit?.display == "1rem")
+        let mixed = sheetTotal(of: evaluate(sheetText: "(16px in rem at 20px) in em\n1 em", context: ctx), context: ctx)
+        #expect(mixed?.display == "2em")
+    }
+
+    @Test func timeQuantitiesSkipIncompatibleMoney() {
+        let ctx = context()
+        let total = sheetTotal(of: evaluate(sheetText: "5 USD\n2 hours\n3 hours", context: ctx), context: ctx)
+        #expect(total?.value == .decimal(5))
+        #expect(total?.display == "5 hours")
     }
 }

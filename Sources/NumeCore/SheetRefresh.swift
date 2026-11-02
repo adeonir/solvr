@@ -63,6 +63,12 @@ public struct SheetRefresher: Sendable {
         !conversionTimeZones.isEmpty
     }
 
+    /// The sheet total's display text at the current precision, or nil when
+    /// no total is available (ADK-256). The line results stay as they are.
+    public var total: String? {
+        sheetTotal(of: results, context: context)?.display
+    }
+
     /// The first instant after `instant` at which a time zone a visible
     /// conversion uses changes its offset, or nil when no zone it uses
     /// changes again (ADK-251). The earliest transition decides, so a
@@ -124,6 +130,15 @@ public struct SheetRefresher: Sendable {
     @discardableResult
     public mutating func update(exchangeRates: ExchangeRateSnapshot, now: Date) -> SheetRefreshOutcome {
         context.exchangeRates = exchangeRates
+        return reevaluate(now: now)
+    }
+
+    /// A precision change from Settings reaches the visible results at
+    /// once, with the sheet text untouched (ADK-255).
+    @discardableResult
+    public mutating func update(displayPrecision: Int, cryptoPrecision: Int, now: Date) -> SheetRefreshOutcome {
+        context.displayPrecision = displayPrecision
+        context.cryptoPrecision = cryptoPrecision
         return reevaluate(now: now)
     }
 

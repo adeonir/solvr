@@ -173,7 +173,10 @@ struct SheetEvaluator {
                     return ExpressionResult(
                         kind: .expression,
                         value: dateValue,
-                        display: dateDisplay(dateValue, node: node)
+                        display: dateDisplay(dateValue, showsTimeOfDay: showsTimeOfDay(of: node)),
+                        diagnostic: nil,
+                        unit: nil,
+                        measure: dateMeasure(dateValue)
                     )
                 }
                 // Time-of-day forms carry clock readings, apart from the
@@ -185,16 +188,20 @@ struct SheetEvaluator {
                         display: timeOfDayDisplay(timeValue)
                     )
                 }
-                let value = try evaluate(node: node)
+                let value = try lineValue(of: node)
                 if let failure = Numeric.rangeDiagnostic(for: value) {
                     return ExpressionResult(kind: .expression, diagnostic: failure)
                 }
                 let retained = Numeric.retain(value)
                 let display = representation(of: node, for: retained)
+                let stored = try Numeric.retain(storedValue(retained, of: node))
                 return ExpressionResult(
                     kind: .expression,
-                    value: .decimal(retained),
-                    display: display
+                    value: .decimal(stored),
+                    display: display,
+                    diagnostic: nil,
+                    unit: Units.sourceUnit(of: node),
+                    measure: measure(of: node)
                 )
             } catch let lineError as LineError {
                 // A multi-word currency name is reserved as a whole; reading
@@ -257,13 +264,26 @@ struct SheetEvaluator {
             // (ADK-228).
             return try evaluate(node: inner, overriding: override)
         case let .conversion(inner, target, localOverride):
-            let value = try evaluate(node: inner, overriding: localOverride ?? override)
+            let effective = localOverride ?? override
+            let value = try evaluate(node: inner, overriding: effective)
+            // A relative count of an inner conversion converts from pixels at
+            // the base it was counted at, so the outer step stays at the
+            // shared base (ADK-254).
+            if let base = countBase(of: inner, overriding: effective) {
+                return try Units.convert(
+                    Numeric.multiply(value, base),
+                    from: .pixel,
+                    to: target,
+                    context: context,
+                    override: effective
+                )
+            }
             return try Units.convert(
                 value,
                 from: Units.sourceUnit(of: inner),
                 to: target,
                 context: context,
-                override: localOverride ?? override
+                override: effective
             )
         case let .reference(name):
             return try resolved(name: name)
@@ -304,7 +324,7 @@ struct SheetEvaluator {
             do {
                 let result = try evaluate(node: value, overriding: override)
                 let retained = Numeric.retain(result)
-                variables.define(name, .decimal(retained))
+                variables.define(name, .decimal(retained), measure: measure(of: value), countBase: countBase(of: value))
                 return retained
             } catch let diagnostic as Diagnostic {
                 // Neither a stale value nor a silent one: dependents show
@@ -350,8 +370,65 @@ struct SheetEvaluator {
             return Units.quantityDisplay(value, in: unit, precision: precision, locale: locale)
         case let .conversion(_, target, _):
             return Units.display(value, in: target, precision: precision, locale: locale)
+        case .binary:
+            if let unit = Units.sourceUnit(of: node) {
+                return Units.display(value, in: unit, precision: precision, locale: locale)
+            }
+            return Numeric.display(value, precision: precision, locale: locale)
         default:
             return Numeric.display(value, precision: precision, locale: locale)
+        }
+    }
+
+    /// The value a whole line holds. A pixel and relative-count sum holds
+    /// its relative count, so the line shows in that unit (ADK-257).
+    private mutating func lineValue(of node: Node) throws -> Decimal {
+        if case let .binary(op, lhsNode, rhsNode) = node,
+           Units.relativeSumUnit(of: op, lhsNode, rhsNode) != nil
+        {
+            return try relativeSumCount(op, lhsNode, rhsNode, overriding: nil)
+        }
+        return try evaluate(node: node)
+    }
+
+    /// A pixel and relative-count sum adds in the relative unit: each
+    /// operand counts that unit, and a pixel operand converts at the base
+    /// in effect. Its evaluated value is that count in pixels, so an
+    /// enclosing conversion reads the same basis as a bare `rem` quantity
+    /// (ADK-257).
+    private mutating func relativeSumCount(
+        _ op: NumericOperator, _ lhsNode: Node, _ rhsNode: Node,
+        overriding override: Units.Override?
+    ) throws -> Decimal {
+        let lhs = try relativeCount(of: lhsNode, overriding: override)
+        let rhs = try relativeCount(of: rhsNode, overriding: override)
+        return op == .add ? try Numeric.add(lhs, rhs) : try Numeric.subtract(lhs, rhs)
+    }
+
+    /// The count an operand holds in its relative unit (ADK-257).
+    private mutating func relativeCount(
+        of node: Node, overriding override: Units.Override?
+    ) throws -> Decimal {
+        switch node {
+        case let .unaryMinus(inner):
+            return try Numeric.subtract(Decimal(0), relativeCount(of: inner, overriding: override))
+        case let .quantity(number, unit) where unit.isRelative:
+            return number
+        case let .conversion(inner, target, localOverride):
+            let scoped = localOverride ?? override
+            if target.isRelative {
+                if Units.sourceUnit(of: inner)?.isRelative == true {
+                    return try relativeCount(of: inner, overriding: scoped)
+                }
+                return try evaluate(node: node, overriding: override)
+            }
+            let pixels = try evaluate(node: node, overriding: override)
+            return try Numeric.divide(pixels, by: Units.pixelBase(in: context, override: scoped))
+        default:
+            let pixels = try evaluate(node: node, overriding: override)
+            return try Numeric.divide(
+                pixels, by: Units.pixelBase(in: context, override: override)
+            )
         }
     }
 
@@ -359,6 +436,12 @@ struct SheetEvaluator {
         _ operator: NumericOperator, _ lhsNode: Node, _ rhsNode: Node,
         overriding override: Units.Override? = nil
     ) throws -> Decimal {
+        if Units.relativeSumUnit(of: `operator`, lhsNode, rhsNode) != nil {
+            let count = try relativeSumCount(
+                `operator`, lhsNode, rhsNode, overriding: override
+            )
+            return try Numeric.multiply(count, Units.pixelBase(in: context, override: override))
+        }
         let lhs = try evaluate(node: lhsNode, overriding: override)
         let rhs = try evaluate(node: rhsNode, overriding: override)
         switch `operator` {
@@ -388,6 +471,109 @@ struct SheetEvaluator {
             let exponent = NSDecimalNumber(decimal: rhs).intValue
             return try Numeric.power(lhs, by: exponent)
         }
+    }
+
+    /// The quantity a numeric node adds to a sheet total with (ADK-254).
+    /// Arithmetic keeps a quantity only where its value stays in that
+    /// quantity's unit: a plain operand joins a unit by addition or
+    /// subtraction only for units that count their own magnitude, and by
+    /// multiplication or division for any unit.
+    func measure(of node: Node) -> Measure? {
+        switch node {
+        case let .quantity(_, unit):
+            .unit(unit)
+        case let .conversion(_, target, _):
+            .unit(target)
+        case let .duration(_, unit):
+            .time(unit)
+        case let .durationConversion(_, target):
+            .time(target)
+        case let .toTimespan(inner), let .unaryMinus(inner):
+            measure(of: inner)
+        case let .binary(op, lhs, rhs):
+            if let unit = Units.relativeSumUnit(of: op, lhs, rhs) {
+                .unit(unit)
+            } else {
+                combinedMeasure(op, measure(of: lhs), measure(of: rhs))
+            }
+        case let .reference(name):
+            variables.measures[name]
+        case let .assignment(_, inner):
+            measure(of: inner)
+        default:
+            nil
+        }
+    }
+
+    /// The pixel base a relative value was counted at, or nil when the value
+    /// holds pixels (ADK-254). A conversion to `rem` or `em` counts at its own
+    /// `at` base, or at the shared base; a chain, an arithmetic result, or a
+    /// reference keeps the base of the count it carries.
+    func countBase(of node: Node, overriding override: Units.Override? = nil) -> Decimal? {
+        switch node {
+        case let .unaryMinus(inner), let .assignment(_, inner):
+            countBase(of: inner, overriding: override)
+        case let .conversion(_, target, localOverride):
+            target.isRelative ? Units.pixelBase(in: context, override: localOverride ?? override) : nil
+        case let .binary(_, lhs, rhs):
+            countBase(of: lhs, overriding: override) ?? countBase(of: rhs, overriding: override)
+        case let .reference(name):
+            variables.countBases[name]
+        default:
+            nil
+        }
+    }
+
+    /// The value a numeric result stores, in its measure's unit (ADK-254). A
+    /// `rem` or `em` result evaluates to pixels at the shared base (ADK-227),
+    /// so it divides by that base. A relative count scales from the base it
+    /// was counted at to the shared base first.
+    func storedValue(_ value: Decimal, of node: Node) throws -> Decimal {
+        guard case let .unit(unit)? = measure(of: node), unit.isRelative else {
+            return value
+        }
+        // A pixel and relative-count sum already holds its count (ADK-257).
+        if case let .binary(op, lhsNode, rhsNode) = node,
+           Units.relativeSumUnit(of: op, lhsNode, rhsNode) != nil
+        {
+            return value
+        }
+        guard let base = countBase(of: node) else {
+            return try Numeric.divide(value, by: context.pixelBase)
+        }
+        guard base != context.pixelBase else { return value }
+        return try Numeric.divide(Numeric.multiply(value, base), by: context.pixelBase)
+    }
+
+    /// Two time quantities keep the right operand's time unit, since their
+    /// values both hold seconds. A plain operand joins a time or relative
+    /// unit by addition or subtraction, since its value sits in the same
+    /// seconds or pixels as the quantity's.
+    private func combinedMeasure(_ op: NumericOperator, _ lhs: Measure?, _ rhs: Measure?) -> Measure? {
+        switch (op, lhs, rhs) {
+        case let (.add, left?, right?), let (.subtract, left?, right?):
+            if left == right {
+                return left
+            }
+            if case .time = left, case .time = right {
+                return right
+            }
+            return nil
+        case let (.add, measure?, nil), let (.subtract, measure?, nil), let (.subtract, nil, measure?), let (.add, nil, measure?):
+            return measure
+        case let (.multiply, measure?, nil), let (.multiply, nil, measure?), let (.divide, measure?, nil):
+            return measure
+        default:
+            return nil
+        }
+    }
+
+    /// A calendar-day difference counts its days (ADK-254).
+    func dateMeasure(_ value: ExpressionValue) -> Measure? {
+        if case .difference = value {
+            return .time(Duration.day)
+        }
+        return nil
     }
 
     mutating func resolved(name: String) throws -> Decimal {

@@ -288,4 +288,73 @@ struct DatesTests {
         #expect(results[1].display == "152 days")
         #expect(results[2].display == "28 February 2026")
     }
+
+    // MARK: Assignments and references keep date values (ADK-258)
+
+    @Test(arguments: [
+        "x = days until 31 Mar",
+        "x = (days until 31 Mar)",
+    ])
+    func assignedDifferenceShowsTheLineDisplay(_ source: String) {
+        let results = evaluate(
+            sheetText: source,
+            context: context(now: clock("2026-10-30 09:00:00"))
+        )
+        #expect(results[0].diagnostic == nil)
+        #expect(results[0].display == "152 days")
+        #expect(results[0].value == .difference(152))
+    }
+
+    @Test
+    func referencedDifferenceKeepsValueAndDayMeasure() {
+        let results = evaluate(
+            sheetText: "x = days until 31 Mar\nx",
+            context: context(now: clock("2026-10-30 09:00:00"))
+        )
+        #expect(results[1].diagnostic == nil)
+        #expect(results[1].display == "152 days")
+        #expect(results[1].value == .difference(152))
+        #expect(results[1].measure == .time(Duration.day))
+    }
+
+    @Test(arguments: [
+        "31 Jan",
+        "fromunix(1700000000)",
+    ])
+    func assignedAndReferencedDatesShowTheLineDisplay(_ source: String) {
+        let now = context(now: clock("2026-10-30 09:00:00"))
+        let lineDisplay = evaluate(sheetText: source, context: now)[0].display
+        let results = evaluate(sheetText: "x = \(source)\nx", context: now)
+        #expect(results[0].display == lineDisplay)
+        #expect(results[1].display == lineDisplay)
+        #expect(results[1].diagnostic == nil)
+    }
+
+    @Test
+    func failedAssignmentLeavesItsReferenceDependent() {
+        let results = evaluate(
+            sheetText: "x = days until 30 Feb\nx",
+            context: context(now: clock("2026-10-30 09:00:00"))
+        )
+        #expect(results[0].diagnostic != nil)
+        #expect(results[1].diagnostic == .dependsOnError)
+    }
+
+    @Test
+    func assignedDifferenceCountsInTheTotalOncePerLine() {
+        let now = context(now: clock("2026-10-30 09:00:00"))
+        let referenced = sheetTotal(
+            of: evaluate(sheetText: "x = days until 31 Mar\nx", context: now),
+            context: now
+        )
+        let plain = sheetTotal(
+            of: evaluate(sheetText: "days until 31 Mar\ndays until 31 Mar", context: now),
+            context: now
+        )
+        #expect(referenced?.value == plain?.value)
+        #expect(referenced?.display == plain?.display)
+        let single = sheetTotal(of: evaluate(sheetText: "x = days until 31 Mar", context: now), context: now)
+        let singlePlain = sheetTotal(of: evaluate(sheetText: "days until 31 Mar", context: now), context: now)
+        #expect(single?.display == singlePlain?.display)
+    }
 }

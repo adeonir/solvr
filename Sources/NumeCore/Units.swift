@@ -226,7 +226,39 @@ enum Units {
         case let .quantity(_, unit): unit
         case let .unaryMinus(inner): sourceUnit(of: inner)
         case let .conversion(_, target, _): target
+        case let .binary(op, lhs, rhs): relativeSumUnit(of: op, lhs, rhs)
         default: nil
+        }
+    }
+
+    /// The relative unit a sum or difference takes when it mixes a pixel
+    /// value with a `rem` or `em` count, or a bare `rem` or `em` quantity
+    /// with a converted one, whose value is already a count (ADK-257). Nil
+    /// for any other pair.
+    static func relativeSumUnit(of op: NumericOperator, _ lhs: Node, _ rhs: Node) -> Unit? {
+        guard op == .add || op == .subtract,
+              let left = sourceUnit(of: lhs),
+              let right = sourceUnit(of: rhs)
+        else { return nil }
+        if left.isRelative, right == .pixel {
+            return left
+        }
+        if left == .pixel, right.isRelative {
+            return right
+        }
+        if left.isRelative, right.isRelative, isConversion(lhs) != isConversion(rhs) {
+            return left
+        }
+        return nil
+    }
+
+    /// Whether a node is a conversion, whose value is already counted in
+    /// its target unit, rather than a quantity holding its pixels.
+    private static func isConversion(_ node: Node) -> Bool {
+        switch node {
+        case .conversion: true
+        case let .unaryMinus(inner): isConversion(inner)
+        default: false
         }
     }
 

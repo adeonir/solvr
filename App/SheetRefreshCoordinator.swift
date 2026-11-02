@@ -21,6 +21,9 @@ final class SheetRefreshCoordinator: NSObject {
     /// their expressions; the changed indexes of each trigger stay on the
     /// outcome the app refreshes from.
     private(set) var results: [ExpressionResult] = []
+    /// The sheet total's display text below the content, or nil when no
+    /// total is available (ADK-256).
+    private(set) var total: String?
     /// The cities the visible time-of-day conversions name (ADK-250). The
     /// view keeps their city data current through the shared service, and a
     /// city whose lookup failed is asked for again on the next trigger.
@@ -72,6 +75,17 @@ final class SheetRefreshCoordinator: NSObject {
         guard let outcome = refresher?.update(cityTimeZones: snapshot, now: Date()) else { return }
         publish(outcome.results)
         scheduleTransitionTimer()
+    }
+
+    /// A precision change from Settings reaches the open sheet at once; the
+    /// sheet text stays untouched (ADK-255).
+    func precisionChanged(displayPrecision: Int, cryptoPrecision: Int) {
+        guard let outcome = refresher?.update(
+            displayPrecision: displayPrecision,
+            cryptoPrecision: cryptoPrecision,
+            now: Date()
+        ) else { return }
+        publish(outcome.results)
     }
 
     /// The sheet closed; the coordinator releases the sheet's refresher
@@ -189,6 +203,7 @@ final class SheetRefreshCoordinator: NSObject {
     /// the view can look up and refresh their city data (ADK-250).
     private func publish(_ fresh: [ExpressionResult]) {
         results = fresh
+        total = refresher?.total
         cityNames = refresher?.cityNames ?? []
     }
 }

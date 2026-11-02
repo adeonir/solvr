@@ -11,6 +11,10 @@ struct NumeApp: App {
             SheetEditorView()
         }
         .defaultSize(width: 648, height: 498)
+
+        Settings {
+            PrecisionSettingsView()
+        }
     }
 }
 
@@ -59,6 +63,8 @@ private struct SheetEditorView: View {
     private let exchangeRates = ApplicationExchangeRates.shared.service
     private let cityTimeZones = ApplicationCityTimeZones.shared.service
     @State private var coordinator = SheetRefreshCoordinator()
+    @AppStorage(PrecisionSettingsView.generalKey) private var generalPrecision = PrecisionSetting.generalDefault
+    @AppStorage(PrecisionSettingsView.cryptoKey) private var cryptoPrecision = PrecisionSetting.cryptoDefault
     @State private var sheetText = ""
     @State private var sheetTitle = ""
     @FocusState private var titleFocused: Bool
@@ -104,6 +110,10 @@ private struct SheetEditorView: View {
                     let old = sheets.remove(at: index)
                     sheets.insert(StoredSheet(id: old.id, title: old.title, created: old.created, updated: Date(), text: updatedText), at: 0)
                     autosave?.edit(id, text: updatedText)
+                }
+                // The sheet total sits centered below the content and is absent when no total is available (ADK-256).
+                if let total = coordinator.total {
+                    SheetTotalView(total: total)
                 }
             }
         }
@@ -160,6 +170,12 @@ private struct SheetEditorView: View {
         }
         .onChange(of: cityTimeZones.snapshot) { _, snapshot in
             coordinator.cityTimeZonesChanged(snapshot)
+        }
+        .onChange(of: [generalPrecision, cryptoPrecision]) { _, _ in
+            coordinator.precisionChanged(
+                displayPrecision: storedPrecision.general,
+                cryptoPrecision: storedPrecision.crypto
+            )
         }
         // The cities the visible results name go to the shared city data
         // service, which looks up a city the cache lacks and refreshes one
@@ -335,10 +351,20 @@ private struct SheetEditorView: View {
                 localeIdentifier: locale.identifier,
                 timeZone: .current,
                 now: Date(),
-                displayPrecision: 2,
+                displayPrecision: storedPrecision.general,
                 exchangeRates: exchangeRates.snapshot,
-                cityTimeZones: cityTimeZones.snapshot
+                cityTimeZones: cityTimeZones.snapshot,
+                cryptoPrecision: storedPrecision.crypto
             )
+        )
+    }
+
+    /// The Settings precision values, within their ranges even when the
+    /// stored preference is not (ADK-255).
+    private var storedPrecision: (general: Int, crypto: Int) {
+        (
+            PrecisionSetting.stored(generalPrecision, in: PrecisionSetting.generalRange, default: PrecisionSetting.generalDefault),
+            PrecisionSetting.stored(cryptoPrecision, in: PrecisionSetting.cryptoRange, default: PrecisionSetting.cryptoDefault)
         )
     }
 }
@@ -462,6 +488,23 @@ private final class DimKnobScroller: NSScroller {
     }
 
     override func drawKnobSlot(in _: NSRect, highlight _: Bool) {}
+}
+
+/// The sheet total below the content: a labeled value, centered, that darkens on hover.
+private struct SheetTotalView: View {
+    let total: String
+    @State private var isHovered = false
+
+    var body: some View {
+        Text("Total: \(total)")
+            .font(.system(size: 12, weight: isHovered ? .semibold : .regular))
+            .monospacedDigit()
+            .foregroundStyle(Color(nsColor: isHovered ? Palette.text : Palette.secondaryText))
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, minHeight: 48, maxHeight: 48)
+            .onHover { isHovered = $0 }
+            .accessibilityLabel("Total \(total)")
+    }
 }
 
 /// What the editor draws beside a line: a result, an error message, or nothing.
