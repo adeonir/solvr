@@ -160,6 +160,8 @@ struct CssSettingsTests {
             #expect(result.display == "1.8rem")
             #expect(result.value == .decimal(Decimal(sign: .plus, exponent: -1, significand: 18)))
         }
+        let total = sheetTotal(of: [results[0]], context: context(locale: "en_US"))
+        #expect(total?.display == "1.8rem")
     }
 
     @Test(arguments: [

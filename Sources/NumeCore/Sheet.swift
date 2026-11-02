@@ -491,7 +491,11 @@ struct SheetEvaluator {
         case let .toTimespan(inner), let .unaryMinus(inner):
             measure(of: inner)
         case let .binary(op, lhs, rhs):
-            combinedMeasure(op, measure(of: lhs), measure(of: rhs))
+            if let unit = Units.relativeSumUnit(of: op, lhs, rhs) {
+                .unit(unit)
+            } else {
+                combinedMeasure(op, measure(of: lhs), measure(of: rhs))
+            }
         case let .reference(name):
             variables.measures[name]
         case let .assignment(_, inner):
@@ -526,6 +530,12 @@ struct SheetEvaluator {
     /// was counted at to the shared base first.
     func storedValue(_ value: Decimal, of node: Node) throws -> Decimal {
         guard case let .unit(unit)? = measure(of: node), unit.isRelative else {
+            return value
+        }
+        // A pixel and relative-count sum already holds its count (ADK-257).
+        if case let .binary(op, lhsNode, rhsNode) = node,
+           Units.relativeSumUnit(of: op, lhsNode, rhsNode) != nil
+        {
             return value
         }
         guard let base = countBase(of: node) else {
