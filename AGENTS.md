@@ -12,6 +12,11 @@ Solvr is a beautiful text calculator for Mac. It combines a calculation language
 - `docs/product/PRD.md` — requirements (FR, NFR), scope, assumptions, risks, open questions
 - `docs/adr/` — architecture decision records, one file per decision
 
+## Build
+
+- Generate the Xcode project with `xcodegen generate`, then build with `xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' build`.
+- The app lands in Xcode's default DerivedData folder: `~/Library/Developer/Xcode/DerivedData/Solvr-<hash>/Build/Products/Debug/Solvr.app`. The hash differs per machine; print the exact folder with `xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' -showBuildSettings | grep BUILT_PRODUCTS_DIR`.
+
 ## Conventions
 
 - All documents in English.
