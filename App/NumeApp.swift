@@ -70,6 +70,7 @@ private struct SheetEditorView: View {
     @State private var coordinator = SheetRefreshCoordinator()
     @AppStorage(PrecisionSettingsView.generalKey) private var generalPrecision = PrecisionSetting.generalDefault
     @AppStorage(PrecisionSettingsView.cryptoKey) private var cryptoPrecision = PrecisionSetting.cryptoDefault
+    @AppStorage(AppearanceSettingsView.familyKey) private var fontFamily = SheetTypography.defaultFamily
     @State private var sheetText = ""
     @State private var sheetTitle = ""
     @FocusState private var titleFocused: Bool
@@ -108,7 +109,7 @@ private struct SheetEditorView: View {
                     .onSubmit(renameSheet)
                     .padding(.horizontal, 24)
                     .padding(.bottom, 16)
-                SheetTextView(text: $sheetText, results: coordinator.results.map(SheetLineResult.init)) { updatedText in
+                SheetTextView(text: $sheetText, results: coordinator.results.map(SheetLineResult.init), typography: typography) { updatedText in
                     sheetText = updatedText
                     coordinator.sheetTextEdited(updatedText)
                     guard let id = selectedID, let index = sheets.firstIndex(where: { $0.id == id }) else { return }
@@ -364,6 +365,16 @@ private struct SheetEditorView: View {
         )
     }
 
+    /// The sheet typography from Settings; the family falls back to SF Mono
+    /// when it is not installed, and the stored name stays (ADK-262).
+    private var typography: SheetTypography {
+        SheetTypography(
+            family: SheetFonts.resolvedFamily(fontFamily, in: InstalledFonts.faces),
+            size: SheetTypography.defaultSize,
+            lineHeight: SheetTypography.defaultLineHeight
+        )
+    }
+
     /// The Settings precision values, within their ranges even when the
     /// stored preference is not (ADK-255).
     private var storedPrecision: (general: Int, crypto: Int) {
@@ -538,25 +549,34 @@ private struct Metrics {
     let font: NSFont
     let numberFont: NSFont
     let headingFont: NSFont
+    /// Whether headings draw the regular face in a synthetic bold.
+    let headingIsSynthetic: Bool
     let lineHeight: CGFloat
     let numberColumn: CGFloat
 
     init(typography: SheetTypography) {
-        font = Self.font(typography.family, size: typography.textSize, weight: .regular)
-        numberFont = Self.font(typography.family, size: typography.lineNumberSize, weight: .regular)
-        headingFont = Self.font(typography.family, size: typography.headingSize, weight: .bold)
+        let selection = SheetFonts.selection(for: typography.family, in: InstalledFonts.faces)
+        font = Self.font(selection?.text.name, size: typography.textSize, weight: .regular)
+        numberFont = Self.font(selection?.text.name, size: typography.lineNumberSize, weight: .regular)
+        headingFont = Self.font(selection?.heading.name, size: typography.headingSize, weight: .bold)
+        headingIsSynthetic = selection?.isHeadingSynthetic ?? false
         lineHeight = typography.lineHeightInPixels
         numberColumn = ("000" as NSString).size(withAttributes: [.font: font]).width
     }
 
-    private static func font(_: String, size: Double, weight: NSFont.Weight) -> NSFont {
-        NSFont.monospacedSystemFont(ofSize: size, weight: weight)
+    /// The face by name, or the system monospaced font (SF Mono) without one.
+    private static func font(_ name: String?, size: Double, weight: NSFont.Weight) -> NSFont {
+        if let name, let font = NSFont(name: name, size: size) {
+            return font
+        }
+        return NSFont.monospacedSystemFont(ofSize: size, weight: weight)
     }
 }
 
 private struct SheetTextView: NSViewRepresentable {
     @Binding var text: String
     var results: [SheetLineResult]
+    var typography: SheetTypography
     var onEdit: (String) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -573,6 +593,7 @@ private struct SheetTextView: NSViewRepresentable {
         scrollView.contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: Metrics.bottomPadding, right: 0)
 
         let textView = ShortcutTextView()
+        textView.metrics = Metrics(typography: typography)
         textView.isRichText = false
         textView.drawsBackground = false
         textView.isVerticallyResizable = true
@@ -604,6 +625,13 @@ private struct SheetTextView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.parent = self
         guard let textView = scrollView.documentView as? ShortcutTextView else { return }
+        if textView.typography != typography {
+            textView.typography = typography
+            textView.metrics = Metrics(typography: typography)
+            textView.applySheetStyle()
+            textView.updateContainerWidth()
+            textView.needsDisplay = true
+        }
         if textView.string != text {
             textView.string = text
             textView.applySheetStyle()
@@ -641,7 +669,8 @@ private struct SheetTextView: NSViewRepresentable {
 
 private final class ShortcutTextView: NSTextView {
     var onCommentShortcut: ((ShortcutTextView) -> Void)?
-    private let metrics = Metrics(typography: .default)
+    var typography = SheetTypography.default
+    var metrics = Metrics(typography: .default)
 
     /// The results drawn beside the lines, parallel to the sheet's lines.
     var lineResults: [SheetLineResult] = [] {
@@ -689,6 +718,9 @@ private final class ShortcutTextView: NSTextView {
             let line = source.lineRange(for: NSRange(location: location, length: 0))
             if source.substring(with: line).hasPrefix("#") {
                 storage.addAttribute(.font, value: metrics.headingFont, range: line)
+                if metrics.headingIsSynthetic {
+                    storage.addAttribute(.strokeWidth, value: -3, range: line)
+                }
             }
             location = NSMaxRange(line)
         }
@@ -697,7 +729,7 @@ private final class ShortcutTextView: NSTextView {
         updateContainerWidth()
     }
 
-    private func updateContainerWidth() {
+    func updateContainerWidth() {
         textContainerInset = NSSize(width: leadingInset, height: 0)
         let width = max(frame.width - leadingInset - Metrics.sidePadding - resultsReserve, 1)
         if textContainer?.size.width != width {
