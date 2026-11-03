@@ -17,7 +17,7 @@ struct NumeApp: App {
                 PrecisionSettingsView()
                     .tabItem { Label("General", systemImage: "gearshape") }
                 AppearanceSettingsView()
-                    .tabItem { Label("Appearance", systemImage: "paintbrush") }
+                    .tabItem { Label("Appearance", systemImage: "circle.lefthalf.filled") }
             }
         }
     }
@@ -739,8 +739,18 @@ private final class ShortcutTextView: NSTextView {
         updateContainerWidth()
     }
 
+    private var updatingContainerWidth = false
+
+    /// Setting the inset or the container size resizes the frame, which
+    /// calls back here; the guard stops that recursion.
     func updateContainerWidth() {
-        textContainerInset = NSSize(width: leadingInset, height: 0)
+        guard !updatingContainerWidth else { return }
+        updatingContainerWidth = true
+        defer { updatingContainerWidth = false }
+        let inset = NSSize(width: leadingInset, height: 0)
+        if textContainerInset != inset {
+            textContainerInset = inset
+        }
         let width = max(frame.width - leadingInset - Metrics.sidePadding - resultsReserve, 1)
         if textContainer?.size.width != width {
             textContainer?.size = NSSize(width: width, height: .greatestFiniteMagnitude)

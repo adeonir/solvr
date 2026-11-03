@@ -11,6 +11,8 @@ struct AppearanceSettingsView: View {
     static let familyKey = "sheetFontFamily"
     static let sizeKey = "sheetFontSize"
     static let lineHeightKey = "sheetLineHeight"
+    /// The row height of the Settings design, shared by both tabs.
+    static let rowHeight: CGFloat = 24
 
     @AppStorage(familyKey) private var family = SheetTypography.defaultFamily
     @AppStorage(sizeKey) private var storedSize = TypographySetting.sizeDefault
@@ -39,21 +41,39 @@ struct AppearanceSettingsView: View {
                     Text(name).tag(name)
                 }
             }
-            LabeledContent("Size (9 to 32)") {
-                TextField("", text: $sizeText)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 64)
-                    .focused($focused, equals: .size)
+            .frame(height: Self.rowHeight)
+            HStack {
+                Text("Size")
+                Spacer()
+                HStack(spacing: 8) {
+                    TextField("", text: $sizeText)
+                        .textFieldStyle(.roundedBorder)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 64)
+                        .focused($focused, equals: .size)
+                    Text("px")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20, alignment: .leading)
+                }
             }
-            LabeledContent("Line Height (1 to 3)") {
-                TextField("", text: $lineHeightText)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 64)
-                    .focused($focused, equals: .lineHeight)
+            .frame(height: AppearanceSettingsView.rowHeight)
+            HStack {
+                Text("Line Height")
+                Spacer()
+                HStack(spacing: 8) {
+                    TextField("", text: $lineHeightText)
+                        .textFieldStyle(.roundedBorder)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 64)
+                        .focused($focused, equals: .lineHeight)
+                    Color.clear
+                        .frame(width: 20, height: 1)
+                }
             }
+            .frame(height: AppearanceSettingsView.rowHeight)
         }
         .formStyle(.grouped)
-        .frame(width: 380)
+        .frame(width: 500)
         .onAppear {
             sizeText = String(size)
             lineHeightText = Self.format(lineHeight)
