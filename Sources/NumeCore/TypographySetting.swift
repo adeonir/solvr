@@ -13,12 +13,13 @@ public enum TypographySetting {
 
     /// The size a field commits when its text changes: a whole number in
     /// range, the default for an empty field, otherwise the last valid size.
+    /// Digits only: a sign or a leading zero does not produce a value.
     public static func committedSize(_ text: String, lastValid: Int) -> Int {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
         if trimmed.isEmpty {
             return sizeDefault
         }
-        guard let value = Int(trimmed), sizeRange.contains(value) else { return lastValid }
+        guard let value = validSize(of: text) else { return lastValid }
         return value
     }
 
@@ -30,7 +31,26 @@ public enum TypographySetting {
         if trimmed.isEmpty {
             return lineHeightDefault
         }
-        guard let tenths = tenths(of: trimmed), lineHeightRange.contains(Double(tenths) / 10) else { return lastValid }
+        guard let value = validLineHeight(of: text) else { return lastValid }
+        return value
+    }
+
+    /// The size a field holds while its text is on screen: the size the text
+    /// commits when it is valid, otherwise nil. An empty or invalid field
+    /// holds its last valid size and commits on focus leave.
+    public static func validSize(of text: String) -> Int? {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard let value = wholeNumber(of: trimmed), sizeRange.contains(value) else { return nil }
+        return value
+    }
+
+    /// The line height a field holds while its text is on screen: the line
+    /// height the text commits when it is valid, otherwise nil. An empty or
+    /// invalid field holds its last valid line height and commits on focus
+    /// leave.
+    public static func validLineHeight(of text: String) -> Double? {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard let tenths = tenths(of: trimmed), lineHeightRange.contains(Double(tenths) / 10) else { return nil }
         return Double(tenths) / 10
     }
 
@@ -75,5 +95,14 @@ public enum TypographySetting {
         let fraction = parts[1]
         guard fraction.count == 1, let digit = fraction.first, digit.isASCII, let tenth = digit.wholeNumberValue else { return nil }
         return wholeValue * 10 + tenth
+    }
+
+    /// The whole number in size text: at most two ASCII digits, no sign and
+    /// no leading zero. The zero alone parses, and the range rules settle it.
+    private static func wholeNumber(of text: String) -> Int? {
+        guard text.count <= 2, let first = text.first, first != "0" || text.count == 1,
+              text.allSatisfy({ $0.isASCII && $0.isNumber })
+        else { return nil }
+        return Int(text)
     }
 }

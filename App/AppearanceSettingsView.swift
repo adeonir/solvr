@@ -83,16 +83,28 @@ struct AppearanceSettingsView: View {
             lineHeightText = Self.format(lineHeight)
         }
         .onChange(of: sizeText) { _, text in
-            storedSize = TypographySetting.committedSize(text, lastValid: size)
+            // A valid size commits as typed; an empty or invalid field holds
+            // its last valid size and commits on focus leave (ADK-261).
+            if let size = TypographySetting.validSize(of: text) {
+                storedSize = size
+            }
         }
         .onChange(of: lineHeightText) { _, text in
-            storedLineHeight = TypographySetting.committedLineHeight(text, lastValid: lineHeight)
+            // A valid line height commits as typed; an empty or invalid field
+            // holds its last valid value and commits on focus leave (ADK-261).
+            if let lineHeight = TypographySetting.validLineHeight(of: text) {
+                storedLineHeight = lineHeight
+            }
         }
         .onChange(of: focused) { previous, current in
             if previous == .size, current != .size {
+                // The empty field commits the default, any other invalid text
+                // commits the last valid value, and the field shows the result.
+                storedSize = TypographySetting.committedSize(sizeText, lastValid: size)
                 sizeText = String(size)
             }
             if previous == .lineHeight, current != .lineHeight {
+                storedLineHeight = TypographySetting.committedLineHeight(lineHeightText, lastValid: lineHeight)
                 lineHeightText = Self.format(lineHeight)
             }
         }

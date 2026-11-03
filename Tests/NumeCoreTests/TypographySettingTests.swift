@@ -28,8 +28,16 @@ struct TypographySettingTests {
     }
 
     @Test func invalidSizeCommitsTheLastValidValue() {
-        for text in ["8", "33", "13.5", "abc", "-12", "1e1", "13,5"] {
+        for text in ["8", "33", "13.5", "abc", "-12", "+13", "007", "1e1", "13,5"] {
             #expect(TypographySetting.committedSize(text, lastValid: 20) == 20)
+        }
+    }
+
+    @Test func aValidSizeIsTheValueTheTextCommits() {
+        #expect(TypographySetting.validSize(of: "20") == 20)
+        #expect(TypographySetting.validSize(of: " 14 ") == 14)
+        for text in ["", "   ", "8", "33", "abc", "+13", "007", "13.5"] {
+            #expect(TypographySetting.validSize(of: text) == nil)
         }
     }
 
@@ -43,6 +51,15 @@ struct TypographySettingTests {
     @Test func emptyLineHeightCommitsTheDefault() {
         #expect(TypographySetting.committedLineHeight("", lastValid: 1.5) == 2)
         #expect(TypographySetting.committedLineHeight("  ", lastValid: 1.5) == 2)
+    }
+
+    @Test func aValidLineHeightIsTheValueTheTextCommits() {
+        #expect(TypographySetting.validLineHeight(of: "2") == 2)
+        #expect(TypographySetting.validLineHeight(of: "1.5") == 1.5)
+        #expect(TypographySetting.validLineHeight(of: " 2.5 ") == 2.5)
+        for text in ["", "   ", "0.9", "3.1", "1.25", "1,5", "abc", "13.5"] {
+            #expect(TypographySetting.validLineHeight(of: text) == nil)
+        }
     }
 
     @Test func invalidLineHeightCommitsTheLastValidValue() {
