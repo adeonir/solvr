@@ -549,7 +549,7 @@ private struct Metrics {
         numberColumn = ("000" as NSString).size(withAttributes: [.font: font]).width
     }
 
-    private static func font(_ family: String, size: Double, weight: NSFont.Weight) -> NSFont {
+    private static func font(_: String, size: Double, weight: NSFont.Weight) -> NSFont {
         NSFont.monospacedSystemFont(ofSize: size, weight: weight)
     }
 }

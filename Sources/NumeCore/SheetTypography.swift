@@ -25,14 +25,22 @@ public struct SheetTypography: Equatable, Sendable {
     }
 
     /// The size of sheet text and results, in px.
-    public var textSize: Double { Double(size) }
+    public var textSize: Double {
+        Double(size)
+    }
 
     /// The size of headings, in px.
-    public var headingSize: Double { Double(size) }
+    public var headingSize: Double {
+        Double(size)
+    }
 
     /// The size of line numbers: 11/13 of the font size, 11 px at 13.
-    public var lineNumberSize: Double { Double(size) * 11 / 13 }
+    public var lineNumberSize: Double {
+        Double(size) * 11 / 13
+    }
 
     /// The height of a sheet line, in px.
-    public var lineHeightInPixels: Double { Double(size) * lineHeight }
+    public var lineHeightInPixels: Double {
+        Double(size) * lineHeight
+    }
 }
