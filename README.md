@@ -1,17 +1,28 @@
 # Solvr
 
-I'm building Solvr, a beautiful text calculator for Mac. I do calculations in text every day at work, and I wanted sheets that stay saved between sessions, stay organized, and sync through iCloud. Solvr is that place where the calculation lives next to its comments.
+I'm building Solvr, a beautiful text calculator for Mac.
 
-## What Solvr does
+It calculates in text every day at work, and I wanted my sheets to stay saved between sessions, stay organized, and sync through iCloud.
 
-- You type, and the result appears next to the line while you type. The sheet is the interface, with no form or button in the way.
-- Earlier lines and variables keep their meaning until you delete them, so a sheet is a place to come back to.
-- Each sheet saves automatically after every change, with no save action.
-- The calculation language covers conversions and functions out of the box.
-- It converts currencies, cryptocurrencies, units, and time zones, by abbreviation and by city name.
+<p align="center">
+  <img src="docs/screenshots/app-icon.png" alt="Solvr app icon in the Finder info window" width="600">
+</p>
 
-## Docs
+<p align="center">
+  <img src="docs/screenshots/main-window.png" alt="Solvr main window with a sheet of four example lines and their results" width="700">
+</p>
 
-- [PRODUCT.md](PRODUCT.md), the product register: positioning, users, brand personality, and design principles
-- [PRD.md](docs/product/PRD.md), the requirements, scope, and risks
-- [GLOSSARY.md](GLOSSARY.md), the words the product, its documents, and its code use for the same concepts
+## What it does
+
+You type a line, and the result shows up next to it while you type. A sheet can hold a quick conversion during work or a budget you keep for months, because earlier lines and variables keep their meaning until you delete them.
+
+```text
+price = $8 times 3      $ 24
+days until 31 Mar       148 days
+5pm ldn in sf           09:00
+16px in em              1em
+```
+
+It converts units, currencies, and cryptocurrencies, with exchange rates that update over the internet, and it converts time zones by abbreviation or by city name. When a line can't be calculated, it shows the reason in place of the result, and the rest of the sheet keeps working. The total at the bottom sums the results of the sheet.
+
+Each sheet saves after every change, so there's no save button, and you can edit it without an internet connection.
