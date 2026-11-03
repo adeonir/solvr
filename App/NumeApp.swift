@@ -71,6 +71,8 @@ private struct SheetEditorView: View {
     @AppStorage(PrecisionSettingsView.generalKey) private var generalPrecision = PrecisionSetting.generalDefault
     @AppStorage(PrecisionSettingsView.cryptoKey) private var cryptoPrecision = PrecisionSetting.cryptoDefault
     @AppStorage(AppearanceSettingsView.familyKey) private var fontFamily = SheetTypography.defaultFamily
+    @AppStorage(AppearanceSettingsView.sizeKey) private var fontSize = TypographySetting.sizeDefault
+    @AppStorage(AppearanceSettingsView.lineHeightKey) private var lineHeight = TypographySetting.lineHeightDefault
     @State private var sheetText = ""
     @State private var sheetTitle = ""
     @FocusState private var titleFocused: Bool
@@ -109,7 +111,11 @@ private struct SheetEditorView: View {
                     .onSubmit(renameSheet)
                     .padding(.horizontal, 24)
                     .padding(.bottom, 16)
-                SheetTextView(text: $sheetText, results: coordinator.results.map(SheetLineResult.init), typography: typography) { updatedText in
+                SheetTextView(
+                    text: $sheetText,
+                    results: coordinator.results.map(SheetLineResult.init),
+                    typography: typography
+                ) { updatedText in
                     sheetText = updatedText
                     coordinator.sheetTextEdited(updatedText)
                     guard let id = selectedID, let index = sheets.firstIndex(where: { $0.id == id }) else { return }
@@ -368,10 +374,10 @@ private struct SheetEditorView: View {
     /// The sheet typography from Settings; the family falls back to SF Mono
     /// when it is not installed, and the stored name stays (ADK-262).
     private var typography: SheetTypography {
-        SheetTypography(
+        TypographySetting.typography(
             family: SheetFonts.resolvedFamily(fontFamily, in: InstalledFonts.faces),
-            size: SheetTypography.defaultSize,
-            lineHeight: SheetTypography.defaultLineHeight
+            size: fontSize,
+            lineHeight: lineHeight
         )
     }
 
@@ -593,7 +599,7 @@ private struct SheetTextView: NSViewRepresentable {
         scrollView.contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: Metrics.bottomPadding, right: 0)
 
         let textView = ShortcutTextView()
-        textView.metrics = Metrics(typography: typography)
+        textView.typography = typography
         textView.isRichText = false
         textView.drawsBackground = false
         textView.isVerticallyResizable = true
@@ -625,13 +631,7 @@ private struct SheetTextView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.parent = self
         guard let textView = scrollView.documentView as? ShortcutTextView else { return }
-        if textView.typography != typography {
-            textView.typography = typography
-            textView.metrics = Metrics(typography: typography)
-            textView.applySheetStyle()
-            textView.updateContainerWidth()
-            textView.needsDisplay = true
-        }
+        textView.typography = typography
         if textView.string != text {
             textView.string = text
             textView.applySheetStyle()
@@ -669,8 +669,18 @@ private struct SheetTextView: NSViewRepresentable {
 
 private final class ShortcutTextView: NSTextView {
     var onCommentShortcut: ((ShortcutTextView) -> Void)?
-    var typography = SheetTypography.default
-    var metrics = Metrics(typography: .default)
+    private var metrics = Metrics(typography: .default)
+
+    /// The sheet typography. A change rebuilds the fonts and line metrics
+    /// and restyles the open sheet at once.
+    var typography = SheetTypography.default {
+        didSet {
+            guard typography != oldValue else { return }
+            metrics = Metrics(typography: typography)
+            applySheetStyle()
+            needsDisplay = true
+        }
+    }
 
     /// The results drawn beside the lines, parallel to the sheet's lines.
     var lineResults: [SheetLineResult] = [] {
