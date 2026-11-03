@@ -4,7 +4,7 @@ Guidance for AI agents working in this repository.
 
 ## Project
 
-Nume is a beautiful text calculator for Mac. It combines a calculation language with sheets that stay saved, organized, and synced.
+Solvr is a beautiful text calculator for Mac. It combines a calculation language with sheets that stay saved, organized, and synced.
 ## Layout
 
 - `PRODUCT.md` — the product register: purpose, users, brand personality, design principles
@@ -22,9 +22,9 @@ Nume is a beautiful text calculator for Mac. It combines a calculation language 
 - The PRD keeps its numbered structure (1. Problem through 8. References) and the scope groups Must Have, Should Have, Could Have, Won't Have, and Out of Scope.
 - An ADR keeps the structure name, Context, Decision, Alternatives Considered, Consequences, References.
 - Commits follow Conventional Commits in English, with `docs:` for document-only changes so far.
-- Conventional commit messages carry the Linear issue they implement as the scope, in lowercase, e.g. `feat(adk-233): add the Nume core package`.
+- Conventional commit messages carry the Linear issue they implement as the scope, in lowercase, e.g. `feat(adk-233): add the Solvr core package`.
 - Pull requests merge into `main` with a merge commit.
 
 ## Issue tracker
 
-Tracker: Linear — team Development, project Nume App. Configuration: repository-local `tracker.*`; inspect with `git config --local --get-regexp '^tracker\.'`. Change with "configure tracker".
+Tracker: Linear — team Development, project Solvr App. Configuration: repository-local `tracker.*`; inspect with `git config --local --get-regexp '^tracker\.'`. Change with "configure tracker".

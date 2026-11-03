@@ -1,5 +1,5 @@
 import AppKit
-import NumeCore
+import SolvrCore
 
 /// One rate service and durable cache for every sheet and window.
 @MainActor
@@ -12,7 +12,7 @@ final class ApplicationExchangeRates: NSObject {
         let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         service = ExchangeRateService(
             source: CoinbaseExchangeRateSource(),
-            cache: FileExchangeRateCache(url: folder.appending(path: "Nume/exchange-rates.json"))
+            cache: FileExchangeRateCache(url: folder.appending(path: "Solvr/exchange-rates.json"))
         )
         super.init()
     }
@@ -47,7 +47,7 @@ final class ApplicationExchangeRates: NSObject {
 }
 
 @MainActor
-final class NumeApplicationDelegate: NSObject, NSApplicationDelegate {
+final class SolvrApplicationDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_: Notification) {
         ApplicationExchangeRates.shared.setForeground(NSApp.isActive)
     }

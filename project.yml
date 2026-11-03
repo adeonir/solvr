@@ -1,4 +1,4 @@
-name: Nume
+name: Solvr
 
 options:
   bundleIdPrefix: com.adeonir.labs
@@ -6,21 +6,21 @@ options:
     macOS: "15.0"
 
 packages:
-  NumeCore:
+  SolvrCore:
     path: .
 
 targets:
-  Nume:
+  Solvr:
     type: application
     platform: macOS
     sources:
       - App
     dependencies:
-      - package: NumeCore
+      - package: SolvrCore
     info:
       path: App/Info.plist
       properties:
-        CFBundleName: Nume
+        CFBundleName: Solvr
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"

@@ -1,5 +1,5 @@
 import AppKit
-import NumeCore
+import SolvrCore
 
 /// One city data service and durable cache for every sheet and window.
 @MainActor
@@ -11,7 +11,7 @@ final class ApplicationCityTimeZones {
         let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         service = CityTimeZoneService(
             source: OpenMeteoGeocodingSource(),
-            cache: FileCityTimeZoneCache(url: folder.appending(path: "Nume/city-time-zones.json"))
+            cache: FileCityTimeZoneCache(url: folder.appending(path: "Solvr/city-time-zones.json"))
         )
     }
 

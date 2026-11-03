@@ -2,18 +2,18 @@
 import PackageDescription
 
 let package = Package(
-    name: "NumeCore",
+    name: "SolvrCore",
     platforms: [
         .macOS(.v15)
     ],
     products: [
-        .library(name: "NumeCore", targets: ["NumeCore"]),
+        .library(name: "SolvrCore", targets: ["SolvrCore"]),
     ],
     targets: [
-        .target(name: "NumeCore"),
+        .target(name: "SolvrCore"),
         .testTarget(
-            name: "NumeCoreTests",
-            dependencies: ["NumeCore"]
+            name: "SolvrCoreTests",
+            dependencies: ["SolvrCore"]
         ),
     ]
 )

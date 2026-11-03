@@ -2,7 +2,7 @@
 // is stored as it is typed and reaches every open sheet at once. A cleared
 // or invalid field restores its last valid value when focus leaves it.
 
-import NumeCore
+import SolvrCore
 import SwiftUI
 
 struct PrecisionSettingsView: View {

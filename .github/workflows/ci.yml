@@ -13,7 +13,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Run NumeCore tests
+      - name: Run SolvrCore tests
         run: swift test
 
       - name: Install XcodeGen
@@ -22,5 +22,5 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build Nume for macOS
-        run: xcodebuild -project Nume.xcodeproj -scheme Nume -destination 'platform=macOS' build
+      - name: Build Solvr for macOS
+        run: xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' build

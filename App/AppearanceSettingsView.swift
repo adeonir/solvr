@@ -4,7 +4,7 @@
 // when focus leaves it: the default for an empty field, otherwise the last
 // valid value.
 
-import NumeCore
+import SolvrCore
 import SwiftUI
 
 struct AppearanceSettingsView: View {
