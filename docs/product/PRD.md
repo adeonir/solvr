@@ -6,7 +6,7 @@ status: approved
 sources: []
 ---
 
-# PRD: Nume
+# PRD: Solvr
 
 ## 1. Problem
 
@@ -21,9 +21,9 @@ The text calculators the author uses today do not keep sheets between sessions, 
 
 | Goal | Metric | Target |
 |------|--------|--------|
-| Use Nume for daily calculations | The author uses Nume for daily calculations | The author performs daily calculations in Nume |
+| Use Solvr for daily calculations | The author uses Solvr for daily calculations | The author performs daily calculations in Solvr |
 
-Primary metric: the author uses Nume for daily calculations.
+Primary metric: the author uses Solvr for daily calculations.
 
 ## 4. Scope
 
@@ -31,7 +31,7 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
 
 ### Must Have
 
-- FR-1 The calculation language covers the calculations of a daily use of Nume, as the use cases of section 2 state: quick calculations during work, such as unit conversions, currency conversions, `px` to `em`, and time zones; and saved sheets, such as a budget or a split of expenses.
+- FR-1 The calculation language covers the calculations of a daily use of Solvr, as the use cases of section 2 state: quick calculations during work, such as unit conversions, currency conversions, `px` to `em`, and time zones; and saved sheets, such as a budget or a split of expenses.
 - FR-2 The calculation language reads these expressions as follows:
   - `and` adds. `&` is bitwise AND. `|` and `or` are bitwise OR.
   - `min` followed by parentheses is the minimum function, as in `min(3; 7)`. `min` after a number is the minute unit, as in `15 min`.
@@ -73,9 +73,9 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
 - FR-34 More themes join the default theme (FR-33):
   - The themes are catppuccin with all its variants, rose-pine with all its variants, tokyo-night with all its variants, Dracula and Alucard, one-dark and One Light, and Monokai dark and Monokai light. Each theme is light or dark and has an error color.
   - The theme list shows only the themes that match the current mode. The default theme is first in each list.
-  - In Auto, when macOS changes between light and dark, Nume applies the first theme in the list for the new mode.
-- FR-18 A global hotkey opens Nume from any app. The user configures the hotkey in Settings. No global hotkey is configured by default.
-- FR-19 Launch at Login opens Nume when the user logs in to macOS.
+  - In Auto, when macOS changes between light and dark, Solvr applies the first theme in the list for the new mode.
+- FR-18 A global hotkey opens Solvr from any app. The user configures the hotkey in Settings. No global hotkey is configured by default.
+- FR-19 Launch at Login opens Solvr when the user logs in to macOS.
 - FR-22 Telemetry sends crash reports, errors, and usage data. Telemetry is on by default. The Telemetry option in Settings turns all telemetry off. Telemetry follows NFR-1.
 - FR-39 The shortcut Cmd + / comments the line with the cursor by adding `// ` at its start, and uncomments it when it already starts with `//`. With several lines selected, the shortcut comments all of them, or uncomments all of them when every selected line is already a comment.
 
@@ -88,10 +88,10 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
 - FR-15 iCloud syncs sheets and folders. Sync resumes when an internet connection returns. When the same sheet is edited on two devices, changes are compared against the last synced version:
   - Changes to different parts are merged automatically. Identical changes are kept once.
   - When devices make different changes to the same expression, including deleting it on one device and editing it on another, the user chooses the final content. Both versions are preserved until the conflict is resolved.
-  - Nume recalculates the sheet after merging changes.
+  - Solvr recalculates the sheet after merging changes.
 - FR-16 Export writes a `.txt` file with one `expression = result` line for each expression. Import reads the same format: it removes the last `= result` from each line and keeps the `=` of an assignment, so `price = $8 times 3 = $24` comes back as `price = $8 times 3`.
 - FR-20 A URL scheme opens a sheet, creates a sheet with a given text, and adds a given text to the end of a sheet.
-- FR-21 A Raycast integration searches sheets and opens a sheet in Nume.
+- FR-21 A Raycast integration searches sheets and opens a sheet in Solvr.
 - FR-10 Always on Top keeps the window above other windows.
 
 ### Won't Have
@@ -111,7 +111,7 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
 |----|------------|--------|
 | NFR-1 | Telemetry carries no personal data. Sheet text and expressions go with telemetry only in anonymized form: each real name and each real number is replaced by a false value of the same type and format, and the expression can still be calculated, so `salário = R$ 8.000 - 4%` becomes `var1 = R$ 3.517 - 7%`. | Every telemetry event |
 | NFR-2 | Without an internet connection, currency conversion and time zone conversion by city name use the cached data. | Each conversion that has cached data |
-| NFR-3 | Nume runs on the supported macOS versions. | macOS 15 or later |
+| NFR-3 | Solvr runs on the supported macOS versions. | macOS 15 or later |
 
 ## 6. Assumptions & Risks
 
@@ -124,4 +124,4 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
 ## 8. References
 
 - Product positioning: [PRODUCT.md](../../PRODUCT.md)
-- Hi-fi mockup: [Nume main window](https://claude.ai/artifact/FhzDwfzVV31GPTf6LKWWe9)
+- Hi-fi mockup: [Solvr main window](https://claude.ai/artifact/FhzDwfzVV31GPTf6LKWWe9)

@@ -5,12 +5,12 @@
 // app, and the next daylight-saving transition of a time zone a visible
 // conversion uses (ADK-251). The coordinator never evaluates — it supplies
 // the system's clock and events, and the reevaluation stays in the
-// NumeCore refresher, where the model-layer integration tests inject
+// SolvrCore refresher, where the model-layer integration tests inject
 // controlled ones instead.
 
 import AppKit
 import Foundation
-import NumeCore
+import SolvrCore
 import Observation
 
 @MainActor

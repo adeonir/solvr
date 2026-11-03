@@ -10,7 +10,7 @@ sources: []
 
 ## Context
 
-Nume is a text calculator for the Mac that runs on macOS 15 or later (NFR-3). The repository holds documentation and no application code yet, so no language is in use.
+Solvr is a text calculator for the Mac that runs on macOS 15 or later (NFR-3). The repository holds documentation and no application code yet, so no language is in use.
 
 ## Decision
 

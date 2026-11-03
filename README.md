@@ -1,8 +1,8 @@
-# Nume
+# Solvr
 
-I'm building Nume, a beautiful text calculator for Mac. I do calculations in text every day at work, and I wanted sheets that stay saved between sessions, stay organized, and sync through iCloud. Nume is that place where the calculation lives next to its comments.
+I'm building Solvr, a beautiful text calculator for Mac. I do calculations in text every day at work, and I wanted sheets that stay saved between sessions, stay organized, and sync through iCloud. Solvr is that place where the calculation lives next to its comments.
 
-## What Nume does
+## What Solvr does
 
 - You type, and the result appears next to the line while you type. The sheet is the interface, with no form or button in the way.
 - Earlier lines and variables keep their meaning until you delete them, so a sheet is a place to come back to.

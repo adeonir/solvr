@@ -20,14 +20,14 @@ We will use the Foundation `Decimal` type for numeric values.
 
 - **`Double`:** It holds about 15 to 17 significant digits and does not represent `0,1` exactly.
 - **A C decimal library wrapped in Swift:** It adds a dependency outside Swift.
-- **A decimal type written for Nume:** It requires writing and testing the arithmetic itself.
+- **A decimal type written for Solvr:** It requires writing and testing the arithmetic itself.
 
 ## Consequences
 
 - The supported magnitude range is `10^-127` through `10^127`, with either sign and zero. A result beyond it is a numeric-range error, and an overflow that `Decimal` reports as `NaN` is shown as that error.
 - The 38 digits of `Decimal` cover the 34 significant digits that approximate values keep.
 - The `plain` rounding mode of `Decimal` resolves exact ties away from zero.
-- `sqrt`, `sin`, `log`, and `fact` are code in Nume, calculated on `Decimal` without passing through `Double`. Nume's tests check their results against the error bounds of the calculation language.
+- `sqrt`, `sin`, `log`, and `fact` are code in Solvr, calculated on `Decimal` without passing through `Double`. Solvr's tests check their results against the error bounds of the calculation language.
 
 ## References
 
