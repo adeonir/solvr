@@ -13,7 +13,12 @@ struct NumeApp: App {
         .defaultSize(width: 648, height: 498)
 
         Settings {
-            PrecisionSettingsView()
+            TabView {
+                PrecisionSettingsView()
+                    .tabItem { Label("General", systemImage: "gearshape") }
+                AppearanceSettingsView()
+                    .tabItem { Label("Appearance", systemImage: "circle.lefthalf.filled") }
+            }
         }
     }
 }
@@ -65,6 +70,9 @@ private struct SheetEditorView: View {
     @State private var coordinator = SheetRefreshCoordinator()
     @AppStorage(PrecisionSettingsView.generalKey) private var generalPrecision = PrecisionSetting.generalDefault
     @AppStorage(PrecisionSettingsView.cryptoKey) private var cryptoPrecision = PrecisionSetting.cryptoDefault
+    @AppStorage(AppearanceSettingsView.familyKey) private var fontFamily = SheetTypography.defaultFamily
+    @AppStorage(AppearanceSettingsView.sizeKey) private var fontSize = TypographySetting.sizeDefault
+    @AppStorage(AppearanceSettingsView.lineHeightKey) private var lineHeight = TypographySetting.lineHeightDefault
     @State private var sheetText = ""
     @State private var sheetTitle = ""
     @FocusState private var titleFocused: Bool
@@ -103,7 +111,11 @@ private struct SheetEditorView: View {
                     .onSubmit(renameSheet)
                     .padding(.horizontal, 24)
                     .padding(.bottom, 16)
-                SheetTextView(text: $sheetText, results: coordinator.results.map(SheetLineResult.init)) { updatedText in
+                SheetTextView(
+                    text: $sheetText,
+                    results: coordinator.results.map(SheetLineResult.init),
+                    typography: typography
+                ) { updatedText in
                     sheetText = updatedText
                     coordinator.sheetTextEdited(updatedText)
                     guard let id = selectedID, let index = sheets.firstIndex(where: { $0.id == id }) else { return }
@@ -148,6 +160,12 @@ private struct SheetEditorView: View {
             // every trigger, so a lookup that failed while offline is retried.
             coordinator.requestCityData = { names in
                 ApplicationCityTimeZones.shared.resolve(names)
+            }
+            // The stored family returns to the default when it is no longer
+            // installed, so sheets show SF Mono (ADK-262).
+            let family = SheetFonts.resolvedFamily(fontFamily, in: InstalledFonts.faces)
+            if family != fontFamily {
+                fontFamily = family
             }
             loadSheets()
         }
@@ -359,6 +377,16 @@ private struct SheetEditorView: View {
         )
     }
 
+    /// The sheet typography from Settings; the stored family returns to the
+    /// default when it is not installed (ADK-262).
+    private var typography: SheetTypography {
+        TypographySetting.typography(
+            family: SheetFonts.resolvedFamily(fontFamily, in: InstalledFonts.faces),
+            size: fontSize,
+            lineHeight: lineHeight
+        )
+    }
+
     /// The Settings precision values, within their ranges even when the
     /// stored preference is not (ADK-255).
     private var storedPrecision: (general: Int, crypto: Int) {
@@ -523,20 +551,44 @@ private struct SheetLineResult: Equatable {
     }
 }
 
-private enum Metrics {
-    nonisolated(unsafe) static let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
-    nonisolated(unsafe) static let numberFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
-    nonisolated(unsafe) static let headingFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .bold)
-    static let lineHeight: CGFloat = 26
+/// The fonts and line metrics of the sheet editor, built from the sheet
+/// typography. SF Mono is the system monospaced font.
+private struct Metrics {
     static let sidePadding: CGFloat = 24
     static let columnGap: CGFloat = 16
-    static let numberColumn = ("000" as NSString).size(withAttributes: [.font: font]).width
     static let bottomPadding: CGFloat = 24
+
+    let font: NSFont
+    let numberFont: NSFont
+    let headingFont: NSFont
+    /// Whether headings draw the regular face in a synthetic bold.
+    let headingIsSynthetic: Bool
+    let lineHeight: CGFloat
+    let numberColumn: CGFloat
+
+    init(typography: SheetTypography) {
+        let selection = SheetFonts.selection(for: typography.family, in: InstalledFonts.faces)
+        font = Self.font(selection?.text.name, size: typography.textSize, weight: .regular)
+        numberFont = Self.font(selection?.text.name, size: typography.lineNumberSize, weight: .regular)
+        headingFont = Self.font(selection?.heading.name, size: typography.headingSize, weight: .bold)
+        headingIsSynthetic = selection?.isHeadingSynthetic ?? false
+        lineHeight = typography.lineHeightInPixels
+        numberColumn = ("000" as NSString).size(withAttributes: [.font: font]).width
+    }
+
+    /// The face by name, or the system monospaced font (SF Mono) without one.
+    private static func font(_ name: String?, size: Double, weight: NSFont.Weight) -> NSFont {
+        if let name, let font = NSFont(name: name, size: size) {
+            return font
+        }
+        return NSFont.monospacedSystemFont(ofSize: size, weight: weight)
+    }
 }
 
 private struct SheetTextView: NSViewRepresentable {
     @Binding var text: String
     var results: [SheetLineResult]
+    var typography: SheetTypography
     var onEdit: (String) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -553,6 +605,7 @@ private struct SheetTextView: NSViewRepresentable {
         scrollView.contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: Metrics.bottomPadding, right: 0)
 
         let textView = ShortcutTextView()
+        textView.typography = typography
         textView.isRichText = false
         textView.drawsBackground = false
         textView.isVerticallyResizable = true
@@ -584,6 +637,7 @@ private struct SheetTextView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.parent = self
         guard let textView = scrollView.documentView as? ShortcutTextView else { return }
+        textView.typography = typography
         if textView.string != text {
             textView.string = text
             textView.applySheetStyle()
@@ -621,6 +675,18 @@ private struct SheetTextView: NSViewRepresentable {
 
 private final class ShortcutTextView: NSTextView {
     var onCommentShortcut: ((ShortcutTextView) -> Void)?
+    private var metrics = Metrics(typography: .default)
+
+    /// The sheet typography. A change rebuilds the fonts and line metrics
+    /// and restyles the open sheet at once.
+    var typography = SheetTypography.default {
+        didSet {
+            guard typography != oldValue else { return }
+            metrics = Metrics(typography: typography)
+            applySheetStyle()
+            needsDisplay = true
+        }
+    }
 
     /// The results drawn beside the lines, parallel to the sheet's lines.
     var lineResults: [SheetLineResult] = [] {
@@ -632,19 +698,46 @@ private final class ShortcutTextView: NSTextView {
 
     private var resultsReserve: CGFloat {
         let widest = lineResults
-            .map { ($0.text as NSString).size(withAttributes: [.font: Metrics.font]).width }
+            .map { ($0.text as NSString).size(withAttributes: [.font: metrics.font]).width }
             .max() ?? 0
         return widest > 0 ? widest + Metrics.columnGap : 0
     }
 
     private var leadingInset: CGFloat {
-        Metrics.sidePadding + Metrics.numberColumn + Metrics.columnGap
+        Metrics.sidePadding + metrics.numberColumn + Metrics.columnGap
+    }
+
+    /// Lifts the text from the baseline TextKit gives a fixed-height line,
+    /// which varies with each font's ascent and leading, to the baseline
+    /// that centers the cap height.
+    private var textBaselineOffset: CGFloat {
+        Self.layoutBaseline(for: metrics.font, style: lineParagraphStyle)
+            - Self.centeredBaseline(for: metrics.font, lineHeight: metrics.lineHeight)
+    }
+
+    /// The baseline, from the top of the line, that TextKit lays out for
+    /// one line in the font with the paragraph style.
+    private static func layoutBaseline(for font: NSFont, style: NSParagraphStyle) -> CGFloat {
+        let storage = NSTextStorage(string: "0", attributes: [.font: font, .paragraphStyle: style])
+        let layoutManager = NSLayoutManager()
+        let container = NSTextContainer(size: NSSize(width: 1000, height: 1000))
+        container.lineFragmentPadding = 0
+        layoutManager.addTextContainer(container)
+        storage.addLayoutManager(layoutManager)
+        layoutManager.ensureLayout(for: container)
+        return layoutManager.location(forGlyphAt: 0).y
+    }
+
+    /// The baseline, from the top of a line, that centers the font's cap
+    /// height in the line.
+    private static func centeredBaseline(for font: NSFont, lineHeight: CGFloat) -> CGFloat {
+        (lineHeight + font.capHeight) / 2
     }
 
     private var lineParagraphStyle: NSParagraphStyle {
         let style = NSMutableParagraphStyle()
-        style.minimumLineHeight = Metrics.lineHeight
-        style.maximumLineHeight = Metrics.lineHeight
+        style.minimumLineHeight = metrics.lineHeight
+        style.maximumLineHeight = metrics.lineHeight
         return style
     }
 
@@ -654,10 +747,10 @@ private final class ShortcutTextView: NSTextView {
     func applySheetStyle() {
         guard !hasMarkedText(), let storage = textStorage else { return }
         let base: [NSAttributedString.Key: Any] = [
-            .font: Metrics.font,
+            .font: metrics.font,
             .foregroundColor: Palette.text,
             .paragraphStyle: lineParagraphStyle,
-            .baselineOffset: (Metrics.lineHeight - Metrics.font.boundingRectForFont.height) / 2 + 2.75
+            .baselineOffset: textBaselineOffset
         ]
         typingAttributes = base
         let source = storage.string as NSString
@@ -667,7 +760,10 @@ private final class ShortcutTextView: NSTextView {
         while location < source.length {
             let line = source.lineRange(for: NSRange(location: location, length: 0))
             if source.substring(with: line).hasPrefix("#") {
-                storage.addAttribute(.font, value: Metrics.headingFont, range: line)
+                storage.addAttribute(.font, value: metrics.headingFont, range: line)
+                if metrics.headingIsSynthetic {
+                    storage.addAttribute(.strokeWidth, value: -3, range: line)
+                }
             }
             location = NSMaxRange(line)
         }
@@ -676,8 +772,18 @@ private final class ShortcutTextView: NSTextView {
         updateContainerWidth()
     }
 
-    private func updateContainerWidth() {
-        textContainerInset = NSSize(width: leadingInset, height: 0)
+    private var updatingContainerWidth = false
+
+    /// Setting the inset or the container size resizes the frame, which
+    /// calls back here; the guard stops that recursion.
+    func updateContainerWidth() {
+        guard !updatingContainerWidth else { return }
+        updatingContainerWidth = true
+        defer { updatingContainerWidth = false }
+        let inset = NSSize(width: leadingInset, height: 0)
+        if textContainerInset != inset {
+            textContainerInset = inset
+        }
         let width = max(frame.width - leadingInset - Metrics.sidePadding - resultsReserve, 1)
         if textContainer?.size.width != width {
             textContainer?.size = NSSize(width: width, height: .greatestFiniteMagnitude)
@@ -719,7 +825,7 @@ private final class ShortcutTextView: NSTextView {
                 x: Metrics.sidePadding - Metrics.columnGap,
                 y: lines[activeLine].rect.minY,
                 width: bounds.width - 2 * (Metrics.sidePadding - Metrics.columnGap),
-                height: Metrics.lineHeight
+                height: metrics.lineHeight
             )
             Palette.activeLine.setFill()
             NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6).fill()
@@ -727,31 +833,42 @@ private final class ShortcutTextView: NSTextView {
 
         for (index, line) in lines.enumerated() {
             let numberAttributes: [NSAttributedString.Key: Any] = [
-                .font: Metrics.numberFont,
+                .font: metrics.numberFont,
                 .foregroundColor: index == activeLine ? Palette.lineNumberActive : Palette.lineNumber
             ]
             let number = "\(index + 1)" as NSString
             let numberSize = number.size(withAttributes: numberAttributes)
+            // Drawn from the baseline itself: a font's hidden line gap moves
+            // the baseline of a point-based draw.
             number.draw(
-                at: NSPoint(
-                    x: Metrics.sidePadding + Metrics.numberColumn - numberSize.width,
-                    y: line.rect.minY + (Metrics.lineHeight - numberSize.height) / 2
+                with: NSRect(
+                    x: Metrics.sidePadding + metrics.numberColumn - numberSize.width,
+                    y: line.rect.minY + Self.centeredBaseline(for: metrics.numberFont, lineHeight: metrics.lineHeight),
+                    width: numberSize.width,
+                    height: 0
                 ),
-                withAttributes: numberAttributes
+                options: [],
+                attributes: numberAttributes
             )
-            let top = line.rect.minY + line.baseline - Metrics.font.ascender
+            let baseline = line.rect.minY + Self.centeredBaseline(for: metrics.font, lineHeight: metrics.lineHeight)
 
             guard index < lineResults.count, !lineResults[index].text.isEmpty else { continue }
             let result = lineResults[index]
             let resultAttributes: [NSAttributedString.Key: Any] = [
-                .font: Metrics.font,
+                .font: metrics.font,
                 .foregroundColor: result.isError ? Palette.error : Palette.result
             ]
             let resultText = result.text as NSString
             let resultSize = resultText.size(withAttributes: resultAttributes)
             resultText.draw(
-                at: NSPoint(x: bounds.width - Metrics.sidePadding - resultSize.width, y: top),
-                withAttributes: resultAttributes
+                with: NSRect(
+                    x: bounds.width - Metrics.sidePadding - resultSize.width,
+                    y: baseline,
+                    width: resultSize.width,
+                    height: 0
+                ),
+                options: [],
+                attributes: resultAttributes
             )
         }
 
@@ -780,12 +897,12 @@ private final class ShortcutTextView: NSTextView {
         if source.length == 0 || source.hasSuffix("\n") {
             var rect = layoutManager.extraLineFragmentRect
             if source.length == 0 || rect.isEmpty {
-                rect = NSRect(x: 0, y: CGFloat(fragments.count) * Metrics.lineHeight, width: 0, height: Metrics.lineHeight)
+                rect = NSRect(x: 0, y: CGFloat(fragments.count) * metrics.lineHeight, width: 0, height: metrics.lineHeight)
             }
             rect.origin.x += origin.x
             rect.origin.y += origin.y
             let baseline = fragments.last?.baseline
-                ?? (rect.height - (Metrics.font.ascender - Metrics.font.descender)) / 2 + Metrics.font.ascender
+                ?? (rect.height - (metrics.font.ascender - metrics.font.descender)) / 2 + metrics.font.ascender
             fragments.append((rect, baseline))
         }
         return fragments

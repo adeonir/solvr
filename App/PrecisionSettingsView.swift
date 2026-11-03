@@ -30,21 +30,29 @@ struct PrecisionSettingsView: View {
 
     var body: some View {
         Form {
-            LabeledContent("General precision (1 to 10)") {
+            HStack {
+                Text("General precision")
+                Spacer()
                 TextField("", text: $generalText)
+                    .textFieldStyle(.roundedBorder)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 64)
                     .focused($focused, equals: .general)
             }
-            LabeledContent("Crypto precision (5 to 15)") {
+            .frame(height: AppearanceSettingsView.rowHeight)
+            HStack {
+                Text("Crypto precision")
+                Spacer()
                 TextField("", text: $cryptoText)
+                    .textFieldStyle(.roundedBorder)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 64)
                     .focused($focused, equals: .crypto)
             }
+            .frame(height: AppearanceSettingsView.rowHeight)
         }
         .formStyle(.grouped)
-        .frame(width: 380)
+        .frame(width: 500)
         .onAppear {
             generalText = String(generalValue)
             cryptoText = String(cryptoValue)
