@@ -701,6 +701,33 @@ private final class ShortcutTextView: NSTextView {
         Metrics.sidePadding + metrics.numberColumn + Metrics.columnGap
     }
 
+    /// Lifts the text from the baseline TextKit gives a fixed-height line,
+    /// which varies with each font's ascent and leading, to the baseline
+    /// that centers the cap height.
+    private var textBaselineOffset: CGFloat {
+        Self.layoutBaseline(for: metrics.font, style: lineParagraphStyle)
+            - Self.centeredBaseline(for: metrics.font, lineHeight: metrics.lineHeight)
+    }
+
+    /// The baseline, from the top of the line, that TextKit lays out for
+    /// one line in the font with the paragraph style.
+    private static func layoutBaseline(for font: NSFont, style: NSParagraphStyle) -> CGFloat {
+        let storage = NSTextStorage(string: "0", attributes: [.font: font, .paragraphStyle: style])
+        let layoutManager = NSLayoutManager()
+        let container = NSTextContainer(size: NSSize(width: 1000, height: 1000))
+        container.lineFragmentPadding = 0
+        layoutManager.addTextContainer(container)
+        storage.addLayoutManager(layoutManager)
+        layoutManager.ensureLayout(for: container)
+        return layoutManager.location(forGlyphAt: 0).y
+    }
+
+    /// The baseline, from the top of a line, that centers the font's cap
+    /// height in the line.
+    private static func centeredBaseline(for font: NSFont, lineHeight: CGFloat) -> CGFloat {
+        (lineHeight + font.capHeight) / 2
+    }
+
     private var lineParagraphStyle: NSParagraphStyle {
         let style = NSMutableParagraphStyle()
         style.minimumLineHeight = metrics.lineHeight
@@ -717,7 +744,7 @@ private final class ShortcutTextView: NSTextView {
             .font: metrics.font,
             .foregroundColor: Palette.text,
             .paragraphStyle: lineParagraphStyle,
-            .baselineOffset: (metrics.lineHeight - metrics.font.boundingRectForFont.height) / 2 + 2.75
+            .baselineOffset: textBaselineOffset
         ]
         typingAttributes = base
         let source = storage.string as NSString
@@ -805,14 +832,19 @@ private final class ShortcutTextView: NSTextView {
             ]
             let number = "\(index + 1)" as NSString
             let numberSize = number.size(withAttributes: numberAttributes)
+            // Drawn from the baseline itself: a font's hidden line gap moves
+            // the baseline of a point-based draw.
             number.draw(
-                at: NSPoint(
+                with: NSRect(
                     x: Metrics.sidePadding + metrics.numberColumn - numberSize.width,
-                    y: line.rect.minY + (metrics.lineHeight - numberSize.height) / 2
+                    y: line.rect.minY + Self.centeredBaseline(for: metrics.numberFont, lineHeight: metrics.lineHeight),
+                    width: numberSize.width,
+                    height: 0
                 ),
-                withAttributes: numberAttributes
+                options: [],
+                attributes: numberAttributes
             )
-            let top = line.rect.minY + line.baseline - metrics.font.ascender
+            let baseline = line.rect.minY + Self.centeredBaseline(for: metrics.font, lineHeight: metrics.lineHeight)
 
             guard index < lineResults.count, !lineResults[index].text.isEmpty else { continue }
             let result = lineResults[index]
@@ -823,8 +855,14 @@ private final class ShortcutTextView: NSTextView {
             let resultText = result.text as NSString
             let resultSize = resultText.size(withAttributes: resultAttributes)
             resultText.draw(
-                at: NSPoint(x: bounds.width - Metrics.sidePadding - resultSize.width, y: top),
-                withAttributes: resultAttributes
+                with: NSRect(
+                    x: bounds.width - Metrics.sidePadding - resultSize.width,
+                    y: baseline,
+                    width: resultSize.width,
+                    height: 0
+                ),
+                options: [],
+                attributes: resultAttributes
             )
         }
 
