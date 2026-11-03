@@ -1,9 +1,9 @@
 ---
 id: "006"
 name: adjust-sheet-typography
-status: accepted
+status: done
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 # Intent: Adjust sheet typography
