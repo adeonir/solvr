@@ -161,6 +161,12 @@ private struct SheetEditorView: View {
             coordinator.requestCityData = { names in
                 ApplicationCityTimeZones.shared.resolve(names)
             }
+            // The stored family returns to the default when it is no longer
+            // installed, so sheets show SF Mono (ADK-262).
+            let family = SheetFonts.resolvedFamily(fontFamily, in: InstalledFonts.faces)
+            if family != fontFamily {
+                fontFamily = family
+            }
             loadSheets()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { _ in autosave?.flush() }
@@ -371,8 +377,8 @@ private struct SheetEditorView: View {
         )
     }
 
-    /// The sheet typography from Settings; the family falls back to SF Mono
-    /// when it is not installed, and the stored name stays (ADK-262).
+    /// The sheet typography from Settings; the stored family returns to the
+    /// default when it is not installed (ADK-262).
     private var typography: SheetTypography {
         TypographySetting.typography(
             family: SheetFonts.resolvedFamily(fontFamily, in: InstalledFonts.faces),

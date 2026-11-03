@@ -37,7 +37,7 @@ struct AppearanceSettingsView: View {
     var body: some View {
         Form {
             Picker("Font", selection: $family) {
-                ForEach(SheetFonts.menuFamilies(stored: family, in: InstalledFonts.faces), id: \.self) { name in
+                ForEach(SheetFonts.monospacedFamilies(in: InstalledFonts.faces), id: \.self) { name in
                     Text(name).tag(name)
                 }
             }
@@ -75,6 +75,10 @@ struct AppearanceSettingsView: View {
         .formStyle(.grouped)
         .frame(width: 500)
         .onAppear {
+            // The stored family returns to the default when it is no longer
+            // installed, and the menu shows the installed families only
+            // (ADK-262).
+            family = SheetFonts.resolvedFamily(family, in: InstalledFonts.faces)
             sizeText = String(size)
             lineHeightText = Self.format(lineHeight)
         }

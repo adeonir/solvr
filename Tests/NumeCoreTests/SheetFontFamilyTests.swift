@@ -115,18 +115,10 @@ struct SheetFontFamilyTests {
         #expect(SheetFonts.resolvedFamily("SF Mono", in: Self.installed) == "SF Mono")
     }
 
-    @Test func resolutionLeavesTheStoredNameAndReinstallingBringsTheFamilyBack() {
+    @Test func aMissingFamilyLeavesTheResolvedNameAsTheDefault() {
         let stored = "MonoLisa"
         let without = Self.installed.filter { $0.family != "MonoLisa" }
         #expect(SheetFonts.resolvedFamily(stored, in: without) == "SF Mono")
         #expect(stored == "MonoLisa")
-        #expect(SheetFonts.resolvedFamily(stored, in: Self.installed) == "MonoLisa")
-    }
-
-    @Test func theMenuKeepsAStoredFamilyThatIsNotInstalled() {
-        let menu = SheetFonts.menuFamilies(stored: "Gone Mono", in: Self.installed)
-        #expect(menu.first == "SF Mono")
-        #expect(menu.contains("Gone Mono"))
-        #expect(SheetFonts.menuFamilies(stored: "Menlo", in: Self.installed) == SheetFonts.monospacedFamilies(in: Self.installed))
     }
 }

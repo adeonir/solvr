@@ -61,13 +61,6 @@ public enum SheetFonts {
         return [SheetTypography.defaultFamily] + others
     }
 
-    /// The families the Settings menu shows: the monospaced families, plus
-    /// the stored family when it is not installed, so the menu keeps it.
-    public static func menuFamilies(stored: String, in faces: [InstalledFace]) -> [String] {
-        let families = monospacedFamilies(in: faces)
-        return families.contains(stored) ? families : families + [stored]
-    }
-
     /// The faces of a family that a sheet uses, or nil when the family has
     /// no monospaced face. The text face is the upright regular face.
     public static func selection(for family: String, in faces: [InstalledFace]) -> SheetFontSelection? {
@@ -82,8 +75,10 @@ public enum SheetFonts {
         return SheetFontSelection(text: text, heading: text, isHeadingSynthetic: true)
     }
 
-    /// The family a sheet shows: the chosen family when it is installed with
-    /// a monospaced face, otherwise SF Mono. The stored name never changes.
+    /// The family a sheet shows and the value the stored setting holds: the
+    /// chosen family when it is installed with a monospaced face, otherwise
+    /// SF Mono. A caller commits the resolved name back to the preference
+    /// when the stored family is not installed.
     public static func resolvedFamily(_ chosen: String, in faces: [InstalledFace]) -> String {
         if chosen == SheetTypography.defaultFamily {
             return chosen
