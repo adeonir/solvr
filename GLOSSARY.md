@@ -135,6 +135,10 @@ _Avoid_: appearance mode
 A named set of colors for the whole window. Each theme is light or dark, and only the themes that match the current mode are available.
 _Avoid_: color scheme, palette, skin
 
+**Typography**:
+The font family, the size in pixels, and the line-height multiplier that the Appearance settings give every sheet.
+_Avoid_: font settings, typeface, font style
+
 **Telemetry**:
 The data sent about the app's own operation: crash reports, errors, and usage data. The Telemetry option controls all of this data together.
 _Avoid_: analytics, tracking, error tracker
