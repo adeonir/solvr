@@ -84,11 +84,13 @@ public enum TypographySetting {
         )
     }
 
-    /// The number of tenths in CSS number text: digits, optionally a dot and
-    /// one digit. The dot is the only decimal separator, whatever the region.
+    /// The number of tenths in line-height text: digits, optionally a dot
+    /// and one digit. The dot is the only decimal separator, whatever the
+    /// region, and the whole part carries no leading zero.
     private static func tenths(of text: String) -> Int? {
         let parts = text.split(separator: ".", omittingEmptySubsequences: false)
         guard parts.count <= 2, let whole = parts.first, !whole.isEmpty, whole.count <= 2,
+              whole.count == 1 || whole.first != "0",
               whole.allSatisfy({ $0.isASCII && $0.isNumber }), let wholeValue = Int(whole)
         else { return nil }
         guard parts.count == 2 else { return wholeValue * 10 }

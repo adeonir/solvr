@@ -63,7 +63,7 @@ struct TypographySettingTests {
     }
 
     @Test func invalidLineHeightCommitsTheLastValidValue() {
-        for text in ["0.9", "3.1", "1.25", "1,5", "abc", "4", "0", "-1.5", "1e0", "1.", ".5"] {
+        for text in ["0.9", "3.1", "1.25", "1,5", "abc", "4", "0", "-1.5", "02.5", "07.5", "1e0", "1.", ".5"] {
             #expect(TypographySetting.committedLineHeight(text, lastValid: 1.5) == 1.5)
         }
     }
