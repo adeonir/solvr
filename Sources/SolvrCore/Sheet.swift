@@ -302,6 +302,16 @@ struct SheetEvaluator {
         case let .binary(op, lhsNode, rhsNode):
             return try evaluateBinary(op, lhsNode, rhsNode, overriding: override)
         case let .representation(kind, inner):
+            // A percent representation over a monetary division is the
+            // monetary ratio: the amounts convert and divide, and only the
+            // whole-line form shows the percent (ADK-263).
+            if case let .binary(.divide, numerator, denominator) = inner,
+               kind == .percent,
+               let ratio = try monetaryRatio(numerator, denominator)
+            {
+                try Display.validate(ratio, as: kind)
+                return ratio
+            }
             // Inside arithmetic, a conversion contributes its value only;
             // the representation shows when the whole line is the
             // conversion (ADK-222).
@@ -364,6 +374,18 @@ struct SheetEvaluator {
             return durationDisplay
         }
         switch node {
+        case let .percentPortion(inner):
+            // The share forms wrap: a percentage of a percentage comes out
+            // as the wrapped share's fraction, so the line shows a percent
+            // instead of the bare decimal (ADK-263).
+            switch inner {
+            case .percentShare, .percentOff:
+                return Display.format(value, as: .percent, precision: precision, locale: locale)
+            default:
+                return Numeric.display(value, precision: precision, locale: locale)
+            }
+        case let .percentShare(_, base), let .percentOff(_, base):
+            return shareDisplay(of: base, for: value)
         case let .representation(kind, _):
             return Display.format(value, as: kind, precision: precision, locale: locale)
         case let .quantity(_, unit):
@@ -445,7 +467,7 @@ struct SheetEvaluator {
         let lhs = try evaluate(node: lhsNode, overriding: override)
         let rhs = try evaluate(node: rhsNode, overriding: override)
         switch `operator` {
-        case .add: return try Numeric.add(lhs, rhs)
+        case .add: return try addPortion(lhsNode, rhsNode, lhs, rhs)
         case .bitwiseAnd: return try Functions.bitwiseAnd(lhs, rhs)
         case .bitwiseOr: return try Functions.bitwiseOr(lhs, rhs)
         case .subtract:
@@ -471,6 +493,75 @@ struct SheetEvaluator {
             let exponent = NSDecimalNumber(decimal: rhs).intValue
             return try Numeric.power(lhs, by: exponent)
         }
+    }
+
+    /// The sum two operands make beside a bare `N%`: each percent reads
+    /// its base from the value on the other side, so `10 + 40%` adds the
+    /// share and `10% + 40` is the same addition (ADK-263). The
+    /// subtraction keeps the older right-side form of `X - N%`.
+    private mutating func addPortion(
+        _ lhsNode: Node, _ rhsNode: Node, _ lhs: Decimal, _ rhs: Decimal
+    ) throws -> Decimal {
+        let portion: (Decimal, Decimal)?
+        switch (lhsNode, rhsNode) {
+        case let (lhsNode, .percentPortion(inner)):
+            portion = try (lhs, evaluate(node: inner))
+        case let (.percentPortion(inner), rhsNode):
+            portion = try (rhs, evaluate(node: inner))
+        default:
+            portion = nil
+        }
+        if let (base, percent) = portion {
+            return try Numeric.add(base, Percent.share(percent, of: base))
+        }
+        return try Numeric.add(lhs, rhs)
+    }
+
+    /// The monetary ratio a percent representation divides: a single
+    /// monetary numerator counts as its amount against a plain number, and
+    /// two monetary values convert through the exchange rate before the
+    /// division (ADK-263). A monetary denominator alone stays outside the
+    /// ratio, so plain division keeps its Invalid syntax; the numeric
+    /// path evaluates every other pair.
+    private mutating func monetaryRatio(
+        _ numerator: Node, _ denominator: Node
+    ) throws -> Decimal? {
+        let typedNumerator = try evaluateMonetary(numerator)
+        let typedDenominator = try evaluateMonetary(denominator)
+        guard case let .money(money) = typedNumerator else {
+            return nil
+        }
+        let denominatorAmount: Decimal
+        if case let .money(other) = typedDenominator {
+            denominatorAmount = try context.exchangeRates.convert(other, to: money.currency).amount
+        } else {
+            // A denominator carrying a quantity, duration, or any other
+            // measure shares nothing with an amount: the numeric path
+            // answers with Invalid syntax.
+            guard measure(of: denominator) == nil else {
+                return nil
+            }
+            denominatorAmount = try evaluate(node: denominator)
+        }
+        return try Numeric.divide(money.amount, by: denominatorAmount)
+    }
+
+    /// The form the sheet shows for a whole-line percent share or
+    /// discount: the base's quantity or duration unit, a percent of a
+    /// percent the percent form, otherwise the plain locale number
+    /// (ADK-263).
+    private func shareDisplay(of base: Node, for value: Decimal) -> String {
+        let precision = context.displayPrecision
+        if case .percentPortion = base {
+            return Display.format(value, as: .percent, precision: precision, locale: locale)
+        }
+        if let durationUnit = Duration.representativeUnit(of: base) {
+            return Duration.count(value, in: durationUnit, precision: precision, locale: locale)
+        }
+        if case let .quantity(_, unit) = base {
+            return Units.quantityDisplay(value, in: unit, precision: precision, locale: locale)
+        }
+        return Numeric.display(value, precision: precision, locale: locale)
     }
 
     /// The quantity a numeric node adds to a sheet total with (ADK-254).
@@ -500,6 +591,10 @@ struct SheetEvaluator {
             variables.measures[name]
         case let .assignment(_, inner):
             measure(of: inner)
+        // A percentage keeps the unit of the base it shares or takes its
+        // share off (ADK-263).
+        case let .percentShare(_, base), let .percentOff(_, base):
+            measure(of: base)
         default:
             nil
         }
@@ -619,9 +714,49 @@ struct SheetEvaluator {
                 variables.fail(name)
                 throw error
             }
+        case let .percentShare(percent, base):
+            // A percentage of a monetary value keeps the currency, and a
+            // base without one stays on the numeric path (ADK-263).
+            guard let typedBase = try evaluateMonetary(base),
+                  case let .money(baseMoney) = typedBase
+            else { return nil }
+            let share = try Percent.share(evaluate(node: percent), of: baseMoney.amount)
+            return try .money(MonetaryValue(
+                amount: Numeric.retain(share),
+                currency: baseMoney.currency
+            ))
+        case let .percentOff(percent, base):
+            guard let typedBase = try evaluateMonetary(base),
+                  case let .money(baseMoney) = typedBase
+            else { return nil }
+            let share = try Percent.share(evaluate(node: percent), of: baseMoney.amount)
+            return try .money(MonetaryValue(
+                amount: Numeric.retain(Numeric.subtract(baseMoney.amount, share)),
+                currency: baseMoney.currency
+            ))
         default:
             return nil
         }
+    }
+
+    /// A bare `N%` beside a monetary value reads the money as its base:
+    /// `$100 + 10%` adds the share and `price - 10%` takes it off
+    /// (ADK-263). Without money at that base the forms stay on the
+    /// numeric path.
+    private mutating func portionBaseline(
+        `operator`: NumericOperator, percent: Node, baseNode: Node
+    ) throws -> TypedValue? {
+        guard let typedBase = try evaluateMonetary(baseNode),
+              case let .money(baseMoney) = typedBase
+        else { return nil }
+        let share = try Percent.share(evaluate(node: percent), of: baseMoney.amount)
+        let amount = try `operator` == .add
+            ? Numeric.add(baseMoney.amount, share)
+            : Numeric.subtract(baseMoney.amount, share)
+        return try .money(MonetaryValue(
+            amount: Numeric.retain(amount),
+            currency: baseMoney.currency
+        ))
     }
 
     /// Addition takes the currency of the second value and subtraction that
@@ -631,6 +766,20 @@ struct SheetEvaluator {
     private mutating func evaluateMonetaryBinary(
         _ op: NumericOperator, _ lhsNode: Node, _ rhsNode: Node
     ) throws -> TypedValue? {
+        // The portion form beside money first: the money side holds the
+        // base either way (ADK-263).
+        if op == .add || op == .subtract {
+            if case let .percentPortion(percent) = rhsNode,
+               let typed = try portionBaseline(operator: op, percent: percent, baseNode: lhsNode)
+            {
+                return typed
+            }
+            if op == .add, case let .percentPortion(percent) = lhsNode,
+               let typed = try portionBaseline(operator: op, percent: percent, baseNode: rhsNode)
+            {
+                return typed
+            }
+        }
         let typedLeft = try evaluateMonetary(lhsNode)
         let typedRight = try evaluateMonetary(rhsNode)
         if typedLeft == nil, typedRight == nil {
