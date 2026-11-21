@@ -31,37 +31,27 @@ struct SolvrApp: App {
     }
 }
 
-/// The colors of the window design, light and dark, resolved by the system
-/// appearance at draw time.
+/// The colors of the window design, read from the Default theme in its light
+/// and dark versions and resolved by the system appearance at draw time.
 private enum Palette {
-    static let background = dynamic(light: 0xFFFFFF, dark: 0x1E1E1E)
-    static let text = dynamic(light: 0x1D1D1F, dark: 0xF5F5F7)
-    static let lineNumber = dynamic(light: 0xC7C7CC, dark: 0x505055)
-    static let lineNumberActive = dynamic(light: 0x8E8E93, dark: 0x8E8E93)
-    static let result = dynamic(light: 0x0062CC, dark: 0x4DA3FF)
-    static let error = dynamic(light: 0xD70015, dark: 0xFF453A)
-    static let caret = dynamic(light: 0x007AFF, dark: 0x0A84FF)
-    static let sidebar = dynamic(light: 0xF2F2F4, dark: 0x232326)
-    static let sidebarSelection = dynamic(light: 0xE1E1E5, dark: 0x303033)
-    static let tertiaryText = dynamic(light: 0x8E8E93, dark: 0x7C7C82)
-    static let secondaryText = dynamic(light: 0x636368, dark: 0xA1A1A6)
-    static let activeLine = NSColor(name: nil) { appearance in
-        appearance.isDark ? NSColor(white: 1, alpha: 0.06) : NSColor(white: 0, alpha: 0.05)
-    }
+    static let background = dynamic { $0.background }
+    static let text = dynamic { $0.text }
+    static let lineNumber = dynamic { $0.lineNumber }
+    static let lineNumberActive = dynamic { $0.lineNumberActive }
+    static let result = dynamic { $0.result }
+    static let error = dynamic { $0.error }
+    static let caret = dynamic { $0.caret }
+    static let sidebar = dynamic { $0.sidebar }
+    static let sidebarSelection = dynamic { $0.sidebarSelection }
+    static let tertiaryText = dynamic { $0.tertiaryText }
+    static let secondaryText = dynamic { $0.secondaryText }
+    static let activeLine = dynamic { $0.activeLine }
 
-    private static func dynamic(light: UInt32, dark: UInt32) -> NSColor {
+    private static func dynamic(_ color: @escaping @Sendable (Theme) -> ThemeColor) -> NSColor {
         NSColor(name: nil) { appearance in
-            rgb(appearance.isDark ? dark : light)
+            let value = color(appearance.isDark ? .defaultDark : .defaultLight)
+            return NSColor(srgbRed: value.red, green: value.green, blue: value.blue, alpha: value.alpha)
         }
-    }
-
-    private static func rgb(_ hex: UInt32) -> NSColor {
-        NSColor(
-            srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
-            green: CGFloat((hex >> 8) & 0xFF) / 255,
-            blue: CGFloat(hex & 0xFF) / 255,
-            alpha: 1
-        )
     }
 }
 
