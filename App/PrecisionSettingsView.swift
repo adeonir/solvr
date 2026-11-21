@@ -40,6 +40,7 @@ struct PrecisionSettingsView: View {
                     .focused($focused, equals: .general)
             }
             .frame(height: AppearanceSettingsView.rowHeight)
+            .settingsRow()
             HStack {
                 Text("Crypto precision")
                 Spacer()
@@ -50,8 +51,10 @@ struct PrecisionSettingsView: View {
                     .focused($focused, equals: .crypto)
             }
             .frame(height: AppearanceSettingsView.rowHeight)
+            .settingsRow()
         }
         .formStyle(.grouped)
+        .settingsThemed()
         .frame(width: 500)
         .onAppear {
             generalText = String(generalValue)

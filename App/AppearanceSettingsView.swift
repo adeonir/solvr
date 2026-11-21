@@ -82,6 +82,7 @@ struct AppearanceSettingsView: View {
             }
             .pickerStyle(.segmented)
             .frame(height: Self.rowHeight)
+            .settingsRow()
             Picker("Theme", selection: themeID) {
                 Text("Default").tag(defaultTheme.id)
                 Divider()
@@ -90,12 +91,14 @@ struct AppearanceSettingsView: View {
                 }
             }
             .frame(height: Self.rowHeight)
+            .settingsRow()
             Picker("Font", selection: $family) {
                 ForEach(SheetFonts.monospacedFamilies(in: InstalledFonts.faces), id: \.self) { name in
                     Text(name).tag(name)
                 }
             }
             .frame(height: Self.rowHeight)
+            .settingsRow()
             HStack {
                 Text("Size")
                 Spacer()
@@ -111,6 +114,7 @@ struct AppearanceSettingsView: View {
                 }
             }
             .frame(height: AppearanceSettingsView.rowHeight)
+            .settingsRow()
             HStack {
                 Text("Line Height")
                 Spacer()
@@ -125,8 +129,10 @@ struct AppearanceSettingsView: View {
                 }
             }
             .frame(height: AppearanceSettingsView.rowHeight)
+            .settingsRow()
         }
         .formStyle(.grouped)
+        .settingsThemed()
         .frame(width: 500)
         .onAppear {
             // The stored family returns to the default when it is no longer
