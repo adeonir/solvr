@@ -31,33 +31,37 @@ struct SolvrApp: App {
     }
 }
 
-/// The colors of the window design, read from the Default theme in its light
-/// and dark versions and resolved by the system appearance at draw time.
-private enum Palette {
-    static let background = dynamic { $0.background }
-    static let text = dynamic { $0.text }
-    static let lineNumber = dynamic { $0.lineNumber }
-    static let lineNumberActive = dynamic { $0.lineNumberActive }
-    static let result = dynamic { $0.result }
-    static let error = dynamic { $0.error }
-    static let caret = dynamic { $0.caret }
-    static let sidebar = dynamic { $0.sidebar }
-    static let sidebarSelection = dynamic { $0.sidebarSelection }
-    static let tertiaryText = dynamic { $0.tertiaryText }
-    static let secondaryText = dynamic { $0.secondaryText }
-    static let activeLine = dynamic { $0.activeLine }
+/// The colors of the window design, taken from the active theme.
+private struct Palette {
+    let background: NSColor
+    let text: NSColor
+    let lineNumber: NSColor
+    let lineNumberActive: NSColor
+    let result: NSColor
+    let error: NSColor
+    let caret: NSColor
+    let sidebar: NSColor
+    let sidebarSelection: NSColor
+    let tertiaryText: NSColor
+    let secondaryText: NSColor
+    let activeLine: NSColor
 
-    private static func dynamic(_ color: @escaping @Sendable (Theme) -> ThemeColor) -> NSColor {
-        NSColor(name: nil) { appearance in
-            let value = color(appearance.isDark ? .defaultDark : .defaultLight)
-            return NSColor(srgbRed: value.red, green: value.green, blue: value.blue, alpha: value.alpha)
+    init(_ theme: Theme) {
+        func color(_ value: ThemeColor) -> NSColor {
+            NSColor(srgbRed: value.red, green: value.green, blue: value.blue, alpha: value.alpha)
         }
-    }
-}
-
-private extension NSAppearance {
-    var isDark: Bool {
-        bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        background = color(theme.background)
+        text = color(theme.text)
+        lineNumber = color(theme.lineNumber)
+        lineNumberActive = color(theme.lineNumberActive)
+        result = color(theme.result)
+        error = color(theme.error)
+        caret = color(theme.caret)
+        sidebar = color(theme.sidebar)
+        sidebarSelection = color(theme.sidebarSelection)
+        tertiaryText = color(theme.tertiaryText)
+        secondaryText = color(theme.secondaryText)
+        activeLine = color(theme.activeLine)
     }
 }
 
@@ -66,6 +70,10 @@ private struct SheetEditorView: View {
     private let exchangeRates = ApplicationExchangeRates.shared.service
     private let cityTimeZones = ApplicationCityTimeZones.shared.service
     @State private var coordinator = SheetRefreshCoordinator()
+    @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(AppearanceMode.key) private var modeName = AppearanceMode.auto.rawValue
+    @AppStorage(AppearanceMode.lightThemeKey) private var lightThemeID = Theme.defaultLight.id
+    @AppStorage(AppearanceMode.darkThemeKey) private var darkThemeID = Theme.defaultDark.id
     @AppStorage(PrecisionSettingsView.generalKey) private var generalPrecision = PrecisionSetting.generalDefault
     @AppStorage(PrecisionSettingsView.cryptoKey) private var cryptoPrecision = PrecisionSetting.cryptoDefault
     @AppStorage(AppearanceSettingsView.familyKey) private var fontFamily = SheetTypography.defaultFamily
@@ -81,6 +89,15 @@ private struct SheetEditorView: View {
     private let store = SheetStore(folder: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appending(path: "Solvr/Sheets"))
     private let logger = Logger(subsystem: "Solvr", category: "SheetStore")
 
+    private var palette: Palette {
+        Palette(Theme.active(
+            mode: AppearanceMode(stored: modeName),
+            systemIsDark: colorScheme == .dark,
+            lightID: lightThemeID,
+            darkID: darkThemeID
+        ))
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             sidebar
@@ -95,7 +112,7 @@ private struct SheetEditorView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(Color(nsColor: Palette.secondaryText))
+                    .foregroundStyle(Color(nsColor: palette.secondaryText))
                     .help("New Sheet")
                     .accessibilityLabel("New Sheet")
                 }
@@ -112,7 +129,8 @@ private struct SheetEditorView: View {
                 SheetTextView(
                     text: $sheetText,
                     results: coordinator.results.map(SheetLineResult.init),
-                    typography: typography
+                    typography: typography,
+                    palette: palette
                 ) { updatedText in
                     sheetText = updatedText
                     coordinator.sheetTextEdited(updatedText)
@@ -123,13 +141,13 @@ private struct SheetEditorView: View {
                 }
                 // The sheet total sits centered below the content and is absent when no total is available (ADK-256).
                 if let total = coordinator.total {
-                    SheetTotalView(total: total)
+                    SheetTotalView(total: total, palette: palette)
                 }
             }
         }
         .frame(minWidth: 420, minHeight: 300)
-        .background(Color(nsColor: Palette.background).ignoresSafeArea())
-        .background(WindowChrome())
+        .background(Color(nsColor: palette.background).ignoresSafeArea())
+        .background(WindowChrome(background: palette.background))
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .toolbar(removing: .title)
         .ignoresSafeArea(.container, edges: .top)
@@ -219,7 +237,7 @@ private struct SheetEditorView: View {
         }
         .frame(width: 212)
         .frame(maxHeight: .infinity)
-        .background(Color(nsColor: Palette.sidebar))
+        .background(Color(nsColor: palette.sidebar))
     }
 
     private func sidebarRow(_ sheet: StoredSheet) -> some View {
@@ -230,24 +248,24 @@ private struct SheetEditorView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(sheet.title)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color(nsColor: Palette.text))
+                        .foregroundStyle(Color(nsColor: palette.text))
                         .lineLimit(1)
                     Spacer(minLength: 0)
                     Text(Self.stamp(of: sheet.updated))
                         .font(.system(size: 11))
                         .monospacedDigit()
-                        .foregroundStyle(Color(nsColor: Palette.tertiaryText))
+                        .foregroundStyle(Color(nsColor: palette.tertiaryText))
                 }
                 Text(Self.preview(of: sheet.text))
                     .font(.system(size: 11))
-                    .foregroundStyle(Color(nsColor: Palette.secondaryText))
+                    .foregroundStyle(Color(nsColor: palette.secondaryText))
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
-                selectedID == sheet.id ? Color(nsColor: Palette.sidebarSelection) : Color.clear,
+                selectedID == sheet.id ? Color(nsColor: palette.sidebarSelection) : Color.clear,
                 in: RoundedRectangle(cornerRadius: 8)
             )
             .contentShape(RoundedRectangle(cornerRadius: 8))
@@ -418,15 +436,25 @@ private final class AppSaveTimer: SheetSaveTimer {
 /// has the color of the sheet. The title is hidden, and the window buttons sit
 /// lower and farther from the edge, like the Finder.
 private struct WindowChrome: NSViewRepresentable {
+    let background: NSColor
+
     func makeNSView(context _: Context) -> ChromeView {
-        ChromeView()
+        let view = ChromeView()
+        view.background = background
+        return view
     }
 
-    func updateNSView(_: ChromeView, context _: Context) {}
+    func updateNSView(_ view: ChromeView, context _: Context) {
+        view.background = background
+    }
 }
 
 @MainActor
 private final class ChromeView: NSView {
+    var background = NSColor.windowBackgroundColor {
+        didSet { window?.backgroundColor = background }
+    }
+
     private static let titleBarHeight: CGFloat = 52
     private static let buttonInset: CGFloat = 19
     private static let buttonSpacing: CGFloat = 23
@@ -449,7 +477,7 @@ private final class ChromeView: NSView {
         window.titlebarAppearsTransparent = true
         window.titlebarSeparatorStyle = .none
         window.styleMask.insert(.fullSizeContentView)
-        window.backgroundColor = Palette.background
+        window.backgroundColor = background
         placeWindowButtons()
     }
 
@@ -519,13 +547,14 @@ private final class DimKnobScroller: NSScroller {
 /// The sheet total below the content: a labeled value, centered, that darkens on hover.
 private struct SheetTotalView: View {
     let total: String
+    let palette: Palette
     @State private var isHovered = false
 
     var body: some View {
         Text("Total: \(total)")
             .font(.system(size: 12, weight: isHovered ? .semibold : .regular))
             .monospacedDigit()
-            .foregroundStyle(Color(nsColor: isHovered ? Palette.text : Palette.secondaryText))
+            .foregroundStyle(Color(nsColor: isHovered ? palette.text : palette.secondaryText))
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, minHeight: 48, maxHeight: 48)
             .onHover { isHovered = $0 }
@@ -587,6 +616,7 @@ private struct SheetTextView: NSViewRepresentable {
     @Binding var text: String
     var results: [SheetLineResult]
     var typography: SheetTypography
+    var palette: Palette
     var onEdit: (String) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -603,6 +633,7 @@ private struct SheetTextView: NSViewRepresentable {
         scrollView.contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: Metrics.bottomPadding, right: 0)
 
         let textView = ShortcutTextView()
+        textView.palette = palette
         textView.typography = typography
         textView.isRichText = false
         textView.drawsBackground = false
@@ -611,7 +642,7 @@ private struct SheetTextView: NSViewRepresentable {
         textView.autoresizingMask = [.width]
         textView.textContainer?.widthTracksTextView = false
         textView.textContainer?.lineFragmentPadding = 0
-        textView.insertionPointColor = Palette.caret
+        textView.insertionPointColor = palette.caret
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
@@ -635,6 +666,7 @@ private struct SheetTextView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.parent = self
         guard let textView = scrollView.documentView as? ShortcutTextView else { return }
+        textView.palette = palette
         textView.typography = typography
         if textView.string != text {
             textView.string = text
@@ -674,6 +706,15 @@ private struct SheetTextView: NSViewRepresentable {
 private final class ShortcutTextView: NSTextView {
     var onCommentShortcut: ((ShortcutTextView) -> Void)?
     private var metrics = Metrics(typography: .default)
+
+    /// The theme colors. A change recolors the open sheet at once.
+    var palette = Palette(.defaultLight) {
+        didSet {
+            insertionPointColor = palette.caret
+            applySheetStyle()
+            needsDisplay = true
+        }
+    }
 
     /// The sheet typography. A change rebuilds the fonts and line metrics
     /// and restyles the open sheet at once.
@@ -746,7 +787,7 @@ private final class ShortcutTextView: NSTextView {
         guard !hasMarkedText(), let storage = textStorage else { return }
         let base: [NSAttributedString.Key: Any] = [
             .font: metrics.font,
-            .foregroundColor: Palette.text,
+            .foregroundColor: palette.text,
             .paragraphStyle: lineParagraphStyle,
             .baselineOffset: textBaselineOffset
         ]
@@ -825,14 +866,14 @@ private final class ShortcutTextView: NSTextView {
                 width: bounds.width - 2 * (Metrics.sidePadding - Metrics.columnGap),
                 height: metrics.lineHeight
             )
-            Palette.activeLine.setFill()
+            palette.activeLine.setFill()
             NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6).fill()
         }
 
         for (index, line) in lines.enumerated() {
             let numberAttributes: [NSAttributedString.Key: Any] = [
                 .font: metrics.numberFont,
-                .foregroundColor: index == activeLine ? Palette.lineNumberActive : Palette.lineNumber
+                .foregroundColor: index == activeLine ? palette.lineNumberActive : palette.lineNumber
             ]
             let number = "\(index + 1)" as NSString
             let numberSize = number.size(withAttributes: numberAttributes)
@@ -854,7 +895,7 @@ private final class ShortcutTextView: NSTextView {
             let result = lineResults[index]
             let resultAttributes: [NSAttributedString.Key: Any] = [
                 .font: metrics.font,
-                .foregroundColor: result.isError ? Palette.error : Palette.result
+                .foregroundColor: result.isError ? palette.error : palette.result
             ]
             let resultText = result.text as NSString
             let resultSize = resultText.size(withAttributes: resultAttributes)

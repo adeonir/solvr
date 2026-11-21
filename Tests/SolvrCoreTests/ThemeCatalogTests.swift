@@ -3,13 +3,6 @@ import Testing
 @testable import SolvrCore
 
 struct ThemeCatalogTests {
-    @Test func catalogHoldsTheDefaultThemeForLightAndDark() {
-        let light = Theme.catalog.filter { $0.kind == .light }.map(\.name)
-        let dark = Theme.catalog.filter { $0.kind == .dark }.map(\.name)
-        #expect(light == ["Default"])
-        #expect(dark == ["Default"])
-    }
-
     @Test func themeIdentifiersAreUnique() {
         #expect(Set(Theme.catalog.map(\.id)).count == Theme.catalog.count)
     }

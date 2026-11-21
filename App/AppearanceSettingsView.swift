@@ -7,13 +7,10 @@
 import SolvrCore
 import SwiftUI
 
-/// The window mode (ADK-329). Auto follows macOS; an unknown stored value is Auto.
-enum AppearanceMode: String, CaseIterable {
-    case light = "Light"
-    case dark = "Dark"
-    case auto = "Auto"
-
+extension AppearanceMode {
     static let key = "appearanceMode"
+    static let lightThemeKey = "lightThemeID"
+    static let darkThemeKey = "darkThemeID"
 
     /// The color scheme forced on the window, or nil to let macOS decide.
     var colorScheme: ColorScheme? {
@@ -33,6 +30,9 @@ struct AppearanceSettingsView: View {
     static let rowHeight: CGFloat = 24
 
     @AppStorage(AppearanceMode.key) private var modeName = AppearanceMode.auto.rawValue
+    @AppStorage(AppearanceMode.lightThemeKey) private var lightThemeID = Theme.defaultLight.id
+    @AppStorage(AppearanceMode.darkThemeKey) private var darkThemeID = Theme.defaultDark.id
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage(familyKey) private var family = SheetTypography.defaultFamily
     @AppStorage(sizeKey) private var storedSize = TypographySetting.sizeDefault
     @AppStorage(lineHeightKey) private var storedLineHeight = TypographySetting.lineHeightDefault
@@ -53,6 +53,26 @@ struct AppearanceSettingsView: View {
         TypographySetting.storedLineHeight(storedLineHeight)
     }
 
+    /// The kind the window shows now: the mode decides it, and Auto follows macOS.
+    private var kind: Theme.Kind {
+        Theme.active(mode: AppearanceMode(stored: modeName), systemIsDark: colorScheme == .dark, lightID: nil, darkID: nil).kind
+    }
+
+    private var defaultTheme: Theme {
+        kind == .light ? .defaultLight : .defaultDark
+    }
+
+    /// The theme kept for the current kind; a choice is kept for that kind only.
+    private var themeID: Binding<String> {
+        Binding(
+            get: {
+                let kept = kind == .light ? lightThemeID : darkThemeID
+                return Theme.list(for: kind).first { $0.id == kept }?.id ?? defaultTheme.id
+            },
+            set: { kind == .light ? (lightThemeID = $0) : (darkThemeID = $0) }
+        )
+    }
+
     var body: some View {
         Form {
             Picker("Mode", selection: $modeName) {
@@ -61,6 +81,14 @@ struct AppearanceSettingsView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .frame(height: Self.rowHeight)
+            Picker("Theme", selection: themeID) {
+                Text("Default").tag(defaultTheme.id)
+                Divider()
+                ForEach(Theme.list(for: kind).dropFirst()) { theme in
+                    Text(theme.name).tag(theme.id)
+                }
+            }
             .frame(height: Self.rowHeight)
             Picker("Font", selection: $family) {
                 ForEach(SheetFonts.monospacedFamilies(in: InstalledFonts.faces), id: \.self) { name in
