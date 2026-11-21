@@ -45,6 +45,12 @@ private struct Palette {
     let tertiaryText: NSColor
     let secondaryText: NSColor
     let activeLine: NSColor
+    private let syntax: [SyntaxKind: NSColor]
+
+    /// The color of a kind of part of a sheet line.
+    func color(for kind: SyntaxKind) -> NSColor {
+        syntax[kind] ?? text
+    }
 
     init(_ theme: Theme) {
         func color(_ value: ThemeColor) -> NSColor {
@@ -62,6 +68,7 @@ private struct Palette {
         tertiaryText = color(theme.tertiaryText)
         secondaryText = color(theme.secondaryText)
         activeLine = color(theme.activeLine)
+        syntax = Dictionary(uniqueKeysWithValues: SyntaxKind.allCases.map { ($0, color(theme.color(for: $0))) })
     }
 }
 
@@ -707,6 +714,11 @@ private final class ShortcutTextView: NSTextView {
     var onCommentShortcut: ((ShortcutTextView) -> Void)?
     private var metrics = Metrics(typography: .default)
 
+    /// The context the line parts are read in.
+    var partsContext = EvaluationContext(
+        localeIdentifier: Locale.current.identifier, timeZone: .current, now: Date(), displayPrecision: 2
+    )
+
     /// The theme colors. A change recolors the open sheet at once.
     var palette = Palette(.defaultLight) {
         didSet {
@@ -795,16 +807,24 @@ private final class ShortcutTextView: NSTextView {
         let source = storage.string as NSString
         storage.beginEditing()
         storage.setAttributes(base, range: NSRange(location: 0, length: source.length))
+        let parts = lineParts(sheetText: storage.string, context: partsContext)
         var location = 0
+        var lineIndex = 0
         while location < source.length {
             let line = source.lineRange(for: NSRange(location: location, length: 0))
-            if source.substring(with: line).hasPrefix("#") {
-                storage.addAttribute(.font, value: metrics.headingFont, range: line)
-                if metrics.headingIsSynthetic {
-                    storage.addAttribute(.strokeWidth, value: -3, range: line)
+            for part in lineIndex < parts.count ? parts[lineIndex] : [] {
+                let range = NSRange(location: line.location + part.range.lowerBound, length: part.range.count)
+                guard NSMaxRange(range) <= NSMaxRange(line) else { continue }
+                storage.addAttribute(.foregroundColor, value: palette.color(for: part.kind), range: range)
+                if part.kind == .heading {
+                    storage.addAttribute(.font, value: metrics.headingFont, range: range)
+                    if metrics.headingIsSynthetic {
+                        storage.addAttribute(.strokeWidth, value: -3, range: range)
+                    }
                 }
             }
             location = NSMaxRange(line)
+            lineIndex += 1
         }
         storage.endEditing()
         textContainerInset = NSSize(width: leadingInset, height: 0)
