@@ -7,6 +7,24 @@
 import SolvrCore
 import SwiftUI
 
+/// The window mode (ADK-329). Auto follows macOS; an unknown stored value is Auto.
+enum AppearanceMode: String, CaseIterable {
+    case light = "Light"
+    case dark = "Dark"
+    case auto = "Auto"
+
+    static let key = "appearanceMode"
+
+    /// The color scheme forced on the window, or nil to let macOS decide.
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .light: .light
+        case .dark: .dark
+        case .auto: nil
+        }
+    }
+}
+
 struct AppearanceSettingsView: View {
     static let familyKey = "sheetFontFamily"
     static let sizeKey = "sheetFontSize"
@@ -14,6 +32,7 @@ struct AppearanceSettingsView: View {
     /// The row height of the Settings design, shared by both tabs.
     static let rowHeight: CGFloat = 24
 
+    @AppStorage(AppearanceMode.key) private var modeName = AppearanceMode.auto.rawValue
     @AppStorage(familyKey) private var family = SheetTypography.defaultFamily
     @AppStorage(sizeKey) private var storedSize = TypographySetting.sizeDefault
     @AppStorage(lineHeightKey) private var storedLineHeight = TypographySetting.lineHeightDefault
@@ -36,6 +55,13 @@ struct AppearanceSettingsView: View {
 
     var body: some View {
         Form {
+            Picker("Mode", selection: $modeName) {
+                ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
+                    Text(mode.rawValue).tag(mode.rawValue)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(height: Self.rowHeight)
             Picker("Font", selection: $family) {
                 ForEach(SheetFonts.monospacedFamilies(in: InstalledFonts.faces), id: \.self) { name in
                     Text(name).tag(name)

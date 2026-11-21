@@ -6,9 +6,16 @@ import SwiftUI
 @main
 struct SolvrApp: App {
     @NSApplicationDelegateAdaptor(SolvrApplicationDelegate.self) private var appDelegate
+    @AppStorage(AppearanceMode.key) private var modeName = AppearanceMode.auto.rawValue
+
+    private var colorScheme: ColorScheme? {
+        AppearanceMode(rawValue: modeName)?.colorScheme
+    }
+
     var body: some Scene {
         WindowGroup("Solvr") {
             SheetEditorView()
+                .preferredColorScheme(colorScheme)
         }
         .defaultSize(width: 648, height: 498)
 
@@ -19,6 +26,7 @@ struct SolvrApp: App {
                 AppearanceSettingsView()
                     .tabItem { Label("Appearance", systemImage: "circle.lefthalf.filled") }
             }
+            .preferredColorScheme(colorScheme)
         }
     }
 }
