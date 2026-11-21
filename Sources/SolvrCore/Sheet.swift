@@ -76,7 +76,7 @@ struct SheetEvaluator {
     }
 
     /// Whether the trimmed line holds anything that can evaluate at all.
-    private func carriesEvaluationSignal(_ line: String) -> Bool {
+    func carriesEvaluationSignal(_ line: String) -> Bool {
         let operatorCharacters: Set<Character> = ["+", "-", "*", "/", "^", "="]
         if line.contains(where: { $0.isNumber || operatorCharacters.contains($0) }) {
             return true
