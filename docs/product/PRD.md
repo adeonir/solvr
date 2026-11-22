@@ -1,7 +1,7 @@
 ---
 name: prd
 created: 2026-10-26
-updated: 2026-10-30
+updated: 2026-11-21
 status: approved
 sources: []
 ---
@@ -61,7 +61,7 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
   - The line height has a default of 2.
   - An empty size field or an empty line height field returns to its default.
 - FR-12 The mode is Light, Dark, or Auto. Auto follows the appearance of macOS.
-- FR-33 The default theme uses the Apple colors and has a light version and a dark version. The theme colors the whole window: the sheet, the bars, and the sheet list.
+- FR-33 The default theme uses the Apple colors and has a light version and a dark version. The theme colors the whole window.
 - FR-9 The app shows either in the Dock or in the menu bar. The Show in Menu Bar option moves the app from the Dock to the menu bar, and turning the option off moves it back to the Dock. The option is off by default. The menu of the menu bar icon opens the window, opens Settings, and quits the app.
 - FR-13 The app is distributed by direct download and by Homebrew. App Store distribution is TBD. The app updates itself automatically in every case.
 
@@ -73,7 +73,7 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
 - FR-34 More themes join the default theme (FR-33):
   - The themes are catppuccin with all its variants, rose-pine with all its variants, tokyo-night with all its variants, Dracula and Alucard, one-dark and One Light, and Monokai dark and Monokai light. Each theme is light or dark and has an error color.
   - The theme list shows only the themes that match the current mode. The default theme is first in each list.
-  - In Auto, when macOS changes between light and dark, Solvr applies the first theme in the list for the new mode.
+  - Solvr keeps one theme for the light mode and one for the dark mode. Each change between light and dark, by hand or in Auto, applies the theme kept for the new mode, or the default theme when none was chosen.
 - FR-18 A global hotkey opens Solvr from any app. The user configures the hotkey in Settings. No global hotkey is configured by default.
 - FR-19 Launch at Login opens Solvr when the user logs in to macOS.
 - FR-22 Telemetry sends crash reports, errors, and usage data. Telemetry is on by default. The Telemetry option in Settings turns all telemetry off. Telemetry follows NFR-1.

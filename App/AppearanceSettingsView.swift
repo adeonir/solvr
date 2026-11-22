@@ -7,6 +7,21 @@
 import SolvrCore
 import SwiftUI
 
+extension AppearanceMode {
+    static let key = "appearanceMode"
+    static let lightThemeKey = "lightThemeID"
+    static let darkThemeKey = "darkThemeID"
+
+    /// The appearance forced on the app, or nil to let macOS decide.
+    var appearance: NSAppearance? {
+        switch self {
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
+        case .auto: nil
+        }
+    }
+}
+
 struct AppearanceSettingsView: View {
     static let familyKey = "sheetFontFamily"
     static let sizeKey = "sheetFontSize"
@@ -14,6 +29,10 @@ struct AppearanceSettingsView: View {
     /// The row height of the Settings design, shared by both tabs.
     static let rowHeight: CGFloat = 24
 
+    @AppStorage(AppearanceMode.key) private var modeName = AppearanceMode.auto.rawValue
+    @AppStorage(AppearanceMode.lightThemeKey) private var lightThemeID = Theme.defaultLight.id
+    @AppStorage(AppearanceMode.darkThemeKey) private var darkThemeID = Theme.defaultDark.id
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage(familyKey) private var family = SheetTypography.defaultFamily
     @AppStorage(sizeKey) private var storedSize = TypographySetting.sizeDefault
     @AppStorage(lineHeightKey) private var storedLineHeight = TypographySetting.lineHeightDefault
@@ -34,45 +53,94 @@ struct AppearanceSettingsView: View {
         TypographySetting.storedLineHeight(storedLineHeight)
     }
 
+    /// The kind the window shows now: the mode decides it, and Auto follows macOS.
+    private var kind: Theme.Kind {
+        Theme.active(mode: AppearanceMode(stored: modeName), systemIsDark: colorScheme == .dark, lightID: nil, darkID: nil).kind
+    }
+
+    private var defaultTheme: Theme {
+        kind == .light ? .defaultLight : .defaultDark
+    }
+
+    /// The theme kept for the current kind; a choice is kept for that kind only.
+    private var themeID: Binding<String> {
+        Binding(
+            get: {
+                let kept = kind == .light ? lightThemeID : darkThemeID
+                return Theme.list(for: kind).first { $0.id == kept }?.id ?? defaultTheme.id
+            },
+            set: { kind == .light ? (lightThemeID = $0) : (darkThemeID = $0) }
+        )
+    }
+
     var body: some View {
         Form {
-            Picker("Font", selection: $family) {
-                ForEach(SheetFonts.monospacedFamilies(in: InstalledFonts.faces), id: \.self) { name in
-                    Text(name).tag(name)
+            Section {
+                Picker("Mode", selection: $modeName) {
+                    ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
+                        Text(mode.rawValue).tag(mode.rawValue)
+                    }
                 }
-            }
-            .frame(height: Self.rowHeight)
-            HStack {
-                Text("Size")
-                Spacer()
-                HStack(spacing: 8) {
-                    TextField("", text: $sizeText)
-                        .textFieldStyle(.roundedBorder)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 64)
-                        .focused($focused, equals: .size)
-                    Text("px")
-                        .foregroundStyle(.secondary)
-                        .frame(width: 20, alignment: .leading)
+                .pickerStyle(.segmented)
+                .frame(height: Self.rowHeight)
+                .settingsRow()
+                Picker("Theme", selection: themeID) {
+                    Text("Default").tag(defaultTheme.id)
+                    Divider()
+                    ForEach(Theme.list(for: kind).dropFirst()) { theme in
+                        Text(theme.name).tag(theme.id)
+                    }
                 }
+                .frame(height: Self.rowHeight)
+                .settingsRow()
+            } header: {
+                Text("Colors").settingsHeader()
             }
-            .frame(height: AppearanceSettingsView.rowHeight)
-            HStack {
-                Text("Line Height")
-                Spacer()
-                HStack(spacing: 8) {
-                    TextField("", text: $lineHeightText)
-                        .textFieldStyle(.roundedBorder)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 64)
-                        .focused($focused, equals: .lineHeight)
-                    Color.clear
-                        .frame(width: 20, height: 1)
+            Section {
+                Picker("Font", selection: $family) {
+                    ForEach(SheetFonts.monospacedFamilies(in: InstalledFonts.faces), id: \.self) { name in
+                        Text(name).tag(name)
+                    }
                 }
+                .frame(height: Self.rowHeight)
+                .settingsRow()
+                HStack {
+                    Text("Size")
+                    Spacer()
+                    HStack(spacing: 8) {
+                        TextField("", text: $sizeText)
+                            .settingsField()
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 64)
+                            .focused($focused, equals: .size)
+                        Text("px")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20, alignment: .leading)
+                    }
+                }
+                .frame(height: AppearanceSettingsView.rowHeight)
+                .settingsRow()
+                HStack {
+                    Text("Line Height")
+                    Spacer()
+                    HStack(spacing: 8) {
+                        TextField("", text: $lineHeightText)
+                            .settingsField()
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 64)
+                            .focused($focused, equals: .lineHeight)
+                        Color.clear
+                            .frame(width: 20, height: 1)
+                    }
+                }
+                .frame(height: AppearanceSettingsView.rowHeight)
+                .settingsRow()
+            } header: {
+                Text("Typography").settingsHeader()
             }
-            .frame(height: AppearanceSettingsView.rowHeight)
         }
         .formStyle(.grouped)
+        .settingsThemed()
         .frame(width: 500)
         .onAppear {
             // The stored family returns to the default when it is no longer

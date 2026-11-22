@@ -30,28 +30,35 @@ struct PrecisionSettingsView: View {
 
     var body: some View {
         Form {
-            HStack {
-                Text("General precision")
-                Spacer()
-                TextField("", text: $generalText)
-                    .textFieldStyle(.roundedBorder)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 64)
-                    .focused($focused, equals: .general)
+            Section {
+                HStack {
+                    Text("General precision")
+                    Spacer()
+                    TextField("", text: $generalText)
+                        .settingsField()
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 64)
+                        .focused($focused, equals: .general)
+                }
+                .frame(height: AppearanceSettingsView.rowHeight)
+                .settingsRow()
+                HStack {
+                    Text("Crypto precision")
+                    Spacer()
+                    TextField("", text: $cryptoText)
+                        .settingsField()
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 64)
+                        .focused($focused, equals: .crypto)
+                }
+                .frame(height: AppearanceSettingsView.rowHeight)
+                .settingsRow()
+            } header: {
+                Text("Calculation").settingsHeader()
             }
-            .frame(height: AppearanceSettingsView.rowHeight)
-            HStack {
-                Text("Crypto precision")
-                Spacer()
-                TextField("", text: $cryptoText)
-                    .textFieldStyle(.roundedBorder)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 64)
-                    .focused($focused, equals: .crypto)
-            }
-            .frame(height: AppearanceSettingsView.rowHeight)
         }
         .formStyle(.grouped)
+        .settingsThemed()
         .frame(width: 500)
         .onAppear {
             generalText = String(generalValue)

@@ -47,65 +47,99 @@ enum Tokenizer {
         decimalSeparator: Character,
         groupingSeparator: Character
     ) throws -> [Token] {
-        var tokens: [Token] = []
+        try scan(line, decimalSeparator: decimalSeparator, groupingSeparator: groupingSeparator, recovering: false)
+            .map(\.token)
+    }
+
+    /// A token with the range of the line it was read from.
+    struct Spanned {
+        let token: Token
+        let range: Range<String.Index>
+    }
+
+    /// Reads the tokens with their ranges. A recovering scan skips what it
+    /// cannot read, a character the language does not define or a number
+    /// that does not parse, instead of throwing (ADK-331).
+    static func scan(
+        _ line: String,
+        decimalSeparator: Character,
+        groupingSeparator: Character,
+        recovering: Bool
+    ) throws -> [Spanned] {
+        var tokens: [Spanned] = []
         var index = line.startIndex
 
         while index < line.endIndex {
             let character = line[index]
-            if let (value, next) = try Money.scanLiteral(at: index, in: line, locale: Locale(identifier: decimalSeparator == "." ? "en_US" : "pt_BR")) {
-                tokens.append(.monetary(value))
+            let start = index
+            let locale = Locale(identifier: decimalSeparator == "." ? "en_US" : "pt_BR")
+            let literal = recovering
+                ? try? Money.scanLiteral(at: index, in: line, locale: locale)
+                : try Money.scanLiteral(at: index, in: line, locale: locale)
+            if let (value, next) = literal {
+                tokens.append(Spanned(token: .monetary(value), range: start ..< next))
                 index = next
                 continue
             }
             if character.isLetter {
-                let start = index
                 while index < line.endIndex,
                       line[index].isLetter || line[index].isNumber || line[index] == "_"
                 {
                     index = line.index(after: index)
                 }
                 let word = String(line[start ..< index])
-                tokens.append(word == "times" ? .times : word == "in" ? .in : .word(word))
+                tokens.append(Spanned(token: word == "times" ? .times : word == "in" ? .in : .word(word), range: start ..< index))
                 continue
             }
             if character.isNumber {
                 // A base literal `0b/0o/0x <digits>` shares the plain
                 // decimal value of its digits in its base.
                 if let literal = Display.scanBaseLiteral(at: index, in: line) {
-                    tokens.append(.number(literal.value))
+                    tokens.append(Spanned(token: .number(literal.value), range: start ..< literal.end))
                     index = literal.end
                     continue
                 }
-                let (number, next) = try scanNumber(
-                    from: index, in: line,
-                    decimalSeparator: decimalSeparator,
-                    groupingSeparator: groupingSeparator
-                )
-                tokens.append(.number(number))
-                index = next
+                do {
+                    let (number, next) = try scanNumber(
+                        from: index, in: line,
+                        decimalSeparator: decimalSeparator,
+                        groupingSeparator: groupingSeparator
+                    )
+                    tokens.append(Spanned(token: .number(number), range: start ..< next))
+                    index = next
+                } catch where recovering {
+                    index = line.index(after: index)
+                }
                 continue
             }
+            let token: Token?
             switch character {
-            case "+": tokens.append(.plus)
-            case "-": tokens.append(.minus)
-            case "*", "×": tokens.append(.star)
-            case "/": tokens.append(.slash)
-            case "^": tokens.append(.caret)
-            case "(": tokens.append(.openParen)
-            case ")": tokens.append(.closeParen)
-            case "=": tokens.append(.equals)
-            case ";": tokens.append(.semicolon)
-            case ":": tokens.append(.colon)
-            case "%": tokens.append(.percent)
-            case "&": tokens.append(.ampersand)
-            case "|": tokens.append(.pipe)
-            case "°": tokens.append(.degree)
+            case "+": token = .plus
+            case "-": token = .minus
+            case "*", "×": token = .star
+            case "/": token = .slash
+            case "^": token = .caret
+            case "(": token = .openParen
+            case ")": token = .closeParen
+            case "=": token = .equals
+            case ";": token = .semicolon
+            case ":": token = .colon
+            case "%": token = .percent
+            case "&": token = .ampersand
+            case "|": token = .pipe
+            case "°": token = .degree
             case " ", "\t", "\u{00A0}", "\u{202F}", "\u{2060}":
-                break
+                token = nil
             default:
-                throw LineError(diagnostic: .syntax)
+                if !recovering {
+                    throw LineError(diagnostic: .syntax)
+                }
+                token = nil
             }
             index = line.index(after: index)
+            if let token {
+                tokens.append(Spanned(token: token, range: start ..< index))
+            }
         }
         return tokens
     }
