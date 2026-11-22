@@ -54,6 +54,19 @@ targets:
         SWIFT_VERSION: "6.0"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
+  AppTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/AppTests
+    dependencies:
+      - target: Solvr
+      - package: SolvrCore
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   Solvr:
     build:
@@ -63,3 +76,4 @@ schemes:
     test:
       targets:
         - CoreTests
+        - AppTests
