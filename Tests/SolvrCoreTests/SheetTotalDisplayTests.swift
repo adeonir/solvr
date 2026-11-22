@@ -1,5 +1,9 @@
 import Foundation
+#if canImport(Core)
+@testable import Core
+#else
 @testable import SolvrCore
+#endif
 import Testing
 
 // The total follows the sheet text and the precision settings, is absent

@@ -1,5 +1,9 @@
 import Foundation
+#if canImport(Core)
+@testable import Core
+#else
 @testable import SolvrCore
+#endif
 import Testing
 
 // Headings and comments organize the sheet without evaluating their text;

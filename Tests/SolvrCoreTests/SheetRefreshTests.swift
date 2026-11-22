@@ -1,5 +1,9 @@
 import Foundation
+#if canImport(Core)
+@testable import Core
+#else
 @testable import SolvrCore
+#endif
 import Testing
 
 // The refresher keeps a sheet's visible results current through the

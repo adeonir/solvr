@@ -1,5 +1,9 @@
 import Foundation
+#if canImport(Core)
+@testable import Core
+#else
 @testable import SolvrCore
+#endif
 import Testing
 
 // A conversion schedules the next transition of the zones it uses, and

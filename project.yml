@@ -3,13 +3,38 @@ name: Solvr
 options:
   bundleIdPrefix: com.adeonir.labs
   deploymentTarget:
-    macOS: "15.0"
+    macOS: "26.0"
+  xcodeVersion: "27.0"
+  projectFormat: "xcode27_0"
 
 packages:
   SolvrCore:
     path: .
 
 targets:
+  Core:
+    type: framework
+    platform: macOS
+    sources:
+      - Sources/SolvrCore
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+
+  CoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/SolvrCoreTests
+    dependencies:
+      - target: Core
+        embed: false
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+
   Solvr:
     type: application
     platform: macOS
@@ -28,3 +53,13 @@ targets:
       base:
         SWIFT_VERSION: "6.0"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+schemes:
+  Solvr:
+    build:
+      targets:
+        Solvr: all
+        Core: all
+    test:
+      targets:
+        - CoreTests
