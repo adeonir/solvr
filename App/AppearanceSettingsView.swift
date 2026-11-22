@@ -12,11 +12,11 @@ extension AppearanceMode {
     static let lightThemeKey = "lightThemeID"
     static let darkThemeKey = "darkThemeID"
 
-    /// The color scheme forced on the window, or nil to let macOS decide.
-    var colorScheme: ColorScheme? {
+    /// The appearance forced on the app, or nil to let macOS decide.
+    var appearance: NSAppearance? {
         switch self {
-        case .light: .light
-        case .dark: .dark
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
         case .auto: nil
         }
     }

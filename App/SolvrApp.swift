@@ -8,14 +8,17 @@ struct SolvrApp: App {
     @NSApplicationDelegateAdaptor(SolvrApplicationDelegate.self) private var appDelegate
     @AppStorage(AppearanceMode.key) private var modeName = AppearanceMode.auto.rawValue
 
-    private var colorScheme: ColorScheme? {
-        AppearanceMode(rawValue: modeName)?.colorScheme
+    // Set on the app rather than through preferredColorScheme: a nil color
+    // scheme does not return a window to the macOS appearance until the
+    // window is activated again.
+    private func applyAppearance() {
+        NSApp.appearance = AppearanceMode(stored: modeName).appearance
     }
 
     var body: some Scene {
         WindowGroup("Solvr") {
             SheetEditorView()
-                .preferredColorScheme(colorScheme)
+                .onChange(of: modeName, initial: true) { applyAppearance() }
         }
         .defaultSize(width: 648, height: 498)
 
@@ -26,7 +29,7 @@ struct SolvrApp: App {
                 AppearanceSettingsView()
                     .tabItem { Label("Appearance", systemImage: "circle.lefthalf.filled") }
             }
-            .preferredColorScheme(colorScheme)
+            .onChange(of: modeName, initial: true) { applyAppearance() }
         }
     }
 }
@@ -476,6 +479,14 @@ private final class ChromeView: NSView {
                 MainActor.assumeIsolated { self?.placeWindowButtons() }
             }
         }
+    }
+
+    /// A change of appearance rebuilds the title bar, which puts the window
+    /// buttons back at the system position.
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        placeWindowButtons()
+        DispatchQueue.main.async { [weak self] in self?.placeWindowButtons() }
     }
 
     /// Runs twice: SwiftUI sets the window up after this view is attached.
