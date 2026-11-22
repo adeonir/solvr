@@ -153,8 +153,8 @@ private struct SheetEditorView: View {
             }
         }
         .frame(minWidth: 420, minHeight: 300)
-        .background(Color(nsColor: palette.background).ignoresSafeArea())
-        .background(WindowChrome(background: palette.background))
+        .background(Color(nsColor: palette.sidebar).ignoresSafeArea())
+        .background(WindowChrome(background: palette.sidebar))
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .toolbar(removing: .title)
         .ignoresSafeArea(.container, edges: .top)
@@ -244,7 +244,7 @@ private struct SheetEditorView: View {
         }
         .frame(width: 212)
         .frame(maxHeight: .infinity)
-        .background(Color(nsColor: palette.sidebar))
+        .background(Color(nsColor: palette.background))
     }
 
     private func sidebarRow(_ sheet: StoredSheet) -> some View {
@@ -272,7 +272,7 @@ private struct SheetEditorView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
-                selectedID == sheet.id ? Color(nsColor: palette.sidebarSelection) : Color.clear,
+                selectedID == sheet.id ? Color(nsColor: palette.activeLine) : Color.clear,
                 in: RoundedRectangle(cornerRadius: 8)
             )
             .contentShape(RoundedRectangle(cornerRadius: 8))
