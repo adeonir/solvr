@@ -127,12 +127,12 @@ _Avoid_: group, collection
 The place that holds deleted sheets until they are recovered or removed permanently.
 _Avoid_: trash, bin, deleted items
 
-**Mode**:
-The light or dark appearance of the app: Light, Dark, or Auto. Auto follows the appearance of macOS.
-_Avoid_: appearance mode
+**Appearance**:
+The light or dark look of the app: Light, Dark, or Auto. Auto follows the appearance of macOS.
+_Avoid_: mode, appearance mode
 
 **Theme**:
-A named set of colors for the whole window. Each theme is light or dark, and only the themes that match the current mode are available.
+A named set of colors for the whole window. Each theme is light or dark, and only the themes that match the current appearance are available.
 _Avoid_: color scheme, palette, skin
 
 **Typography**:
