@@ -104,7 +104,7 @@ struct AppearanceSettingsView: View {
                 Spacer()
                 HStack(spacing: 8) {
                     TextField("", text: $sizeText)
-                        .textFieldStyle(.roundedBorder)
+                        .settingsField()
                         .multilineTextAlignment(.trailing)
                         .frame(width: 64)
                         .focused($focused, equals: .size)
@@ -120,7 +120,7 @@ struct AppearanceSettingsView: View {
                 Spacer()
                 HStack(spacing: 8) {
                     TextField("", text: $lineHeightText)
-                        .textFieldStyle(.roundedBorder)
+                        .settingsField()
                         .multilineTextAlignment(.trailing)
                         .frame(width: 64)
                         .focused($focused, equals: .lineHeight)

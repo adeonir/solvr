@@ -45,7 +45,7 @@ struct ThemeSyntaxColorTests {
 
     @Test func aThemeKeepsItsFamilyColors() {
         #expect(Theme.catalog.first { $0.id == "dracula" }?.color(for: .comment) == ThemeColor(hex: 0x6272A4))
-        #expect(Theme.catalog.first { $0.id == "dracula" }?.color(for: .monetaryValue) == ThemeColor(hex: 0x50FA7B))
+        #expect(Theme.catalog.first { $0.id == "dracula" }?.color(for: .monetaryValue) == ThemeColor(hex: 0xF1FA8C))
         #expect(Theme.catalog.first { $0.id == "catppuccin-mocha" }?.color(for: .number) == ThemeColor(hex: 0xFAB387))
     }
 
