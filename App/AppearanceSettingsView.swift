@@ -75,61 +75,69 @@ struct AppearanceSettingsView: View {
 
     var body: some View {
         Form {
-            Picker("Mode", selection: $modeName) {
-                ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
-                    Text(mode.rawValue).tag(mode.rawValue)
+            Section {
+                Picker("Mode", selection: $modeName) {
+                    ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
+                        Text(mode.rawValue).tag(mode.rawValue)
+                    }
                 }
-            }
-            .pickerStyle(.segmented)
-            .frame(height: Self.rowHeight)
-            .settingsRow()
-            Picker("Theme", selection: themeID) {
-                Text("Default").tag(defaultTheme.id)
-                Divider()
-                ForEach(Theme.list(for: kind).dropFirst()) { theme in
-                    Text(theme.name).tag(theme.id)
+                .pickerStyle(.segmented)
+                .frame(height: Self.rowHeight)
+                .settingsRow()
+                Picker("Theme", selection: themeID) {
+                    Text("Default").tag(defaultTheme.id)
+                    Divider()
+                    ForEach(Theme.list(for: kind).dropFirst()) { theme in
+                        Text(theme.name).tag(theme.id)
+                    }
                 }
+                .frame(height: Self.rowHeight)
+                .settingsRow()
+            } header: {
+                Text("Colors").settingsHeader()
             }
-            .frame(height: Self.rowHeight)
-            .settingsRow()
-            Picker("Font", selection: $family) {
-                ForEach(SheetFonts.monospacedFamilies(in: InstalledFonts.faces), id: \.self) { name in
-                    Text(name).tag(name)
+            Section {
+                Picker("Font", selection: $family) {
+                    ForEach(SheetFonts.monospacedFamilies(in: InstalledFonts.faces), id: \.self) { name in
+                        Text(name).tag(name)
+                    }
                 }
-            }
-            .frame(height: Self.rowHeight)
-            .settingsRow()
-            HStack {
-                Text("Size")
-                Spacer()
-                HStack(spacing: 8) {
-                    TextField("", text: $sizeText)
-                        .settingsField()
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 64)
-                        .focused($focused, equals: .size)
-                    Text("px")
-                        .foregroundStyle(.secondary)
-                        .frame(width: 20, alignment: .leading)
+                .frame(height: Self.rowHeight)
+                .settingsRow()
+                HStack {
+                    Text("Size")
+                    Spacer()
+                    HStack(spacing: 8) {
+                        TextField("", text: $sizeText)
+                            .settingsField()
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 64)
+                            .focused($focused, equals: .size)
+                        Text("px")
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20, alignment: .leading)
+                    }
                 }
-            }
-            .frame(height: AppearanceSettingsView.rowHeight)
-            .settingsRow()
-            HStack {
-                Text("Line Height")
-                Spacer()
-                HStack(spacing: 8) {
-                    TextField("", text: $lineHeightText)
-                        .settingsField()
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 64)
-                        .focused($focused, equals: .lineHeight)
-                    Color.clear
-                        .frame(width: 20, height: 1)
+                .frame(height: AppearanceSettingsView.rowHeight)
+                .settingsRow()
+                HStack {
+                    Text("Line Height")
+                    Spacer()
+                    HStack(spacing: 8) {
+                        TextField("", text: $lineHeightText)
+                            .settingsField()
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 64)
+                            .focused($focused, equals: .lineHeight)
+                        Color.clear
+                            .frame(width: 20, height: 1)
+                    }
                 }
+                .frame(height: AppearanceSettingsView.rowHeight)
+                .settingsRow()
+            } header: {
+                Text("Typography").settingsHeader()
             }
-            .frame(height: AppearanceSettingsView.rowHeight)
-            .settingsRow()
         }
         .formStyle(.grouped)
         .settingsThemed()

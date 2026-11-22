@@ -66,6 +66,19 @@ private struct SettingsRowModifier: ViewModifier {
     }
 }
 
+private struct SettingsHeaderModifier: ViewModifier {
+    private let active = ActiveTheme()
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if active.isDefault {
+            content
+        } else {
+            content.foregroundStyle(Color(active.theme.text))
+        }
+    }
+}
+
 private struct SettingsFieldModifier: ViewModifier {
     private let active = ActiveTheme()
     @FocusState private var isFocused: Bool
@@ -104,6 +117,11 @@ extension View {
     /// theme's border color between rows.
     func settingsRow() -> some View {
         modifier(SettingsRowModifier())
+    }
+
+    /// Draws a Settings section label in the active theme's text color.
+    func settingsHeader() -> some View {
+        modifier(SettingsHeaderModifier())
     }
 
     /// Draws a Settings text field on the active theme's field background,
