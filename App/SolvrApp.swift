@@ -32,7 +32,7 @@ struct SolvrApp: App {
 }
 
 /// The colors of the window design, taken from the active theme.
-private struct Palette {
+private struct Palette: Equatable {
     let background: NSColor
     let text: NSColor
     let lineNumber: NSColor
@@ -722,6 +722,7 @@ private final class ShortcutTextView: NSTextView {
     /// The theme colors. A change recolors the open sheet at once.
     var palette = Palette(.defaultLight) {
         didSet {
+            guard palette != oldValue else { return }
             insertionPointColor = palette.caret
             applySheetStyle()
             needsDisplay = true
