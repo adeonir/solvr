@@ -141,7 +141,7 @@ public struct Theme: Equatable, Sendable, Identifiable {
               syntax: .roles(purple: 0xA626A4, pink: 0xCA1243, orange: 0xB76B01, yellow: 0xCB7701, green: 0x50A14F,
                              blue: 0x4078F2, cyan: 0x0184BC, comment: 0xA0A1A7, subtle: 0x696C77)),
         Theme("rose-pine-dawn", "Rosé Pine Dawn", .light,
-              background: 0xFAF4ED, text: 0x464261, lineNumber: 0x9893A5, lineNumberActive: 0x797593,
+              background: 0xFAF4ED, text: 0x575279, lineNumber: 0x9893A5, lineNumberActive: 0x797593,
               result: 0x56949F, error: 0xB4637A, caret: 0x56949F, activeLine: ThemeColor(hex: 0xF4EDE8),
               sidebar: 0xFFFAF3, sidebarSelection: 0xF2E9E1, secondaryText: 0x797593, tertiaryText: 0x9893A5,
               syntax: .roles(purple: 0x907AA9, pink: 0xD7827E, orange: 0xEA9D34, yellow: 0xEA9D34, green: 0x286983,
