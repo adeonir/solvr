@@ -33,3 +33,7 @@ Solvr is a beautiful text calculator for Mac. It combines a calculation language
 ## Issue tracker
 
 Tracker: Linear — team Development, project Solvr App. Configuration: repository-local `tracker.*`; inspect with `git config --local --get-regexp '^tracker\.'`. Change with "configure tracker".
+
+## Merge method
+
+Pull requests merge with a merge commit, preserving branch commits.
