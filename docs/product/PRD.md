@@ -1,7 +1,7 @@
 ---
 name: prd
 created: 2026-10-26
-updated: 2026-11-21
+updated: 2026-11-22
 status: approved
 sources: []
 ---
@@ -111,7 +111,8 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
 |----|------------|--------|
 | NFR-1 | Telemetry carries no personal data. Sheet text and expressions go with telemetry only in anonymized form: each real name and each real number is replaced by a false value of the same type and format, and the expression can still be calculated, so `salário = R$ 8.000 - 4%` becomes `var1 = R$ 3.517 - 7%`. | Every telemetry event |
 | NFR-2 | Without an internet connection, currency conversion and time zone conversion by city name use the cached data. | Each conversion that has cached data |
-| NFR-3 | Solvr runs on the supported macOS versions. | macOS 15 or later |
+| NFR-3 | Solvr runs on the supported macOS versions. | macOS 26 or later |
+| NFR-4 | Solvr is built with the supported Xcode versions. | Xcode 27 or later |
 
 ## 6. Assumptions & Risks
 

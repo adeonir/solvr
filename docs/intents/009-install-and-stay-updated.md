@@ -3,7 +3,7 @@ id: "009"
 name: install-and-stay-updated
 status: accepted
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-22
 ---
 
 # Intent: Install the app and stay updated
@@ -22,7 +22,7 @@ The author and other Mac users with the same use cases; macOS, direct download, 
 
 ## Constraints
 
-- The app runs on macOS 15 or later.
+- The app runs on macOS 26 or later.
 - Distribution includes direct download and Homebrew. App Store distribution is planned, subject to confirmation.
 - The app updates itself automatically for every distribution method.
 
