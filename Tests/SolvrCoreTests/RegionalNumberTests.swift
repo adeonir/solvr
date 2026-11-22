@@ -2,9 +2,8 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for regional number reading and representation
-// conversion (ADK-222). Locale and display precision are fixed per fixture
-// through the EvaluationContext, per ADR-005.
+// Locale and display precision are fixed per fixture through the
+// EvaluationContext.
 
 struct RegionalNumberTests {
     private func context(

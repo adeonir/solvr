@@ -1,6 +1,6 @@
-// The font families a sheet can use (ADK-262). The app reads the installed
-// faces from the system; this file decides which families are monospaced,
-// which faces a sheet draws with, and which family it falls back to.
+// The app reads the installed faces from the system; this file decides
+// which families are monospaced, which faces a sheet draws with, and which
+// family it falls back to.
 
 import Foundation
 

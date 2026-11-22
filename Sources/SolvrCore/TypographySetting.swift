@@ -1,7 +1,6 @@
-// Settings values for sheet typography (ADK-261): the font size in px and
-// the line height as a multiplier of the size. An empty field commits the
-// default; any other invalid text commits the last valid value. A stored
-// value outside its range falls back to the default.
+// The font size in px and the line height as a multiplier of the size. An
+// empty field commits the default; any other invalid text commits the last
+// valid value. A stored value outside its range falls back to the default.
 
 import Foundation
 

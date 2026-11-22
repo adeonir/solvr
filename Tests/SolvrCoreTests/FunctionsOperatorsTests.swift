@@ -2,10 +2,8 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for the named functions and the split between
-// arithmetic and bitwise operators (ADK-225). Locale, display precision,
-// time zone, and clock are fixed per fixture through the EvaluationContext,
-// per ADR-005.
+// Locale, display precision, time zone, and clock are fixed per fixture
+// through the EvaluationContext.
 
 struct FunctionsOperatorsTests {
     private func context(
@@ -121,7 +119,7 @@ struct FunctionsOperatorsTests {
         #expect(result.display == expected)
     }
 
-    // MARK: 34-significant-digit retention within the ADR-006 error bounds
+    // MARK: 34-significant-digit retention
 
     /// `sqrt` keeps half a unit in the 34th significant digit.
     @Test
@@ -149,7 +147,6 @@ struct FunctionsOperatorsTests {
         #expect(try approximately(result.value, reference, tolerance: Decimal(exact: "1e-33")))
     }
 
-    /// The retained value does not depend on the displayed places.
     @Test
     func precisionChangeLeavesTheRetainedValueAlone() {
         let tight = evaluate(sheetText: "x = sqrt 2\nx", context: context(precision: 40))

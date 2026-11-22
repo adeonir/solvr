@@ -1,5 +1,5 @@
-// Line parts (ADK-331): the recognized parts of each sheet line, for the
-// editor to color. The parts come from the same reading the evaluation uses.
+// The recognized parts of each sheet line come from the same reading the
+// evaluation uses, for the editor to color.
 
 import Foundation
 

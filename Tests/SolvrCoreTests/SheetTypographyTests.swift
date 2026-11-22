@@ -2,9 +2,9 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Sheet typography (ADK-260): one value of family, size, and line height
-// gives every font size and line metric of the sheet editor. The defaults
-// reproduce the fixed metrics the editor used before.
+// One value of family, size, and line height gives every font size and line
+// metric of the sheet editor. The defaults reproduce the editor's fixed
+// metrics.
 
 struct SheetTypographyTests {
     @Test func defaultsMatchTheCurrentSheet() {

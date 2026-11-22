@@ -1,13 +1,12 @@
-// The public sheet-evaluation boundary (ADK-221). Sheets evaluate as the
-// user types: `evaluate` receives the ordered sheet text and the explicit
-// evaluation context and returns one result per line, per the evaluation
-// contract in the product specification.
+// The public sheet-evaluation boundary. Sheets evaluate as the user types:
+// `evaluate` receives the ordered sheet text and the explicit evaluation
+// context and returns one result per line.
 
 import Foundation
 
 /// The numeric context an evaluation runs in. The caller supplies every
 /// regional and temporal value; the evaluator never relies on process
-/// defaults (ADR-005).
+/// defaults.
 public struct EvaluationContext: Sendable, Equatable {
     /// Regional number formatting, e.g. `"pt_BR"`.
     public var localeIdentifier: String
@@ -28,7 +27,7 @@ public struct EvaluationContext: Sendable, Equatable {
     public var ppi: Decimal
     public var exchangeRates: ExchangeRateSnapshot
     /// The city data a time-of-day conversion by city name resolves
-    /// against (ADK-250).
+    /// against.
     public var cityTimeZones: CityTimeZoneSnapshot
 
     public init(
@@ -78,14 +77,13 @@ public enum LineKind: Sendable, Equatable {
 public enum ExpressionValue: Sendable, Equatable {
     case decimal(Decimal)
     case monetary(MonetaryValue)
-    /// A calendar date, or an instant shown with its time of day
-    /// (ADK-229).
+    /// A calendar date, or an instant shown with its time of day.
     case date(Date)
     /// A calendar-day difference in whole days, apart from any numeric
-    /// magnitude (ADK-229).
+    /// magnitude.
     case difference(Int)
     /// A clock reading such as `11am`, apart from any numeric magnitude
-    /// and from a calendar date (ADK-249).
+    /// and from a calendar date.
     case timeOfDay(TimeOfDay)
 }
 
@@ -100,9 +98,9 @@ public struct ExpressionResult: Sendable, Equatable {
     /// What failed, or nil when the line has a result or has none to show.
     public let diagnostic: Diagnostic?
     /// The unit a quantity line carries: its own unit, or the destination
-    /// of a conversion (ADK-253). Nil for every other result.
+    /// of a conversion. Nil for every other result.
     let unit: Unit?
-    /// The quantity the result adds to a sheet total with (ADK-254). Unlike
+    /// The quantity the result adds to a sheet total with. Unlike
     /// `unit`, it also follows arithmetic, assignments, and references, and
     /// it carries time units for durations, timespans, and calendar-day
     /// differences.
@@ -134,7 +132,7 @@ public struct ExpressionResult: Sendable, Equatable {
     }
 }
 
-/// The quantity a result adds to a sheet total with (ADK-254): a unit of
+/// The quantity a result adds to a sheet total with: a unit of
 /// length, data, temperature, or CSS text, or a time unit. Durations and
 /// timespans count their seconds; a calendar-day difference counts its days.
 enum Measure: Sendable, Equatable {
@@ -151,13 +149,13 @@ public func evaluate(sheetText: String, context: EvaluationContext) -> [Expressi
     return evaluator.evaluate(sheetText)
 }
 
-/// The sheet total (ADK-246, ADK-254). The last eligible result with an
-/// explicit unit, currency, or time unit selects the group; every eligible
-/// result compatible with that group adds to the total, and plain numbers
-/// join it without selecting it. The total takes the group's selecting unit
-/// or currency and sums at full precision. A calendar date or time of day
-/// among the eligible results, a missing rate, a line out of range, or a sum
-/// out of range shows no total.
+/// The sheet total. The last eligible result with an explicit unit,
+/// currency, or time unit selects the group; every eligible result
+/// compatible with that group adds to the total, and plain numbers join it
+/// without selecting it. The total takes the group's selecting unit or
+/// currency and sums at full precision. A calendar date or time of day
+/// among the eligible results, a missing rate, a line out of range, or a
+/// sum out of range shows no total.
 public func sheetTotal(of results: [ExpressionResult], context: EvaluationContext) -> ExpressionResult? {
     let suppressesTotal = results.contains { result in
         switch result.diagnostic {
@@ -258,7 +256,7 @@ private func amount(of result: ExpressionResult, in target: Measure, context: Ev
     switch (target, result.measure, result.value) {
     case let (.unit(target), .unit(source)?, .decimal(number)?) where source.dimension == target.dimension:
         // A `rem` or `em` conversion counts its own unit, so its count reads
-        // through the shared pixel base before conversion (ADK-254).
+        // through the shared pixel base before conversion.
         if source.isRelative {
             let pixels = try Numeric.multiply(number, context.pixelBase)
             return try Units.convert(pixels, from: .pixel, to: target, context: context, override: nil)

@@ -1,9 +1,9 @@
-// Parser (ADK-221): recursive descent over the token line with arithmetic
-// precedence, right-associative `^`, unary minus binding looser than `^`,
-// implicit multiplication through a parenthesis, `;` argument separation,
-// and the incomplete/invalid distinction: a line cut short at its end — a
-// trailing operator, an unclosed parenthesis or call, a bare assignment —
-// is incomplete and shows no message.
+// Recursive descent over the token line with arithmetic precedence,
+// right-associative `^`, unary minus binding looser than `^`, implicit
+// multiplication through a parenthesis, `;` argument separation, and the
+// incomplete/invalid distinction: a line cut short at its end — a trailing
+// operator, an unclosed parenthesis or call, a bare assignment — is
+// incomplete and shows no message.
 
 import Foundation
 
@@ -18,56 +18,54 @@ enum Node {
     indirect case unaryMinus(Node)
     indirect case assignment(name: String, Node)
     /// A representation conversion: the inner value's numeric meaning does
-    /// not change; the kind picks how the line displays it (ADK-222).
+    /// not change; the kind picks how the line displays it.
     indirect case representation(Display.Representation, Node)
     /// A quantity: a number with its unit, in the sense the language
-    /// defines for conversions (ADK-227).
+    /// defines for conversions.
     indirect case quantity(Decimal, Unit)
     /// A duration quantity: a number with a time unit, whose value
-    /// anchors on the seconds magnitude (ADK-228).
+    /// anchors on the seconds magnitude.
     case duration(Decimal, Duration.Unit)
     /// A duration conversion through `in`: representational, the count
     /// shown in the destination unit while the value keeps its seconds
-    /// magnitude (ADK-228).
+    /// magnitude.
     indirect case durationConversion(Node, Duration.Unit)
     /// `N to timespan`: the duration composed to its decomposed form,
-    /// representational like the conversion (ADK-228).
+    /// representational like the conversion.
     indirect case toTimespan(Node)
     /// A quantity conversion through `in`: the value converts into the
-    /// target unit, which the whole line's display carries (ADK-227). An
+    /// target unit, which the whole line's display carries. An
     /// `at` override substitutes a Settings reference for this
     /// expression only.
     indirect case conversion(Node, Unit, override: Units.Override?)
-    /// `N% of M`: the share M that the percent N names (ADK-226).
+    /// `N% of M`: the share M that the percent N names.
     indirect case percentShare(Node, Node)
-    /// `N% off M`: M with the share taken off it (ADK-226).
+    /// `N% off M`: M with the share taken off it.
     indirect case percentOff(Node, Node)
-    /// The bare `N%`: the fraction N/100, meaningful inside `X - N%`
-    /// (ADK-226).
+    /// The bare `N%`: the fraction N/100, meaningful inside `X - N%`.
     indirect case percentPortion(Node)
-    /// A calendar date literal: `31 Mar`, `31 Mar 2027` (ADK-229).
+    /// A calendar date literal: `31 Mar`, `31 Mar 2027`.
     case date(Dates.Spec)
-    /// `days until <date>`: the calendar-day difference to the date
-    /// (ADK-229).
+    /// `days until <date>`: the calendar-day difference to the date.
     case daysUntil(Dates.Spec)
     /// `<weekday> in N weeks`: the weekday of the calendar week N weeks
-    /// away (ADK-229).
+    /// away.
     case weekday(Dates.Weekday, weeks: Int)
     /// `<date> + N month(s)` and its negative `... - ...`: a shift in
-    /// calendar months (ADK-229).
+    /// calendar months.
     indirect case calendarShift(Node, months: Int)
     /// A clock reading with the place it belongs to: `11am`, `11am PST`;
-    /// no place means the sheet's system time zone (ADK-249).
+    /// no place means the sheet's system time zone.
     case timeOfDay(TimeOfDay, place: TimeZones.Place?)
     /// `<time> in <place>`: the same instant shown in the destination
-    /// place's clock (ADK-249).
+    /// place's clock.
     indirect case timeOfDayConversion(Node, target: TimeZones.Place)
 }
 
 enum NumericOperator {
     case add, subtract, multiply, divide, power
     /// The bitwise operators over whole numbers: arithmetic binds tighter
-    /// than `&`, and `&` binds tighter than `|` and the `or` word (ADK-225).
+    /// than `&`, and `&` binds tighter than `|` and the `or` word.
     case bitwiseAnd, bitwiseOr
 }
 
@@ -112,7 +110,7 @@ struct Parser {
             position += 1 // the `=`
             let name = normalizeName(names)
             // Unit aliases hold for every casing, so their reservation
-            // holds likewise (ADK-227).
+            // holds likewise.
             guard Language.reservedNames.contains(name.lowercased()) == false else {
                 throw LineError(diagnostic: .reservedName(name: name))
             }
@@ -130,7 +128,7 @@ struct Parser {
 
     /// Arithmetic binds tighter than `&` (bitwise AND), and `&` binds
     /// tighter than `|` and the `or` word (bitwise OR): `1 + 2 & 2` is 2
-    /// and `1 | 2 & 0` is 1 (ADK-225). The `and` word weighs as the
+    /// and `1 | 2 & 0` is 1. The `and` word weighs as the
     /// addition it stands for, so `6 and 3` is 9.
     mutating func parseExpression(definedNames: Set<String>) throws -> Node {
         var lhs = try parseBitwiseAnd(definedNames: definedNames)
@@ -167,7 +165,7 @@ struct Parser {
             case .plus, .word("and"):
                 position += 1
                 // The calendar-month shift keeps whole calendar months on
-                // a date; other values add numerically (ADK-229).
+                // a date; other values add numerically.
                 if Dates.isCalendarDate(lhs), let months = try parseMonthCount() {
                     lhs = .calendarShift(lhs, months: months)
                 } else {
@@ -209,7 +207,7 @@ struct Parser {
                 // to the value, `10 ft in m` converts the quantity.
                 position += 1
                 // A time-of-day converts into the clock of the place the
-                // line names: `11am PST in London` (ADK-249).
+                // line names: `11am PST in London`.
                 if case .timeOfDay = lhs, let target = parsePlace() {
                     lhs = .timeOfDayConversion(lhs, target: target)
                 } else {
@@ -224,7 +222,7 @@ struct Parser {
                         lhs = try parseConversion(lhs, unit, definedNames: definedNames)
                     } else if let unit = Duration.unit(for: keyword) {
                         // A duration unit conversion is representational: the
-                        // count shows in the destination unit (ADK-228).
+                        // count shows in the destination unit.
                         position += 1
                         lhs = .durationConversion(lhs, unit)
                     } else {
@@ -233,7 +231,7 @@ struct Parser {
                 }
             case let .word(leading) where leading.lowercased() == "to":
                 // `to timespan` composes the duration representation in
-                // the written order, at the same level as `in` (ADK-228):
+                // the written order, at the same level as `in`:
                 // `1500 mins to timespan in days` reads the days back and
                 // `1500 mins in days to timespan` composes last.
                 guard peekTimespanKeyword() else {
@@ -245,7 +243,7 @@ struct Parser {
                 lhs = try parsePercentForms(lhs, definedNames: definedNames)
             case .word("as") where matchesPercentRatioKeyword():
                 // `X as a % of Y`: the ratio shown as a percent
-                // representation (ADK-226); the numeric value stays X/Y.
+                // representation; the numeric value stays X/Y.
                 position += 4 // as, a, %, of
                 let total = try parsePower(definedNames: definedNames)
                 lhs = .representation(.percent, .binary(.divide, lhs, total))
@@ -280,32 +278,31 @@ struct Parser {
         case let .number(value):
             position += 1
             // The degree marker rides its number: `45°` keeps the value
-            // and the trigonometric forms read degrees (ADK-225).
+            // and the trigonometric forms read degrees.
             if peek() == .degree {
                 position += 1
             }
             // A written clock reading keeps its hour and minute as clock
             // fields, read in the place it names or in the system time
-            // zone (ADK-249).
+            // zone.
             if let time = parseTimeOfDay(starting: value) {
                 return time
             }
             // A unit word straight after its number makes the pair a
-            // quantity: `16px` or `2 inches` (ADK-227).
+            // quantity: `16px` or `2 inches`.
             if case let .word(unitWord) = peek(), let unit = Units.unit(for: unitWord) {
                 position += 1
                 return .quantity(value, unit)
             }
             // A duration unit word straight after its number makes the
             // pair a duration quantity: `15 min` is 15 minutes, not a
-            // minimum call (ADK-228).
+            // minimum call.
             if case let .word(unitWord) = peek(), let unit = Duration.unit(for: unitWord) {
                 position += 1
                 return .duration(value, unit)
             }
             // A month name straight after its number makes the pair a
-            // calendar date, with an optional year after the month
-            // (ADK-229).
+            // calendar date, with an optional year after the month.
             if case let .word(monthWord) = peek(), Dates.month(for: monthWord) != nil {
                 let date = try parseDateLiteral(day: value)
                 return .date(date)
@@ -322,13 +319,13 @@ struct Parser {
         case let .word(first):
             position += 1
             // `days until <date>`: the calendar-day difference to the
-            // next occurrence or the dated day (ADK-229).
+            // next occurrence or the dated day.
             if first.lowercased() == "days", case let .word(second) = peek(), second.lowercased() == "until" {
                 position += 1
                 return try parseDaysUntil()
             }
             // `<weekday> in N weeks`: the weekday of the calendar week N
-            // weeks away (ADK-229).
+            // weeks away.
             if let weekday = Dates.Weekday(keyword: first.lowercased()), peek() == .in {
                 position += 1
                 return try parseWeekday(weekday)
@@ -338,7 +335,7 @@ struct Parser {
             }
             // Recognize the longest complete name defined before the
             // reference; any run of spaces, tabs, and non-breaking spaces
-            // between the words of a name counts as one space (ADR-002).
+            // between the words of a name counts as one space.
             var words = [first]
             while case let .word(word) = peek() {
                 words.append(word)
@@ -359,7 +356,7 @@ struct Parser {
     /// Call forms: the parentheses form like `min(3; 7)` and the prefix
     /// form without parentheses, where the operand follows the name, like
     /// `sqrt 16`. The `log` name takes its base before the value in the
-    /// prefix form, so `log 2 (10)` is the base-2 logarithm of 10 (ADK-225).
+    /// prefix form, so `log 2 (10)` is the base-2 logarithm of 10.
     private mutating func parseFunctionCall(
         _ name: String, definedNames: Set<String>
     ) throws -> Node {
@@ -382,7 +379,7 @@ struct Parser {
     mutating func parseCall(name: String, definedNames: Set<String>) throws -> Node {
         position += 1 // the `(`
         // An empty call still parses, so `sqrt()` names its argument-count
-        // error instead of failing as unmatched syntax (ADK-225).
+        // error instead of failing as unmatched syntax.
         guard peek() != .closeParen else {
             position += 1
             return .call(name: name, arguments: [])
@@ -400,8 +397,8 @@ struct Parser {
     }
 
     /// Whether the tokens from the current position spell `timespan`
-    /// behind the `to` the caller seen: `N to timespan` is the composed
-    /// duration form (ADK-228).
+    /// behind the `to` the caller has seen: `N to timespan` is the composed
+    /// duration form.
     private func peekTimespanKeyword() -> Bool {
         guard position + 1 < tokens.count, case let .word(second) = tokens[position + 1] else {
             return false
@@ -409,7 +406,7 @@ struct Parser {
         return second.lowercased() == "timespan"
     }
 
-    // MARK: Percent forms (ADK-226)
+    // MARK: Percent forms
 
     /// The percent forms after `<value>%`: `of M` takes the share of M,
     /// `off M` takes the share of M off it, and the bare `%` is the
@@ -439,13 +436,13 @@ struct Parser {
             && tokens[position + 3] == .word("of")
     }
 
-    // MARK: Unit forms (ADK-227)
+    // MARK: Unit forms
 
     private mutating func parseConversion(
         _ source: Node, _ target: Unit, definedNames _: Set<String>
     ) throws -> Node {
         // The expression-local `at Npx` or `at N ppi` clause substitutes
-        // its reference for this expression only (ADK-227).
+        // its reference for this expression only.
         if case let .word(keyword) = peek(), keyword == "at" {
             position += 1
             guard case let .number(value) = peek() else {
@@ -465,7 +462,7 @@ struct Parser {
         return .conversion(source, target, override: nil)
     }
 
-    // MARK: Date forms (ADK-229)
+    // MARK: Date forms
 
     /// `<day> <month> [year]` after the day's number is known: the whole
     /// numbers parse, a non-integer or out-of-range day runs the numeric
@@ -534,7 +531,7 @@ struct Parser {
         return whole
     }
 
-    // MARK: Time-of-day forms (ADK-249)
+    // MARK: Time-of-day forms
 
     /// `<hour>[:<minute>] am|pm` after its hour number is known, with the
     /// place the reading belongs to when one follows. A non-whole or
@@ -561,7 +558,7 @@ struct Parser {
 
     /// The place the coming word run names: one time zone abbreviation such
     /// as `PST`, or a city such as `London`, `New York`, or `sf`, whose zone
-    /// the city data resolves during evaluation (ADK-249, ADK-250).
+    /// the city data resolves during evaluation.
     private mutating func parsePlace() -> TimeZones.Place? {
         var words: [String] = []
         var index = position

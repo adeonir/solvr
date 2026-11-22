@@ -2,10 +2,8 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for calendar dates, calendar-day differences,
-// weekday weeks, calendar-month shifts, and Unix timestamps (ADK-229).
 // Locale, time zone, display precision, and clock are fixed per fixture
-// through the EvaluationContext, per ADR-005.
+// through the EvaluationContext.
 
 struct DatesTests {
     private func context(
@@ -226,7 +224,7 @@ struct DatesTests {
             context: context(timeZone: saoPaulo, now: clock("2026-10-30 09:00:00"))
         )[0]
         // The exact UTC instant is the value; the display applies the
-        // context's time zone ( São Paulo was at UTC-2 that day).
+        // context's time zone (São Paulo was at UTC-2 that day).
         #expect(result.value == .date(Date(timeIntervalSince1970: 1_446_587_186)))
         #expect(result.display == "3 November 2015 19:46:26")
 
@@ -289,7 +287,7 @@ struct DatesTests {
         #expect(results[2].display == "28 February 2026")
     }
 
-    // MARK: Assignments and references keep date values (ADK-258)
+    // MARK: Assignments and references keep date values
 
     @Test(arguments: [
         "x = days until 31 Mar",

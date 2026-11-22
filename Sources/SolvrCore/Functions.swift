@@ -1,15 +1,15 @@
-// Functions (ADK-225): the named functions and the bitwise operators of the
-// language, computed on Foundation Decimal directly, without passing through
-// Double (ADR-006). Argument counts are errors local to their expression and
-// name their function exactly; `;` separates arguments in every locale.
-// min and max take at least two arguments; sqrt, sin, and log are calculated
-// on Decimal and keep their ADR-006 error bounds: arithmetic and sqrt stay
-// within half a unit in the 34th significant digit, sin and log within one.
+// The named functions and the bitwise operators compute on Foundation
+// Decimal directly, without passing through Double. Argument counts are
+// errors local to their expression and name their function exactly; `;`
+// separates arguments in every locale. min and max take at least two
+// arguments; sqrt, sin, and log are calculated on Decimal and keep their
+// error bounds: arithmetic and sqrt stay within half a unit in the 34th
+// significant digit, sin and log within one.
 
 import Foundation
 
 enum Functions {
-    /// The language's 38-digit pi, shared with the constants (ADR-006).
+    /// The language's 38-digit pi, shared with the constants.
     private static let pi = VariableTable.Constants.values["pi"]!
     private static let naturalLog2 = try? Decimal(
         exact: "0.69314718055994530941723212145817656808"
@@ -87,9 +87,9 @@ enum Functions {
 
     // MARK: Square root: Newton's method seeded by the power of ten
 
-    /// sqrt on Decimal (ADR-006): the magnitude splits into mantissa and
-    /// exponent, a power-of-ten seed stays within a small factor of the root,
-    /// and the Newton iteration refines quadratically to well within half a
+    /// sqrt on Decimal: the magnitude splits into mantissa and exponent,
+    /// a power-of-ten seed stays within a small factor of the root, and
+    /// the Newton iteration refines quadratically to well within half a
     /// unit in the 34th significant digit without Double pass-through.
     static func sqrt(_ x: Decimal) throws -> Decimal {
         if x.isNaN {
@@ -130,7 +130,7 @@ enum Functions {
 
     /// `fact 80` keeps its whole digits inside the supported magnitude;
     /// the product past `fact 84` overflows Decimal and reports Out of
-    /// range (ADR-006).
+    /// range.
     static func factorial(_ x: Decimal) throws -> Decimal {
         if x.isNaN {
             throw Diagnostic.outOfRange
@@ -154,7 +154,7 @@ enum Functions {
 
     /// Sine of an angle given in degrees: full turns reduce exactly on
     /// Decimal, the radians come from the 38-digit pi, and the Taylor
-    /// series carries the rest (ADR-006).
+    /// series carries the rest.
     static func sine(degrees: Decimal) throws -> Decimal {
         if degrees.isNaN {
             throw Diagnostic.outOfRange
@@ -202,8 +202,8 @@ enum Functions {
 
     // MARK: Logarithm: decades and mantissa halves, series remainder
 
-    /// The logarithm of x to base b on Decimal (ADR-006); the natural
-    /// logarithm divides through, so both operands stay on Decimal.
+    /// The logarithm of x to base b on Decimal; the natural logarithm
+    /// divides through, so both operands stay on Decimal.
     static func logarithm(_ x: Decimal, base: Decimal) throws -> Decimal {
         if x.isNaN || base.isNaN {
             throw Diagnostic.outOfRange

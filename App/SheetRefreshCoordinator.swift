@@ -1,12 +1,11 @@
-// The application side of the date-dependent results lifecycle (ADK-230).
 // One coordinator owns the refresher for the open sheet and translates the
 // real system events into the model layer's reevaluation triggers: an edit,
 // local midnight in the system time zone, sheet opening, returning to the
 // app, and the next daylight-saving transition of a time zone a visible
-// conversion uses (ADK-251). The coordinator never evaluates — it supplies
-// the system's clock and events, and the reevaluation stays in the
-// SolvrCore refresher, where the model-layer integration tests inject
-// controlled ones instead.
+// conversion uses. The coordinator never evaluates — it supplies the
+// system's clock and events, and the reevaluation stays in the SolvrCore
+// refresher, where the model-layer integration tests inject controlled ones
+// instead.
 
 import AppKit
 import Foundation
@@ -22,11 +21,11 @@ final class SheetRefreshCoordinator: NSObject {
     /// outcome the app refreshes from.
     private(set) var results: [ExpressionResult] = []
     /// The sheet total's display text below the content, or nil when no
-    /// total is available (ADK-256).
+    /// total is available.
     private(set) var total: String?
-    /// The cities the visible time-of-day conversions name (ADK-250). The
-    /// view keeps their city data current through the shared service, and a
-    /// city whose lookup failed is asked for again on the next trigger.
+    /// The cities the visible time-of-day conversions name. The view keeps
+    /// their city data current through the shared service, and a city whose
+    /// lookup failed is asked for again on the next trigger.
     private(set) var cityNames: Set<String> = []
 
     @ObservationIgnored private var refresher: SheetRefresher?
@@ -68,9 +67,9 @@ final class SheetRefreshCoordinator: NSObject {
         publish(outcome.results)
     }
 
-    /// Fresh city data reaches the visible results without a text edit
-    /// (ADK-250), and the zones the new conversions use begin following
-    /// their daylight-saving transitions (ADK-251).
+    /// Fresh city data reaches the visible results without a text edit, and
+    /// the zones the new conversions use begin following their
+    /// daylight-saving transitions.
     func cityTimeZonesChanged(_ snapshot: CityTimeZoneSnapshot) {
         guard let outcome = refresher?.update(cityTimeZones: snapshot, now: Date()) else { return }
         publish(outcome.results)
@@ -78,7 +77,7 @@ final class SheetRefreshCoordinator: NSObject {
     }
 
     /// A precision change from Settings reaches the open sheet at once; the
-    /// sheet text stays untouched (ADK-255).
+    /// sheet text stays untouched.
     func precisionChanged(displayPrecision: Int, cryptoPrecision: Int) {
         guard let outcome = refresher?.update(
             displayPrecision: displayPrecision,
@@ -136,7 +135,7 @@ final class SheetRefreshCoordinator: NSObject {
     }
 
     /// A time zone a visible conversion uses reached its next
-    /// daylight-saving transition (ADK-251).
+    /// daylight-saving transition.
     @objc private func transitionFell(_: Timer) {
         MainActor.assumeIsolated {
             fire(.daylightSavingTransition)
@@ -191,7 +190,7 @@ final class SheetRefreshCoordinator: NSObject {
         guard refresher != nil, let outcome = refresher?.refresh(trigger, now: Date()) else { return }
         publish(outcome.results)
         // A reevaluation at any trigger can move the zones and the next
-        // transition they schedule (ADK-251).
+        // transition they schedule.
         scheduleTransitionTimer()
         // An edit already asked for its cities; a clock or app trigger asks
         // again, so a city whose lookup failed is retried without a text
@@ -200,7 +199,7 @@ final class SheetRefreshCoordinator: NSObject {
     }
 
     /// Hands the fresh results to the view, with the cities they name, so
-    /// the view can look up and refresh their city data (ADK-250).
+    /// the view can look up and refresh their city data.
     private func publish(_ fresh: [ExpressionResult]) {
         results = fresh
         total = refresher?.total

@@ -1,15 +1,15 @@
-// SheetRefresh (ADK-230): keeps a sheet's visible results current through
-// the reevaluation triggers the application supplies — an edit, local
-// midnight, sheet opening, returning to the app, and a daylight-saving
-// transition of a time zone a conversion uses (ADK-251). The clock arrives
-// with every trigger; nothing here reads the process clock (ADR-005), so
-// the same lifecycle runs for the app and the integration tests. The
-// triggers themselves stay outside the evaluator: a refresh only repeats
-// the sheet evaluation of the contract with a fresh instant.
+// Keeps a sheet's visible results current through the reevaluation
+// triggers the application supplies — an edit, local midnight, sheet
+// opening, returning to the app, and a daylight-saving transition of a
+// time zone a conversion uses. The clock arrives with every trigger;
+// nothing here reads the process clock, so the same lifecycle runs for the
+// app and the integration tests. The triggers themselves stay outside the
+// evaluator: a refresh only repeats the sheet evaluation with a fresh
+// instant.
 
 import Foundation
 
-/// What made the visible results refresh, apart from an edit (ADK-230).
+/// What made the visible results refresh, apart from an edit.
 public enum SheetRefreshTrigger: Sendable, Equatable {
     /// Local midnight in the system time zone.
     case midnight
@@ -18,7 +18,7 @@ public enum SheetRefreshTrigger: Sendable, Equatable {
     /// The user returned to the app.
     case returningToApp
     /// A source or destination time zone of a visible conversion reached
-    /// its next daylight-saving transition (ADK-251).
+    /// its next daylight-saving transition.
     case daylightSavingTransition
 }
 
@@ -29,7 +29,7 @@ public struct SheetRefreshOutcome: Sendable, Equatable {
     public let changedIndexes: Set<Int>
 }
 
-/// Keeps one sheet's visible results current (ADK-230). The refresher
+/// Keeps one sheet's visible results current. The refresher
 /// holds the sheet text, the evaluation context, and the results from the
 /// last evaluation; every trigger reevaluates the text with the instant it
 /// carries, so a changed date refreshes the visible results and a line
@@ -43,10 +43,10 @@ public struct SheetRefresher: Sendable {
     /// when nothing on the sheet follows the clock.
     public private(set) var dateDependentIndexes: Set<Int>
     /// The time zones the visible time-of-day conversions use, source and
-    /// destination (ADK-251); the empty set when no visible result converts
+    /// destination; the empty set when no visible result converts
     /// a time between zones.
     public private(set) var conversionTimeZones: Set<TimeZone>
-    /// The cities the visible time-of-day conversions name (ADK-250),
+    /// The cities the visible time-of-day conversions name,
     /// whether resolved, unknown, ambiguous, or never looked up; the
     /// application keeps each one's city data current from this set.
     public private(set) var cityNames: Set<String>
@@ -64,14 +64,14 @@ public struct SheetRefresher: Sendable {
     }
 
     /// The sheet total's display text at the current precision, or nil when
-    /// no total is available (ADK-256). The line results stay as they are.
+    /// no total is available. The line results stay as they are.
     public var total: String? {
         sheetTotal(of: results, context: context)?.display
     }
 
     /// The first instant after `instant` at which a time zone a visible
     /// conversion uses changes its offset, or nil when no zone it uses
-    /// changes again (ADK-251). The earliest transition decides, so a
+    /// changes again. The earliest transition decides, so a
     /// conversion between two zones follows whichever moves first.
     public func nextDaylightSavingTransition(after instant: Date) -> Date? {
         conversionTimeZones
@@ -116,7 +116,7 @@ public struct SheetRefresher: Sendable {
     }
 
     /// The city names the visible results could not resolve because the
-    /// city data held no outcome for them yet (ADK-250); the application
+    /// city data held no outcome for them yet; the application
     /// looks them up and hands the fresh data back.
     public var uncachedCityNames: Set<String> {
         Set(results.compactMap { result in
@@ -134,7 +134,7 @@ public struct SheetRefresher: Sendable {
     }
 
     /// A precision change from Settings reaches the visible results at
-    /// once, with the sheet text untouched (ADK-255).
+    /// once, with the sheet text untouched.
     @discardableResult
     public mutating func update(displayPrecision: Int, cryptoPrecision: Int, now: Date) -> SheetRefreshOutcome {
         context.displayPrecision = displayPrecision
@@ -142,9 +142,8 @@ public struct SheetRefresher: Sendable {
         return reevaluate(now: now)
     }
 
-    /// Fresh city data reaches the visible results without a text edit
-    /// (ADK-250): a city resolved after the sheet opened turns its error
-    /// into a clock.
+    /// Fresh city data reaches the visible results without a text edit:
+    /// a city resolved after the sheet opened turns its error into a clock.
     @discardableResult
     public mutating func update(cityTimeZones: CityTimeZoneSnapshot, now: Date) -> SheetRefreshOutcome {
         context.cityTimeZones = cityTimeZones
@@ -166,8 +165,8 @@ public struct SheetRefresher: Sendable {
         }
         results = fresh
         // A conversion follows both zones it names, so its transitions
-        // steer the next reevaluation (ADK-251), and the cities it names
-        // steer the city data lookup (ADK-250). A sheet without a visible
+        // steer the next reevaluation, and the cities it names
+        // steer the city data lookup. A sheet without a visible
         // time-of-day result uses no zone and no city.
         let places = fresh.contains(where: Self.usesPlace)
             ? TimeZones.used(inSheetText: sheetText, context: context)

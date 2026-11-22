@@ -50,7 +50,6 @@ private struct Palette: Equatable {
     let activeLine: NSColor
     private let syntax: [SyntaxKind: NSColor]
 
-    /// The color of a kind of part of a sheet line.
     func color(for kind: SyntaxKind) -> NSColor {
         syntax[kind] ?? text
     }
@@ -149,7 +148,7 @@ private struct SheetEditorView: View {
                     sheets.insert(StoredSheet(id: old.id, title: old.title, created: old.created, updated: Date(), text: updatedText), at: 0)
                     autosave?.edit(id, text: updatedText)
                 }
-                // The sheet total sits centered below the content and is absent when no total is available (ADK-256).
+                // The sheet total sits centered below the content and is absent when no total is available.
                 if let total = coordinator.total {
                     SheetTotalView(total: total, palette: palette)
                 }
@@ -188,7 +187,7 @@ private struct SheetEditorView: View {
                 ApplicationCityTimeZones.shared.resolve(names)
             }
             // The stored family returns to the default when it is no longer
-            // installed, so sheets show SF Mono (ADK-262).
+            // installed, so sheets show SF Mono.
             let family = SheetFonts.resolvedFamily(fontFamily, in: InstalledFonts.faces)
             if family != fontFamily {
                 fontFamily = family
@@ -404,7 +403,7 @@ private struct SheetEditorView: View {
     }
 
     /// The sheet typography from Settings; the stored family returns to the
-    /// default when it is not installed (ADK-262).
+    /// default when it is not installed.
     private var typography: SheetTypography {
         TypographySetting.typography(
             family: SheetFonts.resolvedFamily(fontFamily, in: InstalledFonts.faces),
@@ -414,7 +413,7 @@ private struct SheetEditorView: View {
     }
 
     /// The Settings precision values, within their ranges even when the
-    /// stored preference is not (ADK-255).
+    /// stored preference is not.
     private var storedPrecision: (general: Int, crypto: Int) {
         (
             PrecisionSetting.stored(generalPrecision, in: PrecisionSetting.generalRange, default: PrecisionSetting.generalDefault),

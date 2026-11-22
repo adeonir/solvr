@@ -1,6 +1,6 @@
-// The typography of a sheet (ADK-260): font family, size in px, and line
-// height as a multiplier of the size, like CSS unitless `line-height`. The
-// editor's font sizes and line metrics all derive from this one value.
+// The line height is a multiplier of the font size, like CSS unitless
+// `line-height`. The editor's font sizes and line metrics all derive from
+// this one value.
 
 import Foundation
 

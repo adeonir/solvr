@@ -1,6 +1,6 @@
-// CityTimeZoneSource (ADK-250): the external city data source that resolves
-// a city name to its place record and time zone. The evaluator never calls
-// it; the application service does, and only the cache reaches a sheet.
+// The external city data source that resolves a city name to its place
+// record and time zone. The evaluator never calls it; the application
+// service does, and only the cache reaches a sheet.
 
 import Foundation
 
@@ -10,15 +10,15 @@ public enum CityLookupError: Error, Sendable, Equatable {
     case httpStatus(Int)
 }
 
-/// One city lookup against the external city data source (ADK-250).
+/// One city lookup against the external city data source.
 public protocol CityTimeZoneSource: Sendable {
     /// The records the source returns for a city name; an empty answer when
     /// the source knows no place of that name.
     func lookup(_ city: String) async throws -> [CityRecord]
 }
 
-/// The Open-Meteo Geocoding API, which returns city records with their time
-/// zone database identifier (ADK-250).
+/// The Open-Meteo Geocoding API, which returns city records with their
+/// time zone database identifier.
 public struct OpenMeteoGeocodingSource: CityTimeZoneSource {
     public typealias Transport = @Sendable (URLRequest) async throws -> (Data, Int)
     private let transport: Transport

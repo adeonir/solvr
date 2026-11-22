@@ -2,8 +2,7 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// The recognized parts of sheet lines, through the public SolvrCore API
-// only (ADK-331).
+// The parts of sheet lines are read through the public SolvrCore API only.
 
 struct LinePartsTests {
     private let context = EvaluationContext(

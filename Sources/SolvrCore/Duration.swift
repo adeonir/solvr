@@ -1,24 +1,20 @@
-// Duration (ADK-228): duration quantities, their `in` conversions, and
-// their `to timespan` composition. `15 min` is a duration of 15 minutes,
-// distinct from a minimum-function call, and each unit accepts exactly
-// its standard abbreviation and its full name singular and plural; no
-// other alias.
+// `15 min` is a duration of 15 minutes, distinct from a minimum-function
+// call, and each unit accepts exactly its standard abbreviation and its
+// full name singular and plural; no other alias.
 //
 // A duration value anchors on the seconds magnitude of the written
 // quantity. A conversion through `in` and the timespan form are
 // representational — they never round the value — so chains compose in
 // their written order: `1500 mins in days to timespan` still holds the
 // full value and shows `1 day 1 hour`. A date-free month counts exactly
-// 30 days and a date-free year 365, independent of the current month
-// (ADR-003).
+// 30 days and a date-free year 365, independent of the current month.
 //
 // Duration unit words bind to the number that precedes them, so they
 // never collide with variable names spelled alike; unlike the physical
-// and CSS units (ADK-227) they carry no reserved names.
+// and CSS units they carry no reserved names.
 
 import Foundation
 
-/// The duration units and the representations of their values.
 enum Duration {
     /// One duration unit: the factor of the unit in seconds, the word the
     /// quantity and its conversions show after their value, and the
@@ -54,12 +50,12 @@ enum Duration {
     static let week = Unit(
         factor: 604_800, singular: "week", plural: "weeks", aliases: ["week", "weeks"]
     )
-    /// A date-free month counts exactly 30 days (ADR-003).
+    /// A date-free month counts exactly 30 days.
     static let month = Unit(
         factor: 2_592_000, singular: "month", plural: "months", aliases: ["month", "months"]
     )
     /// A date-free year counts 365 days: like the month, no reference
-    /// date applies (ADR-003).
+    /// date applies.
     static let year = Unit(
         factor: 31_536_000, singular: "year", plural: "years", aliases: ["year", "years"]
     )
@@ -109,7 +105,7 @@ enum Duration {
     /// preserved. Leading and all-zero parts drop, one negative sign
     /// covers the whole duration, and a fully zero duration shows
     /// `0 s`. The written order of the composed parts follows the
-    /// decomposition, larger units first (ADK-228).
+    /// decomposition, larger units first.
     static func timespan(of seconds: Decimal, precision: Int, locale: Locale) -> String {
         let negative = seconds < 0
         var remaining = negative ? -seconds : seconds
@@ -145,7 +141,7 @@ enum Duration {
     }
 }
 
-// MARK: The sheet's duration forms (ADK-228)
+// MARK: The sheet's duration forms
 
 extension SheetEvaluator {
     /// The representation a duration form shows, or nil when the node
@@ -153,7 +149,7 @@ extension SheetEvaluator {
     /// unit, a timespan form the composed duration, a negation the count
     /// of its inner form with the sign of the value, and a call the count
     /// in the unit of its first duration-carrying argument (the rounding
-    /// of `round(1 month in days)` keeps the quantity, ADK-228).
+    /// of `round(1 month in days)` keeps the quantity).
     func durationDisplay(of node: Node, for value: Decimal) -> String? {
         let precision = context.displayPrecision
         switch node {
@@ -174,7 +170,7 @@ extension SheetEvaluator {
 extension Duration {
     /// The unit a duration form's count shows in: a quantity its written
     /// unit, a conversion its destination, a negation or a timespan the
-    /// unit its inner form shows (ADK-228).
+    /// unit its inner form shows.
     static func representativeUnit(of node: Node) -> Unit? {
         switch node {
         case let .duration(_, unit):
@@ -192,7 +188,7 @@ extension Duration {
 
     /// Whether a node carries a duration quantity its value counts in
     /// seconds: the forms, their negation, and their composition
-    /// recursively (ADK-228).
+    /// recursively.
     static func carriesQuantity(of node: Node) -> Bool {
         switch node {
         case .duration, .durationConversion, .toTimespan:

@@ -1,8 +1,8 @@
-// CityTimeZoneService (ADK-250): owns the city data cache and asks the
-// external source for the cities a sheet could not resolve. A lookup that
-// succeeds replaces the cached entry and publishes the fresh cache; a
-// lookup that fails leaves the cache untouched, so a city resolved before
-// keeps converting without a connection (NFR-2).
+// Owns the city data cache and asks the external source for the cities a
+// sheet could not resolve. A lookup that succeeds replaces the cached
+// entry and publishes the fresh cache; a lookup that fails leaves the
+// cache untouched, so a city resolved before keeps converting without a
+// connection.
 
 import Foundation
 import Observation
@@ -54,10 +54,9 @@ public final class CityTimeZoneService {
     /// then publishes the cache. A city already in the cache is looked up
     /// again, so a successful fetch replaces its entry; the cached entry
     /// keeps converting only while the source is unreachable or a fetch
-    /// fails (NFR-2). A city asked for during a running lookup joins that
-    /// lookup instead of being dropped. A retry waits for the recheck
-    /// interval, so a sheet that keeps changing its text does not keep
-    /// asking.
+    /// fails. A city asked for during a running lookup joins that lookup
+    /// instead of being dropped. A retry waits for the recheck interval, so
+    /// a sheet that keeps changing its text does not keep asking.
     public func resolve(_ cities: Set<String>, now: Date) async {
         pending.formUnion(cities)
         guard !isUpdating else { return }

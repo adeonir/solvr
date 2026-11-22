@@ -1,5 +1,3 @@
-// Dates (ADK-229): calendar dates, calendar-day differences, weekday
-// observances in weeks, calendar-month shifts, and Unix timestamps.
 // The context clock fixes the instant; every date resolves in the
 // context's calendar and time zone, and a calendar-day difference
 // counts whole days from midnight to midnight, independent of the
@@ -10,7 +8,7 @@ import Foundation
 enum Dates {
     /// A calendar date as written: `31 Mar`, `31 Mar 2027`; without a
     /// year the current year holds it, and a day the year lacks advances
-    /// through the years until one carries the day (ADK-229).
+    /// through the years until one carries the day.
     struct Spec: Equatable, Sendable {
         let day: Int
         let month: Int
@@ -32,8 +30,6 @@ enum Dates {
             return nil
         }
 
-        /// The weekday's index from Monday, the handling offset of the
-        /// Monday-based week.
         var daysFromMonday: Int {
             rawValue
         }
@@ -79,7 +75,6 @@ enum Dates {
         return keyed == "month" || keyed == "months"
     }
 
-    /// A whole count from a Decimal value, optionally held inside a range.
     static func integer(of value: Decimal, range: ClosedRange<Int>? = nil) -> Int? {
         guard !value.isNaN, value == Numeric.roundPlain(value, scale: 0) else {
             return nil
@@ -131,7 +126,7 @@ enum Dates {
 
     /// The whole calendar days from today to the date in the spec: with an
     /// explicit year the exact date; without it the next occurrence, today
-    /// counting zero and a passed day rolling to the next year (ADK-229).
+    /// counting zero and a passed day rolling to the next year.
     static func calendarDays(until spec: Spec, now: Date, calendar: Calendar) throws -> Int {
         let today = calendar.startOfDay(for: now)
         let thisYear = calendar.component(.year, from: today)
@@ -167,7 +162,7 @@ enum Dates {
     }
 
     /// The weekday's calendar date in the week `weeks` away: the day the
-    /// Monday-based week holds for the weekday name (ADK-229).
+    /// Monday-based week holds for the weekday name.
     static func weekdayDate(
         _ weekday: Weekday, weeks: Int, now: Date, calendar: Calendar
     ) throws -> Date {
@@ -203,7 +198,7 @@ enum Dates {
 
 extension SheetEvaluator {
     /// The evaluation calendar: Gregorian, the context time zone and
-    /// locale, weeks starting Monday (ADK-229).
+    /// locale, weeks starting Monday.
     var dateCalendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = context.timeZone
@@ -214,7 +209,7 @@ extension SheetEvaluator {
 
     /// The typed value of a whole-line date form, or nil when the node
     /// carries none; date errors throw their own diagnostic, so the other
-    /// lines of the sheet keep evaluating (ADK-229).
+    /// lines of the sheet keep evaluating.
     mutating func evaluateDateForm(_ node: Node) throws -> ExpressionValue? {
         let calendar = dateCalendar
         switch node {
@@ -239,8 +234,8 @@ extension SheetEvaluator {
             return try .date(fromunixTimestamp(arguments))
         case let .assignment(name, inner):
             // A date or difference assigned to a name keeps its value, so
-            // later lines reference it (ADK-258). A numeric or monetary
-            // value leaves the name to its own evaluation path.
+            // later lines reference it. A numeric or monetary value leaves
+            // the name to its own evaluation path.
             do {
                 guard let value = try evaluateDateForm(inner) else { return nil }
                 variables.define(
@@ -265,7 +260,7 @@ extension SheetEvaluator {
     }
 
     /// Whether a whole-line form shows the time of day beside its date:
-    /// a `fromunix` value does, and so does a name that holds one (ADK-258).
+    /// a `fromunix` value does, and so does a name that holds one.
     func showsTimeOfDay(of node: Node) -> Bool {
         switch node {
         case let .assignment(_, inner):
@@ -280,7 +275,7 @@ extension SheetEvaluator {
     }
 
     /// `fromunix(N)`: the exact instant N seconds after the Unix epoch,
-    /// shown in the context's time zone (ADK-229).
+    /// shown in the context's time zone.
     private mutating func fromunixTimestamp(_ arguments: [Node]) throws -> Date {
         guard arguments.count == 1 else {
             throw Diagnostic.argumentCount(function: "fromunix", requirement: "1 argument")
@@ -294,7 +289,7 @@ extension SheetEvaluator {
 
     /// The representation beside a date form: the calendar-day
     /// difference, or the date — a Unix timestamp shows its instant of
-    /// day, the other forms the day alone (ADK-229).
+    /// day, the other forms the day alone.
     func dateDisplay(_ value: ExpressionValue, showsTimeOfDay: Bool) -> String? {
         switch value {
         case let .difference(days):

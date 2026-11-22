@@ -2,12 +2,11 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for variables (ADK-223). Bindings, names,
-// reassignment, and error propagation follow ADR-001's nearest preceding
-// definition and ADR-002's longest complete visible name. Editing an input
-// reevaluates the sheet from scratch, which is what updates the dependent
-// results. Locale, display precision, time zone, and clock are fixed per
-// fixture through the EvaluationContext, per ADR-005.
+// Bindings, names, reassignment, and error propagation follow the nearest
+// preceding definition and the longest complete visible name. Editing an
+// input reevaluates the sheet from scratch, which is what updates the
+// dependent results. Locale, display precision, time zone, and clock are
+// fixed per fixture through the EvaluationContext.
 
 struct VariablesSheetTests {
     private func context(

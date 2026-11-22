@@ -1,12 +1,12 @@
-// CityTimeZones (ADK-250): the city data a time-of-day conversion resolves
-// a city name against. A lookup leaves one outcome per city in the cache —
-// the place it resolved, no place of that name, or more than one plausible
-// place — so the evaluator can tell an unknown city from a city that was
-// never looked up without reaching the network (ADR-005).
+// The city data a time-of-day conversion resolves a city name against. A
+// lookup leaves one outcome per city in the cache — the place it resolved,
+// no place of that name, or more than one plausible place — so the
+// evaluator can tell an unknown city from a city that was never looked up
+// without reaching the network.
 
 import Foundation
 
-/// One city record as the external city data source returns it (ADK-250).
+/// One city record as the external city data source returns it.
 /// The identity fields keep enough context to revisit or show the place.
 public struct CityRecord: Sendable, Equatable, Codable {
     public let name: String
@@ -38,8 +38,8 @@ public struct CityRecord: Sendable, Equatable, Codable {
     }
 }
 
-/// What one city lookup left behind (ADK-250): the place it resolved, no
-/// place of that name, or more than one place the name could mean.
+/// What one city lookup left behind: the place it resolved, no place of
+/// that name, or more than one place the name could mean.
 public enum CityLookupOutcome: Sendable, Equatable, Codable {
     case found(CityRecord)
     case unknown
@@ -47,8 +47,8 @@ public enum CityLookupOutcome: Sendable, Equatable, Codable {
 }
 
 /// The city data the evaluator reads: one outcome per looked-up city, keyed
-/// by the folded city name (ADK-250). The application persists it, so a
-/// city resolved before keeps converting without a connection.
+/// by the folded city name. The application persists it, so a city resolved
+/// before keeps converting without a connection.
 public struct CityTimeZoneSnapshot: Sendable, Equatable, Codable {
     public let entries: [String: CityLookupOutcome]
 
@@ -58,7 +58,6 @@ public struct CityTimeZoneSnapshot: Sendable, Equatable, Codable {
         }
     }
 
-    /// No city looked up yet.
     public static let empty = CityTimeZoneSnapshot()
 
     public var isEmpty: Bool {
@@ -81,7 +80,7 @@ public struct CityTimeZoneSnapshot: Sendable, Equatable, Codable {
 }
 
 /// The city name rules and the lookup policy, apart from the network and
-/// the disk (ADK-250).
+/// the disk.
 enum CityTimeZones {
     /// The abbreviations the language expands to a city name before the
     /// lookup: `ldn` reads London and `sf` reads San Francisco.

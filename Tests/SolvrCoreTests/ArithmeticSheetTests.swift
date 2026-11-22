@@ -2,9 +2,8 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for arithmetic evaluation (ADK-221). Locale, display
-// precision, time zone, and clock are fixed per fixture through the
-// EvaluationContext, per ADR-005.
+// Locale, display precision, time zone, and clock are fixed per fixture
+// through the EvaluationContext.
 
 struct ArithmeticSheetTests {
     private func context(
@@ -111,7 +110,6 @@ struct ArithmeticSheetTests {
 
     @Test
     func displayedExactTiesRoundAwayFromZero() {
-        // Two displayed decimal places, Brazilian formatting.
         let brazillian = context(locale: "pt_BR", precision: 2)
         #expect(evaluate(sheetText: "0,125", context: brazillian)[0].display == "0,13")
         #expect(evaluate(sheetText: "-0,125", context: brazillian)[0].display == "-0,13")
@@ -170,7 +168,6 @@ struct ArithmeticSheetTests {
         #expect(after[0].kind == .incomplete)
         #expect(after[0].value == nil && after[0].diagnostic == nil)
         #expect(after[1].display == "6")
-        // Completing the edit removes nothing again.
         let validAgain = evaluate(sheetText: "20 + 20\n3 + 3", context: context())
         #expect(validAgain[0].display == "40")
         #expect(validAgain[1].display == "6")

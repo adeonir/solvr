@@ -1,7 +1,5 @@
-// Settings values for display precision (ADK-255): the decimal places of
-// ordinary results and totals, and of cryptocurrency results and totals.
-// A field that holds no valid value restores its last valid value; a
-// stored value outside its range falls back to the default.
+// A precision field that holds no valid value restores its last valid
+// value; a stored value outside its range falls back to the default.
 
 import Foundation
 

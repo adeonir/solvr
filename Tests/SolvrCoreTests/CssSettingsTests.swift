@@ -2,14 +2,13 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for the CSS quantity conversions and the Settings
-// references they consume (ADK-227): one shared pixel-base value serves
-// `rem` and `em` alike, initially 16 pixels, and the pixel density of 96
-// ppi translates points and physical lengths into pixels. The Settings
-// values arrive through the injected EvaluationContext (ADR-005); an
-// expression-local `at` override applies to its expression only and
-// leaves the Settings values and every other expression unchanged.
-// Locale, display precision, time zone, and clock are fixed per fixture.
+// One shared pixel-base value serves `rem` and `em` alike, initially 16
+// pixels, and the pixel density of 96 ppi translates points and physical
+// lengths into pixels. The Settings values arrive through the injected
+// EvaluationContext; an expression-local `at` override applies to its
+// expression only and leaves the Settings values and every other
+// expression unchanged. Locale, display precision, time zone, and clock
+// are fixed per fixture.
 
 struct CssSettingsTests {
     private func context(
@@ -84,7 +83,6 @@ struct CssSettingsTests {
         // Other expressions keep the shared Settings base.
         #expect(results[1].display == "1em")
         #expect(results[2].display == "16px")
-        // The shared Settings value stays at sixteen pixels.
         #expect(injected.pixelBase == 16)
     }
 
@@ -112,7 +110,6 @@ struct CssSettingsTests {
         // Other expressions keep the shared Settings density.
         #expect(results[1].display == "192px")
         #expect(results[2].display == "16px")
-        // The shared Settings density stays at ninety-six ppi.
         #expect(injected.ppi == 96)
     }
 
@@ -147,7 +144,7 @@ struct CssSettingsTests {
         #expect(results[2].display == "12 pt")
     }
 
-    // MARK: Pixel and relative-count sums take the relative unit (ADK-257)
+    // MARK: Pixel and relative-count sums take the relative unit
 
     @Test
     func relativeCountSumsWithAConvertedPixelOperandShowTheRelativeUnit() {

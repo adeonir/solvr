@@ -1,12 +1,10 @@
-// Variables (ADK-223): the variable namespace of the language. Names start
-// with a letter and accept accented letters, underscores, and subsequent
-// digits (`salário`, `despesa_mensal`, `item2`); they are case-sensitive.
-// Any run of spaces, tabs, and non-breaking spaces between the words of a
-// name counts as one space (ADR-002). Every reference resolves to its
-// nearest preceding definition in sheet order (ADR-001), so reassignment
-// affects only later expressions, and a defined name whose defining
-// expression failed or never finished leaves its dependents without a
-// usable result.
+// Names start with a letter and accept accented letters, underscores, and
+// subsequent digits (`salário`, `despesa_mensal`, `item2`); they are
+// case-sensitive. Any run of spaces, tabs, and non-breaking spaces between
+// the words of a name counts as one space. Every reference resolves to its
+// nearest preceding definition in sheet order, so reassignment affects only
+// later expressions, and a defined name whose defining expression failed
+// or never finished leaves its dependents without a usable result.
 
 import Foundation
 
@@ -24,13 +22,13 @@ enum Language {
 }
 
 /// Names normalize runs of spaces, tabs, and non-breaking spaces between
-/// the words of a name into one space (ADR-002).
+/// the words of a name into one space.
 func normalizeName(_ words: [String]) -> String {
     words.joined(separator: " ")
 }
 
 /// The longest complete defined name that the word run spells, looked up by
-/// whole name, from the longest candidate to the shortest (ADR-002). The
+/// whole name, from the longest candidate to the shortest. The
 /// word run reaching the parser carries the words as one token each, so the
 /// gaps between them are already normalized away.
 func matchingDefinedName(words: [String], definedNames: Set<String>) -> [String]? {
@@ -46,21 +44,20 @@ func matchingDefinedName(words: [String], definedNames: Set<String>) -> [String]
 }
 
 /// The values the sheet has defined so far, resolved by nearest preceding
-/// definition (ADR-001). Names whose defining expression failed or never
-/// finished stay defined for name recognition (ADR-002) but yield the
+/// definition. Names whose defining expression failed or never
+/// finished stay defined for name recognition but yield the
 /// dependency error, never a stale value.
 struct VariableTable {
-    /// Names defined so far, with the values their expressions produced.
     private(set) var bindings: [String: ExpressionValue] = [:]
     /// Names whose defining expression erred or never finished.
     private(set) var erredNames: Set<String> = []
-    /// The quantity a name's value counts in, for the names defined with one (ADK-254).
+    /// The quantity a name's value counts in, for the names defined with one.
     private(set) var measures: [String: Measure] = [:]
     /// The pixel base a name's relative value was counted at, for the names
-    /// whose value is a relative count rather than pixels (ADK-254).
+    /// whose value is a relative count rather than pixels.
     private(set) var countBases: [String: Decimal] = [:]
     /// The names whose calendar date shows its time of day, as `fromunix`
-    /// values do (ADK-258).
+    /// values do.
     private(set) var showsTimeOfDay: Set<String> = []
 
     /// The names visible for longest-name recognition at the current point
@@ -69,7 +66,7 @@ struct VariableTable {
         Set(bindings.keys).union(erredNames)
     }
 
-    /// Defines a name for every later expression in sheet order (ADR-001).
+    /// Defines a name for every later expression in sheet order.
     mutating func define(
         _ name: String, _ value: ExpressionValue, measure: Measure? = nil, countBase: Decimal? = nil,
         showsTimeOfDay: Bool = false

@@ -1,6 +1,5 @@
-// Tokenizer (ADK-221): turns one sheet line into tokens with region-aware
-// number scanning, inline-comment stripping at the caller, and the `times`
-// multiplication word. Characters the language does not define fail with
+// Number scanning is region-aware; inline comments are stripped at the
+// caller, not here. Characters the language does not define fail with
 // invalid syntax.
 
 import Foundation
@@ -22,20 +21,19 @@ enum Token: Equatable, Sendable {
     case closeParen
     case equals
     case semicolon
-    /// The `:` between the hour and the minute of a clock reading
-    /// (ADK-249).
+    /// The `:` between the hour and the minute of a clock reading.
     case colon
     case times
     /// The `in` keyword that introduces a representation conversion.
     case `in`
-    /// The `%` sign of a percent form (ADK-226).
+    /// The `%` sign of a percent form.
     case percent
     /// The bitwise AND `&` of the operator split: arithmetic binds
-    /// tighter (ADK-225).
+    /// tighter.
     case ampersand
-    /// The bitwise OR `|`; the `or` word shares the meaning (ADK-225).
+    /// The bitwise OR `|`; the `or` word shares the meaning.
     case pipe
-    /// The degree marker `°` that rides its number (ADK-225).
+    /// The degree marker `°` that rides its number.
     case degree
     /// Nothing left on the line; only the parser sees it.
     case end
@@ -59,7 +57,7 @@ enum Tokenizer {
 
     /// Reads the tokens with their ranges. A recovering scan skips what it
     /// cannot read, a character the language does not define or a number
-    /// that does not parse, instead of throwing (ADK-331).
+    /// that does not parse, instead of throwing.
     static func scan(
         _ line: String,
         decimalSeparator: Character,

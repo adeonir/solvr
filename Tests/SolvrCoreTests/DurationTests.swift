@@ -2,15 +2,13 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for duration quantities (ADK-228). `15 min` is a
-// duration of 15 minutes rather than a minimum-function call, each unit
-// accepts its standard abbreviation and its full name singular and
-// plural, `in` converts numerically with ten displayed decimal places,
-// and `to timespan` decomposes in chains that compose in their written
-// order, with one sign over the whole duration and preserved fractions.
-// A date-free month counts 30 days (ADR-003), on any clock. Locale,
-// display precision, time zone, and clock are fixed per fixture
-// (ADR-005).
+// `15 min` is a duration of 15 minutes rather than a minimum-function
+// call, each unit accepts its standard abbreviation and its full name
+// singular and plural, `in` converts numerically with ten displayed
+// decimal places, and `to timespan` decomposes in chains that compose in
+// their written order, with one sign over the whole duration and
+// preserved fractions. A date-free month counts 30 days, on any clock.
+// Locale, display precision, time zone, and clock are fixed per fixture.
 
 struct DurationTests {
     private func context(
@@ -160,7 +158,7 @@ struct DurationTests {
         #expect(results[0].display == "1,04 days")
         #expect(results[0].value == .decimal(90000))
         // The value keeps the seconds magnitude, so the timespan form at
-        // low precision still holds the day and the hour (ADK-228).
+        // low precision still holds the day and the hour.
         #expect(results[2].display == "1 day 1 hour")
     }
 
@@ -206,7 +204,7 @@ struct DurationTests {
         #expect(conversion.display == "1 min 30,5 s")
     }
 
-    // MARK: Date-free months count 30 days (ADR-003)
+    // MARK: Date-free months count 30 days
 
     @Test(arguments: [
         (Date(timeIntervalSince1970: 1_791_926_400), "30 days"), // Oct 2026

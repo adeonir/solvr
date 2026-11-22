@@ -2,9 +2,8 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Sheet font family (ADK-262): the installed monospaced families, the face
-// a sheet uses for text and headings, and the fallback to SF Mono. A face
-// counts as monospaced by its CoreText trait or by equal glyph advances.
+// A face counts as monospaced by its CoreText trait or by equal glyph
+// advances. The fallback family is SF Mono.
 
 struct SheetFontFamilyTests {
     private static func face(

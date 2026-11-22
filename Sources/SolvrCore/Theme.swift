@@ -1,4 +1,4 @@
-// The theme catalog (ADK-328): every color the window draws, as one value.
+// Every color the window draws, as one value.
 
 import Foundation
 

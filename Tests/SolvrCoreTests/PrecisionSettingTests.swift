@@ -2,9 +2,9 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Settings values for display precision (ADK-255): general precision from 1
-// through 10 with default 2, crypto precision from 5 through 15 with default
-// 10. A cleared or invalid field restores its last valid value.
+// General precision runs from 1 through 10 with default 2, crypto precision
+// from 5 through 15 with default 10. A cleared or invalid field restores its
+// last valid value.
 
 struct PrecisionSettingTests {
     @Test func defaultsAndRangesMatchTheSpec() {

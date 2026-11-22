@@ -1,6 +1,6 @@
-// Percent (ADK-226): percentage shares and discounts over numeric
-// amounts — `N% of M`, `N% off M`, and the portion a bare `%` contributes
-// in `X - N%`. Currency parsing and formatting stay out of scope.
+// Percentage shares and discounts over numeric amounts — `N% of M`,
+// `N% off M`, and the portion a bare `%` contributes in `X - N%`. Currency
+// parsing and formatting stay out of scope.
 
 import Foundation
 

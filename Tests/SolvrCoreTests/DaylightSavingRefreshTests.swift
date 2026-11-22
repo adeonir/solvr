@@ -2,12 +2,10 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Model-layer integration tests for keeping visible time zone conversions
-// current at daylight-saving transitions (ADK-251): a conversion schedules
-// the next transition of the zones it uses, and every reevaluation trigger
-// — including the transition itself — shows the clock the transition
-// changed. The clock is injected per trigger (ADR-005), never read from the
-// process, and no UI automation runs.
+// A conversion schedules the next transition of the zones it uses, and
+// every reevaluation trigger — including the transition itself — shows
+// the clock the transition changed. The clock is injected per trigger,
+// never read from the process, and no UI automation runs.
 
 struct DaylightSavingRefreshTests {
     /// The city data the fixtures resolve city names against.
@@ -93,7 +91,6 @@ struct DaylightSavingRefreshTests {
         )
     }
 
-    /// The destination zone's transition refreshes the clock too.
     @Test
     func theDestinationTransitionRefreshesTheConversion() {
         var refresher = refresher("9am London in New York", now: "2026-10-30 09:00:00")
@@ -139,7 +136,7 @@ struct DaylightSavingRefreshTests {
     // MARK: Fresh city data schedules the transition
 
     /// A city resolved after the sheet opened turns its error into a clock
-    /// and begins following that zone's transitions (ADK-250, ADK-251).
+    /// and begins following that zone's transitions.
     @Test
     func freshCityDataSchedulesTheTransition() {
         var refresher = SheetRefresher(

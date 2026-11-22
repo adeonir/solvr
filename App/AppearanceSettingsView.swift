@@ -1,8 +1,7 @@
-// The Settings window's Appearance tab (ADK-260, ADK-261, ADK-262). The font
-// family menu and the sheet size and line height fields store a valid value as it is typed, so it reaches
-// every open sheet at once. A cleared or invalid field restores its value
-// when focus leaves it: the default for an empty field, otherwise the last
-// valid value.
+// The font family menu and the sheet size and line height fields store a
+// valid value as it is typed, so it reaches every open sheet at once. A
+// cleared or invalid field restores its value when focus leaves it: the
+// default for an empty field, otherwise the last valid value.
 
 import SolvrCore
 import SwiftUI
@@ -144,22 +143,21 @@ struct AppearanceSettingsView: View {
         .frame(width: 500)
         .onAppear {
             // The stored family returns to the default when it is no longer
-            // installed, and the menu shows the installed families only
-            // (ADK-262).
+            // installed, and the menu shows the installed families only.
             family = SheetFonts.resolvedFamily(family, in: InstalledFonts.faces)
             sizeText = String(size)
             lineHeightText = Self.format(lineHeight)
         }
         .onChange(of: sizeText) { _, text in
             // A valid size commits as typed; an empty or invalid field holds
-            // its last valid size and commits on focus leave (ADK-261).
+            // its last valid size and commits on focus leave.
             if let size = TypographySetting.validSize(of: text) {
                 storedSize = size
             }
         }
         .onChange(of: lineHeightText) { _, text in
             // A valid line height commits as typed; an empty or invalid field
-            // holds its last valid value and commits on focus leave (ADK-261).
+            // holds its last valid value and commits on focus leave.
             if let lineHeight = TypographySetting.validLineHeight(of: text) {
                 storedLineHeight = lineHeight
             }

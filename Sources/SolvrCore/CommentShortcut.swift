@@ -1,8 +1,8 @@
-// The comment shortcut (ADK-231): comment and uncomment lines with
-// Cmd + /, owned here as the shared `//`-toggle text rule. The shortcut
-// acts on the line with the cursor or on every selected line and only
-// adds or removes `// ` at the start of a line; the keybinding itself is
-// wired in the editable sheet and checked by hand.
+// Comment and uncomment lines with Cmd + /, owned here as the shared
+// `//`-toggle text rule. The shortcut acts on the line with the cursor or
+// on every selected line and only adds or removes `// ` at the start of a
+// line; the keybinding itself is wired in the editable sheet and checked
+// by hand.
 
 import Foundation
 

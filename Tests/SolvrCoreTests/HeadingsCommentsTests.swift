@@ -2,11 +2,10 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for headings and comments (ADK-224). Headings and
-// comments organize the sheet without evaluating their text; the evaluator
-// keeps both distinguishable from expressions, per ADR-005's complete-sheet
-// boundary. Locale, display precision, time zone, and clock are fixed per
-// fixture through the EvaluationContext.
+// Headings and comments organize the sheet without evaluating their text;
+// the evaluator keeps both distinguishable from expressions. Locale,
+// display precision, time zone, and clock are fixed per fixture through
+// the EvaluationContext.
 
 struct HeadingsCommentsTests {
     private func context(

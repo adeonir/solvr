@@ -1,7 +1,6 @@
-// The active theme's colors for the Settings window (ADK-330). The theme comes
-// from the same resolution as the main window: the mode, the macOS appearance,
-// and the kept light and dark theme identifiers. The Default themes keep the
-// system look.
+// The Settings theme comes from the same resolution as the main window: the
+// mode, the macOS appearance, and the kept light and dark theme identifiers.
+// The Default themes keep the system look.
 
 import SolvrCore
 import SwiftUI

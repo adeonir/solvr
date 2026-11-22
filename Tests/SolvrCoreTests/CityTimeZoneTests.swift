@@ -2,10 +2,8 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for time-of-day conversions by city name and city
-// abbreviation (ADK-250). The city data arrives as an injected snapshot, so
-// the fixtures never touch the network, and the external source and cache
-// run behind fakes, per ADR-005.
+// The city data arrives as an injected snapshot, so the fixtures never
+// touch the network, and the external source and cache run behind fakes.
 
 struct CityTimeZoneTests {
     private let instant = Date(timeIntervalSince1970: 1_793_524_800)

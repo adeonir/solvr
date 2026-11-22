@@ -1,4 +1,3 @@
-// Display (ADK-222): regional reading and representation of numbers.
 // Base literals (`0b`, `0o`, `0x`) share the plain decimal value with
 // every other number, and `in sci`, `in bin`, `in oct`, and `in hex`
 // change only the representation shown beside an expression — never the
@@ -18,7 +17,7 @@ enum Display {
         /// Base sixteen with the `0x` prefix.
         case hex
         /// A percent form: the ratio shown as a percent, e.g. `0,5` as
-        /// `50%` with Brazilian formatting (ADK-226).
+        /// `50%` with Brazilian formatting.
         case percent
 
         var base: Int? {
@@ -115,8 +114,7 @@ enum Display {
         case .percent:
             // The percent representation scales the value to a hundred,
             // applies the displayed decimal places, trims trailing zeros,
-            // and keeps the percent sign on the form: `0,5` shows `50%`
-            // (ADK-226).
+            // and keeps the percent sign on the form: `0,5` shows `50%`.
             let scaled = value * 100
             guard !scaled.isNaN else { return "" }
             return digits(of: Numeric.roundPlain(scaled, scale: precision), locale: locale) + "%"

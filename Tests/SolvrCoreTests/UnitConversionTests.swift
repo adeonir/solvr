@@ -2,14 +2,12 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for physical, data, and temperature quantity
-// conversions (ADK-227). A quantity converted through `in` shows its
-// value in the destination unit beside its expression, and keeps its
-// numeric value reusable inside arithmetic. Each unit accepts only its
-// standard abbreviation and its full name singular and plural; no other
-// alias. Locale, display precision, time zone, and clock are fixed per
-// fixture through the EvaluationContext, per ADR-005. The inch
-// abbreviation `in` spells the conversion keyword itself, so inches
+// A quantity converted through `in` shows its value in the destination unit
+// beside its expression, and keeps its numeric value reusable inside
+// arithmetic. Each unit accepts only its standard abbreviation and its full
+// name singular and plural; no other alias. Locale, display precision, time
+// zone, and clock are fixed per fixture through the EvaluationContext. The
+// inch abbreviation `in` spells the conversion keyword itself, so inches
 // accept only `inch` and `inches`.
 
 struct UnitConversionTests {

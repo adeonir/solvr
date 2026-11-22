@@ -2,14 +2,12 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for time-of-day conversions between time zone
-// abbreviations, cities, and the system time zone (ADK-249). Locale, time
-// zone, display precision, and clock are fixed per fixture through the
-// EvaluationContext, per ADR-005.
+// Locale, time zone, display precision, and clock are fixed per fixture
+// through the EvaluationContext.
 
 struct TimeZoneConversionTests {
     /// The city data the fixtures resolve city names against: a lookup reads
-    /// the injected city data, never the network (ADK-250).
+    /// the injected city data, never the network.
     private let cities = CityTimeZoneSnapshot(entries: [
         "London": .found(CityRecord(name: "London", country: "United Kingdom", region: "England", timeZoneIdentifier: "Europe/London", population: 8_961_989)),
         "New York": .found(CityRecord(name: "New York", country: "United States", region: "New York", timeZoneIdentifier: "America/New_York", population: 8_804_190)),

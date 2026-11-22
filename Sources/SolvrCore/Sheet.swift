@@ -1,20 +1,19 @@
-// Sheet (ADK-221): per-line evaluation. Errors stay local to their line, an
-// incomplete line leaves no result and no message, text lines and
-// non-evaluated lines show neither, names resolve against the nearest
-// preceding definitions (ADR-001), and a reference to a name whose
-// defining expression failed shows that it depends on an error.
+// Per-line evaluation. Errors stay local to their line, an incomplete line
+// leaves no result and no message, text lines and non-evaluated lines show
+// neither, names resolve against the nearest preceding definitions, and a
+// reference to a name whose defining expression failed shows that it
+// depends on an error.
 
 import Foundation
 
 struct SheetEvaluator {
     let context: EvaluationContext
-    /// The variable bindings the sheet has defined so far (ADK-223).
     var variables = VariableTable()
     /// The time zones the visible conversions use, collected as the
-    /// evaluation resolves them (ADK-251).
+    /// evaluation resolves them.
     var convertedTimeZones: Set<TimeZone> = []
     /// The city names the visible conversions use, collected as the
-    /// evaluation resolves them (ADK-250), whether or not the city data
+    /// evaluation resolves them, whether or not the city data
     /// holds an outcome for each.
     var convertedCities: Set<String> = []
 
@@ -83,7 +82,7 @@ struct SheetEvaluator {
         }
         // A word of the line is known when the sheet defines it already or
         // the language reserves it. A blank run inside a name collides with
-        // the plain-space spelling the name normalizes to (ADR-002).
+        // the plain-space spelling the name normalizes to.
         for word in line.map({ Tokenizer.isBlank($0) ? " " : $0 }).split(separator: " ") {
             var text = String(word)
             // A function call spells its name straight before the
@@ -125,7 +124,7 @@ struct SheetEvaluator {
     /// attempt that parses and evaluates completes the line; otherwise the
     /// strongest failure decides the outcome, with an unfinished line
     /// staying silent. Every attempt sees the names defined so far, so a
-    /// reference recognizes the longest complete visible name (ADR-002).
+    /// reference recognizes the longest complete visible name.
     private mutating func attempt(lineTokens tokens: [Token]) -> ExpressionResult {
         var leadingWords = 0
         while leadingWords < tokens.count, case .word = tokens[leadingWords] {
@@ -140,7 +139,7 @@ struct SheetEvaluator {
         for stripped in 0 ... leadingWords {
             // A function name is never a stray label: the prefix call form
             // parses it with its operand, and stripping would evaluate the
-            // bare operand alone (ADK-225).
+            // bare operand alone.
             if stripped > 0, case let .word(word) = tokens[stripped - 1],
                Language.functionNames.contains(word) || Money.names[word.lowercased()] != nil
             {
@@ -168,7 +167,7 @@ struct SheetEvaluator {
                     }
                 }
                 // Date forms carry date values and differences, apart
-                // from the numeric magnitudes (ADK-229).
+                // from the numeric magnitudes.
                 if let dateValue = try evaluateDateForm(node) {
                     return ExpressionResult(
                         kind: .expression,
@@ -180,7 +179,7 @@ struct SheetEvaluator {
                     )
                 }
                 // Time-of-day forms carry clock readings, apart from the
-                // numeric magnitudes and the calendar dates (ADK-249).
+                // numeric magnitudes and the calendar dates.
                 if let timeValue = try evaluateTimeOfDayForm(node) {
                     return ExpressionResult(
                         kind: .expression,
@@ -229,7 +228,7 @@ struct SheetEvaluator {
         }
         if pendingSeen {
             // An assigned name whose expression never finished stays erred,
-            // with no stale value its dependents could use (ADK-223).
+            // with no stale value its dependents could use.
             if let name = pendingAssignment {
                 variables.fail(name)
             }
@@ -246,29 +245,28 @@ struct SheetEvaluator {
             return value
         case let .quantity(number, unit):
             // A `rem` or `em` quantity counts its pixels at the shared
-            // Settings base, or the expression-local substitute (ADK-227).
+            // Settings base, or the expression-local substitute.
             return try Units.quantityValue(
                 of: number, in: unit, pixelBase: Units.pixelBase(in: context, override: override)
             )
         case let .duration(number, unit):
             // A duration value anchors on the seconds magnitude of its
-            // written quantity (ADK-228).
+            // written quantity.
             return try Numeric.multiply(number, unit.factor)
         case let .durationConversion(inner, _):
             // The conversion is representational: the count only shows;
             // the value keeps its seconds magnitude, so chains compose in
-            // their written order without rounding (ADK-228).
+            // their written order without rounding.
             return try evaluate(node: inner, overriding: override)
         case let .toTimespan(inner):
-            // The timespan form is representational like the conversion
-            // (ADK-228).
+            // The timespan form is representational like the conversion.
             return try evaluate(node: inner, overriding: override)
         case let .conversion(inner, target, localOverride):
             let effective = localOverride ?? override
             let value = try evaluate(node: inner, overriding: effective)
             // A relative count of an inner conversion converts from pixels at
             // the base it was counted at, so the outer step stays at the
-            // shared base (ADK-254).
+            // shared base.
             if let base = countBase(of: inner, overriding: effective) {
                 return try Units.convert(
                     Numeric.multiply(value, base),
@@ -304,7 +302,7 @@ struct SheetEvaluator {
         case let .representation(kind, inner):
             // A percent representation over a monetary division is the
             // monetary ratio: the amounts convert and divide, and only the
-            // whole-line form shows the percent (ADK-263).
+            // whole-line form shows the percent.
             if case let .binary(.divide, numerator, denominator) = inner,
                kind == .percent,
                let ratio = try monetaryRatio(numerator, denominator)
@@ -314,7 +312,7 @@ struct SheetEvaluator {
             }
             // Inside arithmetic, a conversion contributes its value only;
             // the representation shows when the whole line is the
-            // conversion (ADK-222).
+            // conversion.
             let value = try evaluate(node: inner, overriding: override)
             try Display.validate(value, as: kind)
             return value
@@ -348,8 +346,7 @@ struct SheetEvaluator {
         case .monetary, .monetaryConversion, .date, .daysUntil, .weekday, .calendarShift,
              .timeOfDay, .timeOfDayConversion:
             // Date and time-of-day forms carry typed values, not
-            // magnitudes; they reach the sheet only as a whole line
-            // (ADK-229, ADK-249).
+            // magnitudes; they reach the sheet only as a whole line.
             throw Diagnostic.syntax
         }
     }
@@ -357,11 +354,11 @@ struct SheetEvaluator {
     /// The form a whole line shows beside itself: a representation
     /// conversion its own form, a bare quantity its unit, a unit
     /// conversion the destination unit, and arithmetic the plain locale
-    /// number (ADK-222, ADK-227).
+    /// number.
     private func representation(of node: Node, for value: Decimal) -> String {
         let precision = context.displayPrecision
         // A duration form its own representation, count in unit or
-        // composed timespan (ADK-228): a call shows the count in the unit
+        // composed timespan: a call shows the count in the unit
         // its duration-carrying argument holds, so `round(1 month in
         // days)` returns `30 days`.
         if case let .call(_, arguments) = node,
@@ -377,7 +374,7 @@ struct SheetEvaluator {
         case let .percentPortion(inner):
             // The share forms wrap: a percentage of a percentage comes out
             // as the wrapped share's fraction, so the line shows a percent
-            // instead of the bare decimal (ADK-263).
+            // instead of the bare decimal.
             switch inner {
             case .percentShare, .percentOff:
                 return Display.format(value, as: .percent, precision: precision, locale: locale)
@@ -403,7 +400,7 @@ struct SheetEvaluator {
     }
 
     /// The value a whole line holds. A pixel and relative-count sum holds
-    /// its relative count, so the line shows in that unit (ADK-257).
+    /// its relative count, so the line shows in that unit.
     private mutating func lineValue(of node: Node) throws -> Decimal {
         if case let .binary(op, lhsNode, rhsNode) = node,
            Units.relativeSumUnit(of: op, lhsNode, rhsNode) != nil
@@ -416,8 +413,7 @@ struct SheetEvaluator {
     /// A pixel and relative-count sum adds in the relative unit: each
     /// operand counts that unit, and a pixel operand converts at the base
     /// in effect. Its evaluated value is that count in pixels, so an
-    /// enclosing conversion reads the same basis as a bare `rem` quantity
-    /// (ADK-257).
+    /// enclosing conversion reads the same basis as a bare `rem` quantity.
     private mutating func relativeSumCount(
         _ op: NumericOperator, _ lhsNode: Node, _ rhsNode: Node,
         overriding override: Units.Override?
@@ -427,7 +423,7 @@ struct SheetEvaluator {
         return op == .add ? try Numeric.add(lhs, rhs) : try Numeric.subtract(lhs, rhs)
     }
 
-    /// The count an operand holds in its relative unit (ADK-257).
+    /// The count an operand holds in its relative unit.
     private mutating func relativeCount(
         of node: Node, overriding override: Units.Override?
     ) throws -> Decimal {
@@ -471,7 +467,7 @@ struct SheetEvaluator {
         case .bitwiseAnd: return try Functions.bitwiseAnd(lhs, rhs)
         case .bitwiseOr: return try Functions.bitwiseOr(lhs, rhs)
         case .subtract:
-            // `X - N%` takes the portion N/100 of X off X (ADK-226).
+            // `X - N%` takes the portion N/100 of X off X.
             if case let .percentPortion(inner) = rhsNode {
                 let portion = try evaluate(node: inner)
                 return try Numeric.subtract(lhs, Percent.share(portion, of: lhs))
@@ -497,7 +493,7 @@ struct SheetEvaluator {
 
     /// The sum two operands make beside a bare `N%`: each percent reads
     /// its base from the value on the other side, so `10 + 40%` adds the
-    /// share and `10% + 40` is the same addition (ADK-263). The
+    /// share and `10% + 40` is the same addition. The
     /// subtraction keeps the older right-side form of `X - N%`.
     private mutating func addPortion(
         _ lhsNode: Node, _ rhsNode: Node, _ lhs: Decimal, _ rhs: Decimal
@@ -520,7 +516,7 @@ struct SheetEvaluator {
     /// The monetary ratio a percent representation divides: a single
     /// monetary numerator counts as its amount against a plain number, and
     /// two monetary values convert through the exchange rate before the
-    /// division (ADK-263). A monetary denominator alone stays outside the
+    /// division. A monetary denominator alone stays outside the
     /// ratio, so plain division keeps its Invalid syntax; the numeric
     /// path evaluates every other pair.
     private mutating func monetaryRatio(
@@ -548,8 +544,7 @@ struct SheetEvaluator {
 
     /// The form the sheet shows for a whole-line percent share or
     /// discount: the base's quantity or duration unit, a percent of a
-    /// percent the percent form, otherwise the plain locale number
-    /// (ADK-263).
+    /// percent the percent form, otherwise the plain locale number.
     private func shareDisplay(of base: Node, for value: Decimal) -> String {
         let precision = context.displayPrecision
         if case .percentPortion = base {
@@ -564,7 +559,7 @@ struct SheetEvaluator {
         return Numeric.display(value, precision: precision, locale: locale)
     }
 
-    /// The quantity a numeric node adds to a sheet total with (ADK-254).
+    /// The quantity a numeric node adds to a sheet total with.
     /// Arithmetic keeps a quantity only where its value stays in that
     /// quantity's unit: a plain operand joins a unit by addition or
     /// subtraction only for units that count their own magnitude, and by
@@ -592,7 +587,7 @@ struct SheetEvaluator {
         case let .assignment(_, inner):
             measure(of: inner)
         // A percentage keeps the unit of the base it shares or takes its
-        // share off (ADK-263).
+        // share off.
         case let .percentShare(_, base), let .percentOff(_, base):
             measure(of: base)
         default:
@@ -601,7 +596,7 @@ struct SheetEvaluator {
     }
 
     /// The pixel base a relative value was counted at, or nil when the value
-    /// holds pixels (ADK-254). A conversion to `rem` or `em` counts at its own
+    /// holds pixels. A conversion to `rem` or `em` counts at its own
     /// `at` base, or at the shared base; a chain, an arithmetic result, or a
     /// reference keeps the base of the count it carries.
     func countBase(of node: Node, overriding override: Units.Override? = nil) -> Decimal? {
@@ -619,15 +614,15 @@ struct SheetEvaluator {
         }
     }
 
-    /// The value a numeric result stores, in its measure's unit (ADK-254). A
-    /// `rem` or `em` result evaluates to pixels at the shared base (ADK-227),
+    /// The value a numeric result stores, in its measure's unit. A
+    /// `rem` or `em` result evaluates to pixels at the shared base,
     /// so it divides by that base. A relative count scales from the base it
     /// was counted at to the shared base first.
     func storedValue(_ value: Decimal, of node: Node) throws -> Decimal {
         guard case let .unit(unit)? = measure(of: node), unit.isRelative else {
             return value
         }
-        // A pixel and relative-count sum already holds its count (ADK-257).
+        // A pixel and relative-count sum already holds its count.
         if case let .binary(op, lhsNode, rhsNode) = node,
            Units.relativeSumUnit(of: op, lhsNode, rhsNode) != nil
         {
@@ -663,7 +658,7 @@ struct SheetEvaluator {
         }
     }
 
-    /// A calendar-day difference counts its days (ADK-254).
+    /// A calendar-day difference counts its days.
     func dateMeasure(_ value: ExpressionValue) -> Measure? {
         if case .difference = value {
             return .time(Duration.day)
@@ -716,7 +711,7 @@ struct SheetEvaluator {
             }
         case let .percentShare(percent, base):
             // A percentage of a monetary value keeps the currency, and a
-            // base without one stays on the numeric path (ADK-263).
+            // base without one stays on the numeric path.
             guard let typedBase = try evaluateMonetary(base),
                   case let .money(baseMoney) = typedBase
             else { return nil }
@@ -740,9 +735,8 @@ struct SheetEvaluator {
     }
 
     /// A bare `N%` beside a monetary value reads the money as its base:
-    /// `$100 + 10%` adds the share and `price - 10%` takes it off
-    /// (ADK-263). Without money at that base the forms stay on the
-    /// numeric path.
+    /// `$100 + 10%` adds the share and `price - 10%` takes it off. Without
+    /// money at that base the forms stay on the numeric path.
     private mutating func portionBaseline(
         `operator`: NumericOperator, percent: Node, baseNode: Node
     ) throws -> TypedValue? {
@@ -767,7 +761,7 @@ struct SheetEvaluator {
         _ op: NumericOperator, _ lhsNode: Node, _ rhsNode: Node
     ) throws -> TypedValue? {
         // The portion form beside money first: the money side holds the
-        // base either way (ADK-263).
+        // base either way.
         if op == .add || op == .subtract {
             if case let .percentPortion(percent) = rhsNode,
                let typed = try portionBaseline(operator: op, percent: percent, baseNode: lhsNode)

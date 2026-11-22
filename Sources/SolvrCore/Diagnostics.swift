@@ -1,5 +1,5 @@
-// Diagnostics: the exact user-facing message strings for every language
-// error (ADK-221). Tests assert these texts exactly.
+// The exact user-facing message strings for every language error.
+// Tests assert these texts exactly.
 
 public enum Diagnostic: Error, Equatable, Sendable, Hashable {
     /// The line cannot be recognized as an expression at all.
@@ -21,13 +21,12 @@ public enum Diagnostic: Error, Equatable, Sendable, Hashable {
     /// A function called with an unexpected number of arguments.
     case argumentCount(function: String, requirement: String)
     case exchangeRateUnavailable(currency: String)
-    /// The city data has no place of that name (ADK-250).
+    /// The city data has no place of that name.
     case unknownCity(name: String)
     /// The city name means more than one place, so no conversion picks one
-    /// silently (ADK-250).
+    /// silently.
     case ambiguousCity(name: String)
-    /// The city was never looked up and the connection is unavailable
-    /// (ADK-250).
+    /// The city was never looked up and the connection is unavailable.
     case cityNotCached(name: String)
 
     /// The exact message shown in place of the result.

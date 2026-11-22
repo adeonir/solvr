@@ -2,10 +2,9 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Model-layer integration tests for the date-dependent results lifecycle
-// (ADK-230): the refresher keeps a sheet's visible results current through
-// the application's reevaluation triggers — local midnight, sheet opening,
-// and returning to the app — with the clock injected per trigger (ADR-005),
+// The refresher keeps a sheet's visible results current through the
+// application's reevaluation triggers — local midnight, sheet opening,
+// and returning to the app — with the clock injected per trigger,
 // never read from the process, and no UI automation.
 
 struct SheetRefreshTests {

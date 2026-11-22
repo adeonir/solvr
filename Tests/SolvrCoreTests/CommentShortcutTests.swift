@@ -2,12 +2,12 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Model-layer tests for the comment shortcut (ADK-231). The shortcut toggles
-// `// ` exactly at the start of the cursor's line or of every selected line:
-// a selection whose every line already starts with `// ` removes one `// `
-// from each; any other selection adds `// ` to each. Re-evaluating the
-// toggled text shows the commented line's result disappearing and returning.
-// The shortcut's keybinding in the editable sheet is checked by hand.
+// The shortcut toggles `// ` exactly at the start of the cursor's line or
+// of every selected line: a selection whose every line already starts with
+// `// ` removes one `// ` from each; any other selection adds `// ` to each.
+// Re-evaluating the toggled text shows the commented line's result
+// disappearing and returning. The shortcut's keybinding in the editable
+// sheet is checked by hand.
 
 struct CommentShortcutTests {
     private func context(
@@ -27,7 +27,6 @@ struct CommentShortcutTests {
     @Test
     func commentsTheCursorLine() {
         #expect(CommentShortcut.toggle("2 + 2", lines: [0]) == "// 2 + 2")
-        // The commented line is a Comment and shows no result.
         let result = evaluate(
             sheetText: CommentShortcut.toggle("2 + 2", lines: [0]), context: context()
         )[0]
@@ -38,7 +37,6 @@ struct CommentShortcutTests {
     @Test
     func uncommentsTheCursorLineRemovingCommentAndSpace() {
         #expect(CommentShortcut.toggle("// 2 + 2", lines: [0]) == "2 + 2")
-        // The uncommented line's result returns.
         let result = evaluate(
             sheetText: CommentShortcut.toggle("// 2 + 2", lines: [0]), context: context()
         )[0]
@@ -51,7 +49,6 @@ struct CommentShortcutTests {
         let once = CommentShortcut.toggle("2 + 2 // example", lines: [0])
         #expect(once == "// 2 + 2 // example")
         #expect(CommentShortcut.toggle(once, lines: [0]) == "2 + 2 // example")
-        // The commented inline-comment line still evaluates its expression.
         let result = evaluate(sheetText: once, context: context())[0]
         #expect(result.kind == .comment)
         #expect(result.value == nil && result.diagnostic == nil)
@@ -97,9 +94,7 @@ struct CommentShortcutTests {
 
     @Test
     func toggledMixedSelectionLeavesEveryLineCommented() {
-        // Every line of the mixed selection ends commented, so every
-        // result disappears; a comment is a comment however many markers
-        // it carries.
+        // A comment is a comment however many markers it carries.
         let toggled = CommentShortcut.toggle("2 + 2\n// 3 + 3", lines: [0, 1])
         let results = evaluate(sheetText: toggled, context: context())
         #expect(results.count == 2)

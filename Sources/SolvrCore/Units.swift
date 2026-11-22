@@ -1,10 +1,8 @@
-// Units (ADK-227): everyday physical, data, temperature, and CSS
-// quantity conversion behind `in`. A conversion keeps the numeric value
-// of its expression and shows the destination unit's representation
-// beside it. The shared Settings values — the `rem` and `em` pixel base
-// and the pixel density — arrive through the evaluation context, and an
-// expression-local `at` override substitutes its value for that
-// expression only (ADK-220).
+// A conversion keeps the numeric value of its expression and shows the
+// destination unit's representation beside it. The shared Settings values
+// — the `rem` and `em` pixel base and the pixel density — arrive through
+// the evaluation context, and an expression-local `at` override substitutes
+// its value for that expression only.
 //
 // Every unit accepts exactly its standard abbreviation and its full name
 // singular and plural; matching is not case-sensitive, because unit
@@ -31,7 +29,7 @@ struct Unit: Sendable, Equatable {
 
     /// The `rem` and `em` counts live relative to the shared pixel base:
     /// their quantity values hold the px count the display shows, and
-    /// conversions bind through the base (ADK-227).
+    /// conversions bind through the base.
     var isRelative: Bool {
         symbol == "em" || symbol == "rem"
     }
@@ -159,7 +157,7 @@ enum Units {
     }
 
     /// Every alias any unit accepts; assigning to one is a reserved-name
-    /// error (ADK-220).
+    /// error.
     static var reservedNames: Set<String> {
         Set(byAlias.keys)
     }
@@ -169,7 +167,7 @@ enum Units {
 
     /// One `at N <unit>` clause the parser stores with a conversion: its
     /// value substitutes the Settings reference only inside that
-    /// expression (ADK-227).
+    /// expression.
     struct Override: Sendable, Equatable {
         enum Kind: Sendable, Equatable { case pixelBase, ppi }
         let kind: Kind
@@ -187,7 +185,7 @@ enum Units {
     }
 
     /// The pixel base a quantity or conversion reads: the `at Npx`
-    /// substitute, or the shared Settings value (ADK-220).
+    /// substitute, or the shared Settings value.
     static func pixelBase(in context: EvaluationContext, override: Override?) -> Decimal {
         if let override, override.kind == .pixelBase {
             return override.value
@@ -196,7 +194,7 @@ enum Units {
     }
 
     /// The pixel density a conversion reads: the `at N ppi` substitute,
-    /// or the shared Settings value (ADK-220).
+    /// or the shared Settings value.
     static func ppi(in context: EvaluationContext, override: Override?) -> Decimal {
         if let override, override.kind == .ppi {
             return override.value
@@ -233,7 +231,7 @@ enum Units {
 
     /// The relative unit a sum or difference takes when it mixes a pixel
     /// value with a `rem` or `em` count, or a bare `rem` or `em` quantity
-    /// with a converted one, whose value is already a count (ADK-257). Nil
+    /// with a converted one, whose value is already a count. Nil
     /// for any other pair.
     static func relativeSumUnit(of op: NumericOperator, _ lhs: Node, _ rhs: Node) -> Unit? {
         guard op == .add || op == .subtract,

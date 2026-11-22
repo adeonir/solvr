@@ -1,6 +1,6 @@
-// The font faces installed on this Mac, read from the system once (ADK-262).
-// Each face carries its CoreText monospace trait and the measured advances
-// of a glyph sample, which SolvrCore uses to decide what counts as monospaced.
+// The installed faces are read from the system once. Each face carries its
+// CoreText monospace trait and the measured advances of a glyph sample,
+// which SolvrCore uses to decide what counts as monospaced.
 
 import AppKit
 import CoreText

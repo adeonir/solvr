@@ -1,6 +1,6 @@
-// The Settings window's display precision fields (ADK-255). A valid value
-// is stored as it is typed and reaches every open sheet at once. A cleared
-// or invalid field restores its last valid value when focus leaves it.
+// A valid precision value is stored as it is typed and reaches every open
+// sheet at once. A cleared or invalid field restores its last valid value
+// when focus leaves it.
 
 import SolvrCore
 import SwiftUI

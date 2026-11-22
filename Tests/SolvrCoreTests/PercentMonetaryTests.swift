@@ -2,13 +2,11 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for percentages over monetary values and the
-// percent forms beside addition (ADK-263). A percentage written beside
-// a value reads that value as its base: a money share keeps the
-// currency, an addition takes the base from the other side, and a
-// monetary ratio converts through the exchange rate. Locale and display
-// precision stay fixed per fixture through the EvaluationContext, per
-// ADR-005.
+// A percentage written beside a value reads that value as its base: a
+// money share keeps the currency, an addition takes the base from the
+// other side, and a monetary ratio converts through the exchange rate.
+// Locale and display precision stay fixed per fixture through the
+// EvaluationContext.
 
 struct PercentMonetaryTests {
     private func decimal(_ text: String) -> Decimal {

@@ -1,6 +1,6 @@
-// Numeric core (ADK-221): Foundation Decimal arithmetic with magnitude
-// checks (ADR-006) and 34-significant-digit retention. Values stay
-// independent of their display representation.
+// Foundation Decimal arithmetic with magnitude checks and
+// 34-significant-digit retention. Values stay independent of their display
+// representation.
 
 import Foundation
 
@@ -23,7 +23,7 @@ extension Decimal {
 /// shows in place of its result.
 enum Numeric {
     /// The supported magnitude range is zero plus 10^-127..10^127, either
-    /// sign (ADR-006).
+    /// sign.
     static let maximumMagnitude = try! Decimal(exact: "1e127")
     static let minimumMagnitude = try! Decimal(exact: "1e-127")
     /// The smallest absolute magnitude below which nothing displays or
@@ -49,7 +49,7 @@ enum Numeric {
     /// sinks below about -90, while the result is still representable — so
     /// the mantissas normalize apart, the small mantissa quotient divides
     /// safely near exponent zero, and the exponent reassembles through an
-    /// exact string form that any representable decimal accepts (ADR-006).
+    /// exact string form that any representable decimal accepts.
     static func divide(_ a: Decimal, by b: Decimal) throws -> Decimal {
         if b == 0 {
             throw Diagnostic.divisionByZero
@@ -59,7 +59,7 @@ enum Numeric {
         }
         // The mantissas normalize apart over magnitudes: the remainder sign
         // is applied after reassembly, or the sign becomes part of the
-        // digit string and counts as an exponent place (ADK-227).
+        // digit string and counts as an exponent place.
         let negative = (a < 0) != (b < 0)
         let (mantissaA, exponentA) = normalizedParts(of: a < 0 ? -a : a)
         let (mantissaB, exponentB) = normalizedParts(of: b < 0 ? -b : b)
@@ -89,7 +89,7 @@ enum Numeric {
     /// one lose digits through divisions that stay inside the representable
     /// range and magnitudes below one climb through safe multiplications.
     /// The magnitude normalizes first: a negative mantissa never leaves
-    /// the `mantissa < 1` climb until it reaches NaN (ADK-227).
+    /// the `mantissa < 1` climb until it reaches NaN.
     static func normalizedParts(of value: Decimal) -> (Decimal, Int) {
         if value.isNaN {
             return (value, 0)
@@ -145,7 +145,7 @@ enum Numeric {
     }
 
     /// Foundation reports calculation overflow or underflow as NaN; any NaN
-    /// lies beyond the supported range (ADR-006).
+    /// lies beyond the supported range.
     static func check(_ value: Decimal) throws -> Decimal {
         if value.isNaN {
             throw Diagnostic.outOfRange
@@ -174,7 +174,7 @@ enum Numeric {
     static let retainedDigits = 34
 
     /// Round the value to 34 significant decimal digits, exact ties away
-    /// from zero (ADR-006). The magnitude normalizes next to 10^e with
+    /// from zero. The magnitude normalizes next to 10^e with
     /// 1 <= mantissa < 10, rounds with one integer digit plus the remaining
     /// 33 decimals, and goes back through the exponent.
     static func retain(_ value: Decimal) -> Decimal {
@@ -196,7 +196,7 @@ enum Numeric {
         }
         // Reassemble through the mantissa digits: the divisions back down
         // the exponent would run Foundation division into its underflow
-        // region below about 10^-90 (ADR-006).
+        // region below about 10^-90.
         var digits = normalizedMantissaDigits(of: mantissa)
         var stripped = 0
         while digits.count > 1, digits.hasSuffix("0") {

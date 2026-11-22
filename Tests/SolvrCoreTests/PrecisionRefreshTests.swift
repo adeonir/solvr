@@ -3,8 +3,8 @@ import Foundation
 import Testing
 
 // A precision change reaches the visible results and the total of an open
-// sheet at once, with the sheet text left as it is (ADK-255). Display only:
-// retained values never change (ADK-252).
+// sheet at once, with the sheet text left as it is. Display only: retained
+// values never change.
 
 struct PrecisionRefreshTests {
     private let now = Date(timeIntervalSince1970: 0)

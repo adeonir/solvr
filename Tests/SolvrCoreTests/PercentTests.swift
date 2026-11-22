@@ -2,10 +2,9 @@ import Foundation
 @testable import SolvrCore
 import Testing
 
-// Complete-sheet tests for percentage shares and discounts (ADK-226).
 // Percentages take numeric amounts; currency parsing stays out of scope.
 // Locale, display precision, time zone, and clock are fixed per fixture
-// through the EvaluationContext, per ADR-005.
+// through the EvaluationContext.
 
 struct PercentTests {
     private func context(
@@ -92,7 +91,6 @@ struct PercentTests {
 
     @Test
     func percentRoundsWithTheDisplayedDecimalPlaces() {
-        // One third as a percent at two displayed places, Brazilian formatting.
         let result = evaluate(sheetText: "1 as a % of 3", context: context())[0]
         #expect(result.display == "33,33%")
     }
