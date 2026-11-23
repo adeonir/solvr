@@ -1,5 +1,5 @@
 import AppKit
-import SolvrCore
+import Core
 import OSLog
 import SwiftUI
 

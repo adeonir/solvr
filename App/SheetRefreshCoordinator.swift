@@ -9,7 +9,7 @@
 
 import AppKit
 import Foundation
-import SolvrCore
+import Core
 import Observation
 
 /// Sends application lifecycle events to the refresh coordinator.

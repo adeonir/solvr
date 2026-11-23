@@ -2,7 +2,7 @@
 // sheet at once. A cleared or invalid field restores its last valid value
 // when focus leaves it.
 
-import SolvrCore
+import Core
 import SwiftUI
 
 struct PrecisionSettingsView: View {

@@ -4,7 +4,7 @@
 
 import AppKit
 import CoreText
-import SolvrCore
+import Core
 
 enum InstalledFonts {
     static let faces: [InstalledFace] = readFaces()

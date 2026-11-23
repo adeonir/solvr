@@ -1,5 +1,5 @@
 import AppKit
-import SolvrCore
+import Core
 
 /// One city data service and durable cache for every sheet and window.
 @MainActor

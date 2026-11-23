@@ -2,7 +2,6 @@ import Foundation
 #if canImport(Core)
 @testable import Core
 #else
-@testable import SolvrCore
 #endif
 import Testing
 

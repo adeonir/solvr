@@ -7,10 +7,6 @@ options:
   xcodeVersion: "27.0"
   projectFormat: "xcode27_0"
 
-packages:
-  SolvrCore:
-    path: .
-
 targets:
   Core:
     type: framework
@@ -41,7 +37,7 @@ targets:
     sources:
       - App
     dependencies:
-      - package: SolvrCore
+      - target: Core
     info:
       path: App/Info.plist
       properties:
@@ -61,7 +57,8 @@ targets:
       - Tests/AppTests
     dependencies:
       - target: Solvr
-      - package: SolvrCore
+      - target: Core
+        embed: false
     settings:
       base:
         SWIFT_VERSION: "6.0"
