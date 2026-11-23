@@ -8,13 +8,10 @@ on:
 
 jobs:
   test-and-build:
-    runs-on: macos-15
+    runs-on: xcode-27
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
-      - name: Run SolvrCore tests
-        run: swift test
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -24,3 +21,6 @@ jobs:
 
       - name: Build Solvr for macOS
         run: xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' build
+
+      - name: Run CoreTests and AppTests
+        run: xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' test

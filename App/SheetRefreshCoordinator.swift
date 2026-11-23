@@ -9,8 +9,48 @@
 
 import AppKit
 import Foundation
-import SolvrCore
+import Core
 import Observation
+
+/// Sends application lifecycle events to the refresh coordinator.
+/// The default source watches NSWorkspace; tests supply a source they can
+/// fire deterministically.
+@MainActor
+protocol ApplicationEventSource: AnyObject {
+    /// Start watching for events; call `handler` on the main actor when one
+    /// occurs.
+    func start(handler: @escaping @MainActor (SheetRefreshTrigger) -> Void)
+    /// Stop watching for events.
+    func stop()
+}
+
+/// Observes NSWorkspace and emits a `.returningToApp` trigger when another
+/// application becomes active. This is the coordinator's default event
+/// source; it keeps the existing behavior of refreshing when the user
+/// returns to Solvr.
+@MainActor
+final class WorkspaceApplicationEventSource: NSObject, ApplicationEventSource {
+    private var handler: ((SheetRefreshTrigger) -> Void)?
+
+    func start(handler: @MainActor @escaping (SheetRefreshTrigger) -> Void) {
+        self.handler = handler
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(didBecomeActive(_:)),
+            name: NSWorkspace.didActivateApplicationNotification,
+            object: nil
+        )
+    }
+
+    func stop() {
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
+        handler = nil
+    }
+
+    @objc private func didBecomeActive(_: Notification) {
+        handler?(.returningToApp)
+    }
+}
 
 @MainActor
 @Observable
@@ -32,6 +72,8 @@ final class SheetRefreshCoordinator: NSObject {
     @ObservationIgnored private var midnightTimer: Timer?
     @ObservationIgnored private var transitionTimer: Timer?
     @ObservationIgnored private var observingWorkspace = false
+    @ObservationIgnored private let clock: () -> Date
+    @ObservationIgnored private let applicationEvents: ApplicationEventSource
 
     /// Asks the shared city data service for a lookup of the cities the
     /// visible results still cannot resolve. The view sets it; every trigger
@@ -39,6 +81,15 @@ final class SheetRefreshCoordinator: NSObject {
     /// from an error into a clock once the connection comes back. The
     /// service throttles repeat lookups itself.
     @ObservationIgnored var requestCityData: ((Set<String>) -> Void)?
+
+    init(
+        clock: @escaping () -> Date = Date.init,
+        applicationEvents: ApplicationEventSource = WorkspaceApplicationEventSource()
+    ) {
+        self.clock = clock
+        self.applicationEvents = applicationEvents
+        super.init()
+    }
 
     /// Opening a sheet evaluates it immediately — the opening evaluation
     /// counts as the sheet-opening trigger — and starts the local-midnight
@@ -56,14 +107,14 @@ final class SheetRefreshCoordinator: NSObject {
     /// An edit hands the rewritten text over and reevaluates on the spot,
     /// so a line edited away loses its result immediately.
     func sheetTextEdited(_ newSheetText: String) {
-        guard let outcome = refresher?.update(sheetText: newSheetText, now: Date()) else { return }
+        guard let outcome = refresher?.update(sheetText: newSheetText, now: clock()) else { return }
         publish(outcome.results)
         scheduleMidnightTimer()
         scheduleTransitionTimer()
     }
 
     func exchangeRatesChanged(_ snapshot: ExchangeRateSnapshot) {
-        guard let outcome = refresher?.update(exchangeRates: snapshot, now: Date()) else { return }
+        guard let outcome = refresher?.update(exchangeRates: snapshot, now: clock()) else { return }
         publish(outcome.results)
     }
 
@@ -71,7 +122,7 @@ final class SheetRefreshCoordinator: NSObject {
     /// the zones the new conversions use begin following their
     /// daylight-saving transitions.
     func cityTimeZonesChanged(_ snapshot: CityTimeZoneSnapshot) {
-        guard let outcome = refresher?.update(cityTimeZones: snapshot, now: Date()) else { return }
+        guard let outcome = refresher?.update(cityTimeZones: snapshot, now: clock()) else { return }
         publish(outcome.results)
         scheduleTransitionTimer()
     }
@@ -82,7 +133,7 @@ final class SheetRefreshCoordinator: NSObject {
         guard let outcome = refresher?.update(
             displayPrecision: displayPrecision,
             cryptoPrecision: cryptoPrecision,
-            now: Date()
+            now: clock()
         ) else { return }
         publish(outcome.results)
     }
@@ -104,24 +155,21 @@ final class SheetRefreshCoordinator: NSObject {
         refresher?.hasDateDependentResults ?? false
     }
 
+    /// Fires a refresh trigger using the coordinator's clock. Tests use
+    /// this to drive local midnight and other lifecycle triggers
+    /// deterministically without waiting for timers.
+    func simulateRefresh(_ trigger: SheetRefreshTrigger) {
+        fire(trigger)
+    }
+
     // MARK: System events to reevaluation triggers
 
     private func observeWorkspace() {
         guard !observingWorkspace else { return }
         observingWorkspace = true
-        NSWorkspace.shared.notificationCenter.addObserver(
-            self,
-            selector: #selector(workspaceDidBecomeActive(_:)),
-            name: NSWorkspace.didActivateApplicationNotification,
-            object: nil
-        )
-    }
-
-    /// Returning to the app recalculates the date-dependent results
-    /// without a text edit.
-    @objc private func workspaceDidBecomeActive(_: Notification) {
-        MainActor.assumeIsolated {
-            fire(.returningToApp)
+        applicationEvents.start { [weak self] trigger in
+            guard let self else { return }
+            MainActor.assumeIsolated { self.fire(trigger) }
         }
     }
 
@@ -148,7 +196,7 @@ final class SheetRefreshCoordinator: NSObject {
         midnightTimer = nil
         guard let refresher, refresher.hasDateDependentResults else { return }
         let nextMidnight = refresher.dateCalendarContext.nextDate(
-            after: Date(),
+            after: clock(),
             matching: DateComponents(hour: 0, minute: 0, second: 0),
             matchingPolicy: .nextTime
         )
@@ -172,7 +220,7 @@ final class SheetRefreshCoordinator: NSObject {
         transitionTimer?.invalidate()
         transitionTimer = nil
         guard let refresher,
-              let transition = refresher.nextDaylightSavingTransition(after: Date())
+              let transition = refresher.nextDaylightSavingTransition(after: clock())
         else { return }
         let timer = Timer(
             fireAt: transition,
@@ -187,7 +235,7 @@ final class SheetRefreshCoordinator: NSObject {
     }
 
     private func fire(_ trigger: SheetRefreshTrigger) {
-        guard refresher != nil, let outcome = refresher?.refresh(trigger, now: Date()) else { return }
+        guard refresher != nil, let outcome = refresher?.refresh(trigger, now: clock()) else { return }
         publish(outcome.results)
         // A reevaluation at any trigger can move the zones and the next
         // transition they schedule.

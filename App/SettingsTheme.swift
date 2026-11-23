@@ -2,7 +2,7 @@
 // mode, the macOS appearance, and the kept light and dark theme identifiers.
 // The Default themes keep the system look.
 
-import SolvrCore
+import Core
 import SwiftUI
 
 private extension Color {

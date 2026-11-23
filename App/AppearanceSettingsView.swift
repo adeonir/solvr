@@ -3,7 +3,7 @@
 // cleared or invalid field restores its value when focus leaves it: the
 // default for an empty field, otherwise the last valid value.
 
-import SolvrCore
+import Core
 import SwiftUI
 
 extension AppearanceMode {
