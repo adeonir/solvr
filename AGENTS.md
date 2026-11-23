@@ -7,6 +7,10 @@ Guidance for AI agents working in this repository.
 Solvr is a beautiful text calculator for Mac. It combines a calculation language with sheets that stay saved, organized, and synced.
 ## Layout
 
+- `App/` — the `Solvr` app target: SwiftUI views, AppKit wrappers, and app-owned coordination
+- `Core/` — the `Core` framework target: evaluator, sheet model, and app-independent services
+- `CoreTests/` — tests for `Core`
+- `AppTests/` — app-hosted tests for `Solvr`
 - `PRODUCT.md` — the product register: purpose, users, brand personality, design principles
 - `GLOSSARY.md` — the language of the product; define every new domain term here
 - `docs/product/PRD.md` — requirements (FR, NFR), scope, assumptions, risks, open questions
@@ -14,9 +18,15 @@ Solvr is a beautiful text calculator for Mac. It combines a calculation language
 
 ## Build
 
+- The app and `Core` target macOS 26.0 or later and build with Xcode 27 or later.
 - Generate the Xcode project with `xcodegen generate`, then build with `xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' build`.
 - The app lands in Xcode's default DerivedData folder: `~/Library/Developer/Xcode/DerivedData/Solvr-<hash>/Build/Products/Debug/Solvr.app`. The hash differs per machine; print the exact folder with `xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' -showBuildSettings | grep BUILT_PRODUCTS_DIR`.
 - To see a visual change, launch the app with `open <BUILT_PRODUCTS_DIR>/Solvr.app`, open Settings with `osascript -e 'tell application "System Events" to keystroke "," using command down'` when the change is there, capture the screen with `screencapture -x <file>.png`, and read the image. The capture needs the macOS Screen Recording permission for the terminal.
+
+## CI
+
+- `.github/workflows/ci.yml` runs on the `xcode-27` runner: it installs XcodeGen and swiftformat, checks formatting with `scripts/check-swift-format.sh`, generates the project, builds, and runs `CoreTests` and `AppTests`.
+- A change to a build or test entry point updates the workflow in the same branch.
 
 ## Conventions
 
@@ -28,6 +38,7 @@ Solvr is a beautiful text calculator for Mac. It combines a calculation language
 - The PRD keeps its numbered structure (1. Problem through 8. References) and the scope groups Must Have, Should Have, Could Have, Won't Have, and Out of Scope.
 - An ADR keeps the structure name, Context, Decision, Alternatives Considered, Consequences, References.
 - Code comments state the why of a non-obvious choice, an invariant, a domain rule, or a constraint — nothing that names, types, or tests already state. Normative, self-contained, present-tense prose; no IDs, no historical narration.
+- Delete migration scaffolding, such as a conditional compilation guard or a compatibility shim, once its condition can no longer be false; do not leave it disabled.
 - Commits follow Conventional Commits in English, with `docs:` for document-only changes so far.
 - Conventional commit messages carry the Linear issue they implement as the scope, in lowercase, e.g. `feat(adk-233): add the Solvr core package`. A fix made after a task is integrated into its spec branch takes the spec's issue as scope.
 - Pull requests merge into `main` with a merge commit.
