@@ -1,8 +1,5 @@
 import Foundation
-#if canImport(Core)
 @testable import Core
-#else
-#endif
 import Testing
 
 // One shared pixel-base value serves `rem` and `em` alike, initially 16

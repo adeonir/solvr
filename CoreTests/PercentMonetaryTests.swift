@@ -1,8 +1,5 @@
 import Foundation
-#if canImport(Core)
 @testable import Core
-#else
-#endif
 import Testing
 
 // A percentage written beside a value reads that value as its base: a

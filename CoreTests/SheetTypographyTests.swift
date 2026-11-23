@@ -1,8 +1,5 @@
 import Foundation
-#if canImport(Core)
 @testable import Core
-#else
-#endif
 import Testing
 
 // One value of family, size, and line height gives every font size and line

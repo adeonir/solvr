@@ -1,8 +1,5 @@
 import Foundation
-#if canImport(Core)
 @testable import Core
-#else
-#endif
 import Testing
 
 // A precision change reaches the visible results and the total of an open

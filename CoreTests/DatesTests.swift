@@ -1,8 +1,5 @@
 import Foundation
-#if canImport(Core)
 @testable import Core
-#else
-#endif
 import Testing
 
 // Locale, time zone, display precision, and clock are fixed per fixture

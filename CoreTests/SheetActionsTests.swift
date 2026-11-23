@@ -1,8 +1,5 @@
 import Foundation
-#if canImport(Core)
 @testable import Core
-#else
-#endif
 import Testing
 
 private func edited(_ sheet: StoredSheet, text: String) -> StoredSheet {

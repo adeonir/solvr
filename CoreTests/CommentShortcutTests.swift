@@ -1,8 +1,5 @@
 import Foundation
-#if canImport(Core)
 @testable import Core
-#else
-#endif
 import Testing
 
 // The shortcut toggles `// ` exactly at the start of the cursor's line or

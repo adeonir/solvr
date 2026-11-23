@@ -1,9 +1,6 @@
 import Testing
 
-#if canImport(Core)
 @testable import Core
-#else
-#endif
 
 struct ThemeChoiceTests {
     @Test func lightListHoldsDefaultThenTheOtherLightThemesAlphabetically() {
