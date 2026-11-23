@@ -12,7 +12,7 @@ targets:
     type: framework
     platform: macOS
     sources:
-      - Sources/SolvrCore
+      - Core
     settings:
       base:
         SWIFT_VERSION: "6.0"
@@ -22,7 +22,7 @@ targets:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - Tests/SolvrCoreTests
+      - CoreTests
     dependencies:
       - target: Core
         embed: false
@@ -54,7 +54,7 @@ targets:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - Tests/AppTests
+      - AppTests
     dependencies:
       - target: Solvr
       - target: Core
