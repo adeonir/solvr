@@ -43,6 +43,7 @@ final class WorkspaceApplicationEventSource: NSObject, ApplicationEventSource {
     }
 
     func stop() {
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
         handler = nil
     }
 
