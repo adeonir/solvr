@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // The total follows the sheet text and the precision settings, is absent

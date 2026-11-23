@@ -264,10 +264,10 @@ public struct Theme: Equatable, Sendable, Identifiable {
 }
 
 extension Theme {
-    // Each theme maps its palette roles the same way: the base is the sheet,
-    // the blue family colors results and the caret, red colors errors, the
-    // darker surface is the sheet list, and the muted tones are line numbers
-    // and tertiary text.
+    /// Each theme maps its palette roles the same way: the base is the sheet,
+    /// the blue family colors results and the caret, red colors errors, the
+    /// darker surface is the sheet list, and the muted tones are line numbers
+    /// and tertiary text.
     init(
         _ id: String, _ name: String, _ kind: Kind,
         background: UInt32, text: UInt32, lineNumber: UInt32, lineNumberActive: UInt32,

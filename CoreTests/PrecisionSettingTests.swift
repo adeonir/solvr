@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // General precision runs from 1 through 10 with default 2, crypto precision

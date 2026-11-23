@@ -1,5 +1,5 @@
-import Foundation
 import Core
+import Foundation
 @testable import Solvr
 import Testing
 

@@ -8,9 +8,9 @@ struct SolvrApp: App {
     @NSApplicationDelegateAdaptor(SolvrApplicationDelegate.self) private var appDelegate
     @AppStorage(AppearanceMode.key) private var modeName = AppearanceMode.auto.rawValue
 
-    // Set on the app rather than through preferredColorScheme: a nil color
-    // scheme does not return a window to the macOS appearance until the
-    // window is activated again.
+    /// Set on the app rather than through preferredColorScheme: a nil color
+    /// scheme does not return a window to the macOS appearance until the
+    /// window is activated again.
     private func applyAppearance() {
         NSApp.appearance = AppearanceMode(stored: modeName).appearance
     }

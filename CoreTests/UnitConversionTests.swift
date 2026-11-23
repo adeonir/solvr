@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // A quantity converted through `in` shows its value in the destination unit

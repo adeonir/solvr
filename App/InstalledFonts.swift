@@ -3,8 +3,8 @@
 // which SolvrCore uses to decide what counts as monospaced.
 
 import AppKit
-import CoreText
 import Core
+import CoreText
 
 enum InstalledFonts {
     static let faces: [InstalledFace] = readFaces()

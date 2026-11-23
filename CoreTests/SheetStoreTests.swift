@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 @Test func createsAndListsSheets() throws {

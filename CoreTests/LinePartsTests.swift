@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // The parts of sheet lines are read through the public SolvrCore API only.
@@ -15,7 +15,9 @@ struct LinePartsTests {
     struct Part: Equatable, CustomStringConvertible {
         let text: String
         let kind: SyntaxKind
-        var description: String { "\(text):\(kind)" }
+        var description: String {
+            "\(text):\(kind)"
+        }
     }
 
     /// The parts of the last line of the sheet text, as the text each covers.

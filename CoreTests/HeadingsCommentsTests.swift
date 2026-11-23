@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // Headings and comments organize the sheet without evaluating their text;

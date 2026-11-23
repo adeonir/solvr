@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 private func edited(_ sheet: StoredSheet, text: String) -> StoredSheet {

@@ -1,6 +1,5 @@
-import Testing
-
 @testable import Core
+import Testing
 
 struct ThemeCatalogTests {
     @Test func themeIdentifiersAreUnique() {

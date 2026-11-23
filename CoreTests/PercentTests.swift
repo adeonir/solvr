@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // Percentages take numeric amounts; currency parsing stays out of scope.

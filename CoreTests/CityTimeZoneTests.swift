@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // The city data arrives as an injected snapshot, so the fixtures never

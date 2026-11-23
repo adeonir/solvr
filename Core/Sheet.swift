@@ -498,14 +498,13 @@ struct SheetEvaluator {
     private mutating func addPortion(
         _ lhsNode: Node, _ rhsNode: Node, _ lhs: Decimal, _ rhs: Decimal
     ) throws -> Decimal {
-        let portion: (Decimal, Decimal)?
-        switch (lhsNode, rhsNode) {
+        let portion: (Decimal, Decimal)? = switch (lhsNode, rhsNode) {
         case let (lhsNode, .percentPortion(inner)):
-            portion = try (lhs, evaluate(node: inner))
+            try (lhs, evaluate(node: inner))
         case let (.percentPortion(inner), rhsNode):
-            portion = try (rhs, evaluate(node: inner))
+            try (rhs, evaluate(node: inner))
         default:
-            portion = nil
+            nil
         }
         if let (base, percent) = portion {
             return try Numeric.add(base, Percent.share(percent, of: base))
@@ -738,7 +737,7 @@ struct SheetEvaluator {
     /// `$100 + 10%` adds the share and `price - 10%` takes it off. Without
     /// money at that base the forms stay on the numeric path.
     private mutating func portionBaseline(
-        `operator`: NumericOperator, percent: Node, baseNode: Node
+        operator: NumericOperator, percent: Node, baseNode: Node
     ) throws -> TypedValue? {
         guard let typedBase = try evaluateMonetary(baseNode),
               case let .money(baseMoney) = typedBase

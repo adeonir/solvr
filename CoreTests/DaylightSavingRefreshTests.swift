@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // A conversion schedules the next transition of the zones it uses, and

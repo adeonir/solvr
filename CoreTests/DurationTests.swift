@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // `15 min` is a duration of 15 minutes rather than a minimum-function

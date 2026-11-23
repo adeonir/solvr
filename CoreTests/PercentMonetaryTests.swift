@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // A percentage written beside a value reads that value as its base: a
@@ -220,7 +220,7 @@ struct PercentMonetaryTests {
             "50%",
             "5%",
             "BTC 1",
-            "30 min",
+            "30 min"
         ])
     }
 }

@@ -8,8 +8,8 @@
 // instead.
 
 import AppKit
-import Foundation
 import Core
+import Foundation
 import Observation
 
 /// Sends application lifecycle events to the refresh coordinator.

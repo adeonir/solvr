@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // Bindings, names, reassignment, and error propagation follow the nearest

@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // One shared pixel-base value serves `rem` and `em` alike, initially 16

@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // The shortcut toggles `// ` exactly at the start of the cursor's line or

@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // Size runs from 9 through 32 with default 13, line height from 1 through 3

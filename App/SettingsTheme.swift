@@ -35,7 +35,6 @@ private struct ActiveTheme: DynamicProperty {
 private struct SettingsThemeModifier: ViewModifier {
     private let active = ActiveTheme()
 
-    @ViewBuilder
     func body(content: Content) -> some View {
         if active.isDefault {
             content
@@ -52,7 +51,6 @@ private struct SettingsThemeModifier: ViewModifier {
 private struct SettingsRowModifier: ViewModifier {
     private let active = ActiveTheme()
 
-    @ViewBuilder
     func body(content: Content) -> some View {
         if active.isDefault {
             content
@@ -68,7 +66,6 @@ private struct SettingsRowModifier: ViewModifier {
 private struct SettingsHeaderModifier: ViewModifier {
     private let active = ActiveTheme()
 
-    @ViewBuilder
     func body(content: Content) -> some View {
         if active.isDefault {
             content
@@ -82,7 +79,6 @@ private struct SettingsFieldModifier: ViewModifier {
     private let active = ActiveTheme()
     @FocusState private var isFocused: Bool
 
-    @ViewBuilder
     func body(content: Content) -> some View {
         if active.isDefault {
             content.textFieldStyle(.roundedBorder)

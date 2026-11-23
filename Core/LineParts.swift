@@ -132,12 +132,24 @@ extension SheetEvaluator {
     /// label only in the run of words that opens the line.
     private static func kind(ofWord word: String, leading: Bool) -> SyntaxKind? {
         let lowered = word.lowercased()
-        if Language.functionNames.contains(word) { return .function }
-        if Language.constantNames.contains(word) { return .constant }
-        if Language.operatorNames.contains(word) { return .operator }
-        if Units.unit(for: word) != nil || Duration.unit(for: word) != nil { return .unit }
-        if Money.names[lowered] != nil { return .currency }
-        if Language.reservedNames.contains(word) || Language.reservedNames.contains(lowered) { return .reservedName }
+        if Language.functionNames.contains(word) {
+            return .function
+        }
+        if Language.constantNames.contains(word) {
+            return .constant
+        }
+        if Language.operatorNames.contains(word) {
+            return .operator
+        }
+        if Units.unit(for: word) != nil || Duration.unit(for: word) != nil {
+            return .unit
+        }
+        if Money.names[lowered] != nil {
+            return .currency
+        }
+        if Language.reservedNames.contains(word) || Language.reservedNames.contains(lowered) {
+            return .reservedName
+        }
         return leading ? .label : nil
     }
 }

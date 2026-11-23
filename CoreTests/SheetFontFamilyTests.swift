@@ -1,5 +1,5 @@
-import Foundation
 @testable import Core
+import Foundation
 import Testing
 
 // A face counts as monospaced by its CoreText trait or by equal glyph
