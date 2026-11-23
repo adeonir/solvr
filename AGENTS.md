@@ -5,7 +5,8 @@ Guidance for AI agents working in this repository.
 ## Project
 
 Solvr is a beautiful text calculator for Mac. It combines a calculation language with sheets that stay saved, organized, and synced.
-## Layout
+
+## Structure
 
 - `App/` — the `Solvr` app target: SwiftUI views, AppKit wrappers, and app-owned coordination
 - `Core/` — the `Core` framework target: evaluator, sheet model, and app-independent services
