@@ -21,6 +21,8 @@ Solvr is a beautiful text calculator for Mac. It combines a calculation language
 
 - The app and `Core` target macOS 26.0 or later and build with Xcode 27 or later.
 - Generate the Xcode project with `xcodegen generate`, then build with `xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' build`.
+- Test with `xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' test`. On a machine without the team's Apple Development certificate, append `CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= CODE_SIGN_STYLE=Automatic`.
+- Judge a test run by the exit status of `xcodebuild`, with `set -o pipefail` when the output is piped, and by a nonzero count in each Swift Testing line `Test run with <N> tests`. The XCTest line `Executed 0 tests` is expected.
 - The app lands in Xcode's default DerivedData folder: `~/Library/Developer/Xcode/DerivedData/Solvr-<hash>/Build/Products/Debug/Solvr.app`. The hash differs per machine; print the exact folder with `xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' -showBuildSettings | grep BUILT_PRODUCTS_DIR`.
 - To see a visual change, launch the app with `open <BUILT_PRODUCTS_DIR>/Solvr.app`, open Settings with `osascript -e 'tell application "System Events" to keystroke "," using command down'` when the change is there, capture the screen with `screencapture -x <file>.png`, and read the image. The capture needs the macOS Screen Recording permission for the terminal.
 
@@ -46,7 +48,7 @@ Solvr is a beautiful text calculator for Mac. It combines a calculation language
 
 ## Issue tracker
 
-Tracker: Linear — team Development, project Solvr App. Configuration: repository-local `tracker.*`; inspect with `git config --local --get-regexp '^tracker\.'`. Change with "configure tracker".
+Tracker: Linear; team Development; project Solvr App.
 
 ## Merge method
 
