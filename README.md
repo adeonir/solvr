@@ -32,7 +32,7 @@ Each sheet saves after every change, so there's no save button, and you can edit
 Install it with Homebrew:
 
 ```sh
-brew install adeonir/tap/solvr
+brew install --cask adeonir/tap/solvr
 ```
 
 That one command adds the `adeonir/tap` tap and installs Solvr. It trusts only Solvr, not the rest of the tap.
