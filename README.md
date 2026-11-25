@@ -35,7 +35,13 @@ Install it with Homebrew:
 brew install adeonir/tap/solvr
 ```
 
-Installing with the full name `adeonir/tap/solvr` adds the `adeonir/tap` tap for you and trusts only Solvr, not the rest of the tap. You can read the cask before installing with `brew cat adeonir/tap/solvr`.
+That one command adds the `adeonir/tap` tap and installs Solvr. It trusts only Solvr, not the rest of the tap.
+
+To read the cask before installing, run:
+
+```sh
+brew cat adeonir/tap/solvr
+```
 
 You can also download `Solvr-<version>.zip` from the [releases page](https://github.com/adeonir/solvr/releases), unzip it, and move `Solvr.app` to Applications.
 
