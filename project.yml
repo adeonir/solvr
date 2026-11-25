@@ -53,11 +53,6 @@ targets:
       - App
     dependencies:
       - target: Core
-    entitlements:
-      path: App/Solvr.entitlements
-      properties:
-        # Library validation rejects the embedded Core framework when the signature is ad-hoc and carries no Team ID.
-        com.apple.security.cs.disable-library-validation: true
     info:
       path: App/Info.plist
       properties:

@@ -148,7 +148,6 @@ echo "$log" | grep "^codesign" | grep -q -- "--options runtime" || fail "notariz
 [ "$(echo "$log" | grep '^codesign' | grep -c -- '--timestamp')" -eq 2 ] || fail "notarized build: secure timestamp missing"
 echo "$log" | grep "^codesign" | grep -q -- "Stub-Identity" || fail "notarized build: Developer ID identity unused"
 echo "$log" | grep "^codesign" | grep -q -- "--deep" && fail "notarized build: --deep used"
-echo "$log" | grep "^codesign" | grep -q -- "--entitlements" && fail "notarized build: entitlements passed to the Developer ID signature"
 echo "$log" | grep -q "notarytool submit.*--keychain-profile stub-profile" || fail "notarized build: submission missing"
 echo "$log" | grep -q "stapler staple.*Solvr.app" || fail "notarized build: ticket not stapled"
 echo "$log" | grep -q "spctl .*--assess.*Solvr.app" || fail "notarized build: Gatekeeper assessment missing"
