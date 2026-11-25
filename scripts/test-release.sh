@@ -96,6 +96,74 @@ else
     [ "$(defaults read "$plist" CFBundleIdentifier)" = "dev.adeonir.labs.Solvr" ] || fail "ad-hoc build: bundle identifier is wrong"
 fi
 
+# Developer ID mode, with codesign, xcrun, and spctl replaced by stubs that log their calls.
+make_stubs() {
+    stubs="$WORK/stubs"
+    mkdir -p "$stubs"
+    cat >"$stubs/codesign" <<'STUB'
+#!/bin/sh
+case " $* " in
+    *" --sign "*)
+        case " $* " in *" --sign - "*) ;; *) echo "codesign $*" >>"$STUB_LOG"; exit 0 ;; esac
+        ;;
+esac
+exec /usr/bin/codesign "$@"
+STUB
+    cat >"$stubs/xcrun" <<'STUB'
+#!/bin/sh
+case "$1 $2" in
+    "notarytool submit")
+        echo "xcrun $*" >>"$STUB_LOG"
+        echo "{\"id\":\"1234-abcd\",\"status\":\"$STUB_NOTARY_STATUS\",\"message\":\"stub\"}"
+        ;;
+    "stapler staple" | "stapler validate")
+        echo "xcrun $*" >>"$STUB_LOG"
+        ;;
+    *) exec /usr/bin/xcrun "$@" ;;
+esac
+STUB
+    cat >"$stubs/spctl" <<'STUB'
+#!/bin/sh
+echo "spctl $*" >>"$STUB_LOG"
+STUB
+    chmod +x "$stubs/codesign" "$stubs/xcrun" "$stubs/spctl"
+}
+
+make_stubs
+SIGN_ENV="DEVELOPER_ID_IDENTITY=Stub-Identity NOTARY_KEYCHAIN_PROFILE=stub-profile PATH=$WORK/stubs:$PATH STUB_LOG=$WORK/stub.log"
+
+# Accepted notarization.
+repo=$(new_repo notarized)
+: >"$WORK/stub.log"
+# shellcheck disable=SC2086
+if ! run_release "$repo" $SIGN_ENV STUB_NOTARY_STATUS=Accepted; then
+    fail "notarized build: expected exit 0"
+    cat "$WORK/out.log"
+fi
+log=$(cat "$WORK/stub.log")
+core_line=$(echo "$log" | grep -n "codesign.*Core.framework" | head -1 | cut -d: -f1)
+app_line=$(echo "$log" | grep -n "codesign.*Solvr.app$" | head -1 | cut -d: -f1)
+[ -n "$core_line" ] && [ -n "$app_line" ] && [ "$core_line" -lt "$app_line" ] || fail "notarized build: nested code is not signed before the app"
+echo "$log" | grep "^codesign" | grep -q -- "--options runtime" || fail "notarized build: hardened runtime missing"
+[ "$(echo "$log" | grep '^codesign' | grep -c -- '--timestamp')" -eq 2 ] || fail "notarized build: secure timestamp missing"
+echo "$log" | grep "^codesign" | grep -q -- "Stub-Identity" || fail "notarized build: Developer ID identity unused"
+echo "$log" | grep "^codesign" | grep -q -- "--deep" && fail "notarized build: --deep used"
+echo "$log" | grep -q "notarytool submit.*--keychain-profile stub-profile" || fail "notarized build: submission missing"
+echo "$log" | grep -q "stapler staple.*Solvr.app" || fail "notarized build: ticket not stapled"
+echo "$log" | grep -q "spctl .*--assess.*Solvr.app" || fail "notarized build: Gatekeeper assessment missing"
+[ -f "$repo/dist/Solvr-0.1.0.zip" ] || fail "notarized build: zip missing"
+
+# Notarization that is not Accepted.
+repo=$(new_repo rejected)
+: >"$WORK/stub.log"
+# shellcheck disable=SC2086
+if run_release "$repo" $SIGN_ENV STUB_NOTARY_STATUS=Invalid; then
+    fail "rejected notarization: expected a nonzero exit"
+fi
+grep -q "1234-abcd" "$WORK/out.log" || fail "rejected notarization: submission id not reported"
+grep -q "stapler staple" "$WORK/stub.log" && fail "rejected notarization: stapled anyway"
+[ -f "$repo/dist/Solvr-0.1.0.zip" ] && fail "rejected notarization: zip produced"
+
 if [ "$FAILURES" -ne 0 ]; then
     echo "$FAILURES failure(s)"
     exit 1
