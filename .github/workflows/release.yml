@@ -8,7 +8,8 @@ permissions:
   contents: write
 
 jobs:
-  verify:
+  verify-release:
+    name: Verify release
     if: github.event_name == 'release'
     runs-on: macos-26
     outputs:
@@ -56,8 +57,9 @@ jobs:
 
           echo "sha256=$(shasum -a 256 "$zip" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
 
-  tap:
-    needs: verify
+  update-cask:
+    name: Update cask
+    needs: verify-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -81,7 +83,7 @@ jobs:
       - name: Update the cask
         env:
           TAG: ${{ github.event.release.tag_name }}
-          VERIFIED_SHA256: ${{ needs.verify.outputs.sha256 }}
+          VERIFIED_SHA256: ${{ needs.verify-release.outputs.sha256 }}
         run: |
           version="${TAG#v}"
           sha256=$(sha256sum asset/Solvr-*.zip | cut -d ' ' -f 1)

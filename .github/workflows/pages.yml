@@ -15,7 +15,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  deploy-site:
+    name: Deploy site
     runs-on: ubuntu-latest
     environment:
       name: github-pages

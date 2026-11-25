@@ -7,7 +7,8 @@ on:
       - main
 
 jobs:
-  test-and-build:
+  build-and-test:
+    name: Build and test
     runs-on: xcode-27
     steps:
       - name: Check out repository
