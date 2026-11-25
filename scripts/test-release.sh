@@ -73,7 +73,7 @@ repo=$(new_repo adhoc)
 echo change >>"$repo/README.md"
 if ! run_release "$repo"; then
     fail "ad-hoc build: expected exit 0"
-    cat "$repo/out.log"
+    cat "$WORK/out.log"
 fi
 zip="$repo/dist/Solvr-0.1.0.zip"
 if [ ! -f "$zip" ]; then
