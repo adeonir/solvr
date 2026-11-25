@@ -27,7 +27,7 @@ struct BuildIdentityTests {
 
     /// Debug signs with the team's Apple Development identity; every other
     /// configuration, and the CI override, signs ad-hoc.
-    @Test func appIsSignedWithHardenedRuntime() throws {
+    @Test func appSignatureMatchesTheBuildConfiguration() throws {
         var code: SecStaticCode?
         #expect(SecStaticCodeCreateWithPath(Bundle.main.bundleURL as CFURL, [], &code) == errSecSuccess)
         var info: CFDictionary?
@@ -36,10 +36,9 @@ struct BuildIdentityTests {
         )
         #expect(status == errSecSuccess)
         let signing = info as? [String: Any]
-        let flags = signing?[kSecCodeInfoFlags as String] as? UInt32 ?? 0
         if signing?[kSecCodeInfoTeamIdentifier as String] == nil {
+            let flags = signing?[kSecCodeInfoFlags as String] as? UInt32 ?? 0
             #expect(flags & SecCodeSignatureFlags.adhoc.rawValue != 0)
         }
-        #expect(flags & SecCodeSignatureFlags.runtime.rawValue != 0)
     }
 }

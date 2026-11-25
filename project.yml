@@ -14,8 +14,6 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "26.0"
     CODE_SIGN_IDENTITY: "-"
     ENABLE_HARDENED_RUNTIME: YES
-    # Xcode leaves the runtime flag off an ad-hoc Debug signature without it.
-    OTHER_CODE_SIGN_FLAGS: "--options=runtime"
   configs:
     Debug:
       CODE_SIGN_STYLE: Manual
