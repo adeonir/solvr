@@ -17,6 +17,18 @@ for arg in "$@"; do
     esac
 done
 
+# Read the two signing variables from an optional gitignored file; a variable already set in the environment is kept.
+if [ -f .env.release ]; then
+    while IFS='=' read -r key value; do
+        case "$key" in
+            DEVELOPER_ID_IDENTITY | NOTARY_KEYCHAIN_PROFILE)
+                eval "current=\${$key:-}"
+                [ -n "$current" ] || export "$key=$value"
+                ;;
+        esac
+    done <.env.release
+fi
+
 if [ -n "${DEVELOPER_ID_IDENTITY:-}" ] && [ -z "${NOTARY_KEYCHAIN_PROFILE:-}" ]; then
     fail "DEVELOPER_ID_IDENTITY is set but NOTARY_KEYCHAIN_PROFILE is not; set both or neither"
 fi

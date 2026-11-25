@@ -164,6 +164,25 @@ grep -q "1234-abcd" "$WORK/out.log" || fail "rejected notarization: submission i
 grep -q "stapler staple" "$WORK/stub.log" && fail "rejected notarization: stapled anyway"
 [ -f "$repo/dist/Solvr-0.1.0.zip" ] && fail "rejected notarization: zip produced"
 
+# The optional environment file supplies the signing variables, and the real environment wins over it.
+repo=$(new_repo envfile-half)
+echo "DEVELOPER_ID_IDENTITY=Stub-Identity" >"$repo/.env.release"
+RELEASE_ARGS="--skip-checks"
+expect_error_before_build "environment file, identity only" "$repo" "NOTARY_KEYCHAIN_PROFILE"
+
+repo=$(new_repo envfile-loses)
+printf 'DEVELOPER_ID_IDENTITY=File-Identity\nNOTARY_KEYCHAIN_PROFILE=file-profile\n' >"$repo/.env.release"
+: >"$WORK/stub.log"
+# shellcheck disable=SC2086
+if ! run_release "$repo" $SIGN_ENV STUB_NOTARY_STATUS=Accepted; then
+    fail "environment file: expected exit 0"
+    cat "$WORK/out.log"
+fi
+grep -q "keychain-profile stub-profile" "$WORK/stub.log" || fail "environment file: the real environment did not win"
+grep -q "file-profile" "$WORK/stub.log" && fail "environment file: the file overrode the real environment"
+
+grep -qx ".env.release" "$ROOT/.gitignore" || fail "the environment file is not gitignored"
+
 if [ "$FAILURES" -ne 0 ]; then
     echo "$FAILURES failure(s)"
     exit 1
