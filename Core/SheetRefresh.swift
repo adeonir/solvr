@@ -1,12 +1,3 @@
-// Keeps a sheet's visible results current through the reevaluation
-// triggers the application supplies — an edit, local midnight, sheet
-// opening, returning to the app, and a daylight-saving transition of a
-// time zone a conversion uses. The clock arrives with every trigger;
-// nothing here reads the process clock, so the same lifecycle runs for the
-// app and the integration tests. The triggers themselves stay outside the
-// evaluator: a refresh only repeats the sheet evaluation with a fresh
-// instant.
-
 import Foundation
 
 /// What made the visible results refresh, apart from an edit.
@@ -125,8 +116,6 @@ public struct SheetRefresher: Sendable {
         })
     }
 
-    // MARK: Reevaluation
-
     @discardableResult
     public mutating func update(exchangeRates: ExchangeRateSnapshot, now: Date) -> SheetRefreshOutcome {
         context.exchangeRates = exchangeRates
@@ -159,15 +148,10 @@ public struct SheetRefresher: Sendable {
                 changedIndexes.insert(index)
             }
         }
-        // Lines the older text no longer holds count as changed too.
         if fresh.count != results.count {
             changedIndexes.formUnion(fresh.indices)
         }
         results = fresh
-        // A conversion follows both zones it names, so its transitions
-        // steer the next reevaluation, and the cities it names
-        // steer the city data lookup. A sheet without a visible
-        // time-of-day result uses no zone and no city.
         let places = fresh.contains(where: Self.usesPlace)
             ? TimeZones.used(inSheetText: sheetText, context: context)
             : TimeZones.SheetPlaces()
@@ -176,8 +160,6 @@ public struct SheetRefresher: Sendable {
         return SheetRefreshOutcome(results: fresh, changedIndexes: changedIndexes)
     }
 
-    /// Whether a visible result comes from a time-of-day form, so the sheet
-    /// uses the time zones and cities that form names.
     private static func usesPlace(_ result: ExpressionResult) -> Bool {
         if case .timeOfDay = result.value {
             return true
@@ -190,14 +172,6 @@ public struct SheetRefresher: Sendable {
         }
     }
 
-    // MARK: Date-dependence detection
-
-    /// The lines whose results depend on the current date, found by
-    /// evaluating the text at the same month, day, and time of one and
-    /// four years ahead of the context's calendar: every date form that
-    /// follows the clock changes its result across those probes, while
-    /// every other line — arithmetic, explicit-year dates, Unix
-    /// timestamps — keeps its result exactly.
     private static func detectDateDependence(
         sheetText: String, context: EvaluationContext
     ) -> Set<Int> {

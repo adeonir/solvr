@@ -1,7 +1,6 @@
 import AppKit
 import Core
 
-/// One city data service and durable cache for every sheet and window.
 @MainActor
 final class ApplicationCityTimeZones {
     static let shared = ApplicationCityTimeZones()
@@ -15,11 +14,6 @@ final class ApplicationCityTimeZones {
         )
     }
 
-    /// Keeps the city data of the cities the open sheet names current. A city
-    /// the cache lacks is looked up, and a cached city is looked up again so
-    /// a successful fetch replaces its entry; the cache keeps the last
-    /// usable answer, so an offline app keeps converting the cities it
-    /// resolved before.
     func resolve(_ cities: Set<String>) {
         guard !cities.isEmpty else { return }
         Task {

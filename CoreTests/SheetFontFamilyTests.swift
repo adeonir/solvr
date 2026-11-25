@@ -2,9 +2,6 @@
 import Foundation
 import Testing
 
-// A face counts as monospaced by its CoreText trait or by equal glyph
-// advances. The fallback family is SF Mono.
-
 struct SheetFontFamilyTests {
     private static func face(
         _ family: String,

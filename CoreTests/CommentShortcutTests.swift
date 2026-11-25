@@ -2,13 +2,6 @@
 import Foundation
 import Testing
 
-// The shortcut toggles `// ` exactly at the start of the cursor's line or
-// of every selected line: a selection whose every line already starts with
-// `// ` removes one `// ` from each; any other selection adds `// ` to each.
-// Re-evaluating the toggled text shows the commented line's result
-// disappearing and returning. The shortcut's keybinding in the editable
-// sheet is checked by hand.
-
 struct CommentShortcutTests {
     private func context(
         locale identifier: String = "en_US",
@@ -17,12 +10,10 @@ struct CommentShortcutTests {
         EvaluationContext(
             localeIdentifier: identifier,
             timeZone: TimeZone(identifier: "America/Sao_Paulo")!,
-            now: Date(timeIntervalSince1970: 1_791_926_400), // 2026-10-30 00:00 UTC
+            now: Date(timeIntervalSince1970: 1_791_926_400),
             displayPrecision: precision
         )
     }
-
-    // MARK: One line under the cursor
 
     @Test
     func commentsTheCursorLine() {
@@ -59,8 +50,6 @@ struct CommentShortcutTests {
         #expect(CommentShortcut.toggle("// // 3 + 3", lines: [0]) == "// 3 + 3")
     }
 
-    // MARK: Several selected lines
-
     @Test
     func commentsEverySelectedPlainLine() {
         #expect(
@@ -94,7 +83,6 @@ struct CommentShortcutTests {
 
     @Test
     func toggledMixedSelectionLeavesEveryLineCommented() {
-        // A comment is a comment however many markers it carries.
         let toggled = CommentShortcut.toggle("2 + 2\n// 3 + 3", lines: [0, 1])
         let results = evaluate(sheetText: toggled, context: context())
         #expect(results.count == 2)
@@ -102,16 +90,10 @@ struct CommentShortcutTests {
         #expect(results.allSatisfy { $0.value == nil && $0.diagnostic == nil })
     }
 
-    // MARK: Whitespace is not part of the rule
-
     @Test
     func toggleOperatesExactlyAtLineStart() {
-        // An indented line takes the marker at its very start; uncommenting
-        // requires `// ` there too.
         #expect(CommentShortcut.toggle("  2 + 2", lines: [0]) == "//   2 + 2")
         #expect(CommentShortcut.toggle("// 2 + 2", lines: [0]) == "2 + 2")
-        // A bare `//` without the space is not the commented form of the
-        // rule: the toggle adds `// ` in front of it.
         #expect(CommentShortcut.toggle("//3 + 3", lines: [0]) == "// //3 + 3")
     }
 

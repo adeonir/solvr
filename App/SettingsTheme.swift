@@ -1,7 +1,3 @@
-// The Settings theme comes from the same resolution as the main window: the
-// mode, the macOS appearance, and the kept light and dark theme identifiers.
-// The Default themes keep the system look.
-
 import Core
 import SwiftUI
 
@@ -11,7 +7,6 @@ private extension Color {
     }
 }
 
-/// Reads the active theme the same way the main window does.
 private struct ActiveTheme: DynamicProperty {
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage(AppearanceMode.key) private var modeName = AppearanceMode.auto.rawValue
@@ -89,7 +84,6 @@ private struct SettingsFieldModifier: ViewModifier {
                 .focused($isFocused)
                 .padding(.horizontal, 6)
                 .frame(height: 22)
-                // A click on the field's background, outside the text, still starts editing.
                 .background(
                     shape.fill(Color(active.theme.inputBackground))
                         .contentShape(shape)
@@ -103,24 +97,18 @@ private struct SettingsFieldModifier: ViewModifier {
 }
 
 extension View {
-    /// Draws the Settings form from the active theme.
     func settingsThemed() -> some View {
         modifier(SettingsThemeModifier())
     }
 
-    /// Draws a Settings form row on the active theme's group color, with the
-    /// theme's border color between rows.
     func settingsRow() -> some View {
         modifier(SettingsRowModifier())
     }
 
-    /// Draws a Settings section label in the active theme's text color.
     func settingsHeader() -> some View {
         modifier(SettingsHeaderModifier())
     }
 
-    /// Draws a Settings text field on the active theme's field background,
-    /// edged in the theme's border color.
     func settingsField() -> some View {
         modifier(SettingsFieldModifier())
     }

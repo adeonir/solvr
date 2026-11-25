@@ -2,11 +2,6 @@
 import Foundation
 import Testing
 
-// The refresher keeps a sheet's visible results current through the
-// application's reevaluation triggers — local midnight, sheet opening,
-// and returning to the app — with the clock injected per trigger,
-// never read from the process, and no UI automation.
-
 struct SheetRefreshTests {
     private func context(
         locale identifier: String = "en_US",
@@ -35,8 +30,6 @@ struct SheetRefreshTests {
     private func refresher(_ sheetText: String, now: String) -> SheetRefresher {
         SheetRefresher(sheetText: sheetText, context: context(now: clock(now)))
     }
-
-    // MARK: The acceptance example — 152 days flips to 151 days
 
     @Test
     func localMidnightFlipsTheDaysUntil() {
@@ -69,8 +62,6 @@ struct SheetRefreshTests {
         #expect(outcome.changedIndexes == Set([0]))
     }
 
-    // MARK: A trigger at the same local date changes nothing
-
     @Test
     func aTriggerAtTheSameLocalDateChangesNothing() {
         var refresher = refresher("days until 31 Mar 2027", now: "2026-10-30 09:00:00")
@@ -79,8 +70,6 @@ struct SheetRefreshTests {
         #expect(outcome.changedIndexes.isEmpty)
         #expect(outcome.results == before)
     }
-
-    // MARK: Date-dependence detection steers the midnight recheck
 
     @Test
     func plainArithmeticNeedsNoMidnightRecheck() {
@@ -108,12 +97,8 @@ struct SheetRefreshTests {
         """
         let refresher = refresher(sheet, now: "2026-10-30 09:00:00")
         #expect(refresher.hasDateDependentResults == true)
-        // The no-year forms follow the current date; the explicit years,
-        // the Unix timestamp, and the arithmetic keep their results.
         #expect(refresher.dateDependentIndexes == Set([2, 3, 4, 6, 7]))
     }
-
-    // MARK: The refreshed results equal a fresh evaluation
 
     @Test
     func refreshedResultsEqualAFreshEvaluation() {
@@ -126,8 +111,6 @@ struct SheetRefreshTests {
         #expect(outcome.results == evaluate(sheetText: refresher.sheetText, context: context))
     }
 
-    // MARK: An edit removes the obsolete result
-
     @Test
     func anIncompleteEditRemovesTheObsoleteResult() {
         var refresher = refresher("days until 31 Mar 2027", now: "2026-10-30 09:00:00")
@@ -135,13 +118,9 @@ struct SheetRefreshTests {
 
         let outcome = refresher.update(sheetText: "days until ", now: clock("2026-10-30 12:00:00"))
         #expect(outcome.changedIndexes == Set([0]))
-        // The line no longer evaluates to a result: the previous
-        // `152 days` is gone, with no value and no display to use.
         #expect(outcome.results[0].value == nil)
         #expect(outcome.results[0].display == nil)
 
-        // The removal sticks across the lifecycle triggers; no stale
-        // result returns without a text edit.
         let after = refresher.refresh(.midnight, now: clock("2026-10-31 00:00:00"))
         #expect(after.results[0].value == nil)
         #expect(after.results[0].display == nil)
@@ -156,12 +135,8 @@ struct SheetRefreshTests {
         let outcome = refresher.update(sheetText: "4 * 5", now: clock("2026-10-30 12:00:00"))
         #expect(outcome.results.count == 1)
         #expect(outcome.results[0].display == "20")
-        // The deleted line's result is gone; the surviving line shows the
-        // same `20` it did, so only the first line's result marked changed.
         #expect(outcome.changedIndexes == Set([0]))
     }
-
-    // MARK: An edited sheet keeps refreshing
 
     @Test
     func anEditedSheetKeepsRefreshingThroughTheTriggers() {

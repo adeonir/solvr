@@ -2,9 +2,6 @@
 import Foundation
 import Testing
 
-// Locale, time zone, display precision, and clock are fixed per fixture
-// through the EvaluationContext.
-
 struct DatesTests {
     private func context(
         locale identifier: String = "en_US",
@@ -39,8 +36,6 @@ struct DatesTests {
         return calendar.date(from: DateComponents(year: year, month: month, day: day))!
     }
 
-    // MARK: Acceptance examples (30 October 2026, system time zone)
-
     @Test(arguments: [
         ("days until 31 Mar", "152 days"),
         ("days until 31 Mar 2027", "152 days"),
@@ -58,8 +53,6 @@ struct DatesTests {
         #expect(results[0].diagnostic == nil)
         #expect(results[0].display == expected)
     }
-
-    // MARK: Calendar-day differences stay separate from magnitudes
 
     @Test
     func differenceCarriesItsOwnValue() {
@@ -80,8 +73,6 @@ struct DatesTests {
         #expect(result.value == .date(calendarDate(year: 2026, month: 11, day: 16)))
     }
 
-    // MARK: Next occurrence, today counts as zero
-
     @Test
     func todayCountsAsZero() {
         let result = evaluate(
@@ -100,8 +91,6 @@ struct DatesTests {
         )[0]
         #expect(result.display == "364 days")
     }
-
-    // MARK: Leap day without a year
 
     @Test
     func bareLeapDaySelectsTheNextValidLeapDay() {
@@ -145,12 +134,8 @@ struct DatesTests {
         #expect(results[2].diagnostic == nil)
     }
 
-    // MARK: One calendar day away, independent of the hours
-
     @Test
     func tomorrowStaysOneCalendarDayAwayRegardlessOfTheHours() {
-        // 23:00 on 30 October: the next day difference runs midnight to
-        // midnight, so the hour of the clock never shows.
         let result = evaluate(
             sheetText: "days until 31 Oct 2026",
             context: context(now: clock("2026-10-30 23:00:00"))
@@ -161,8 +146,6 @@ struct DatesTests {
 
     @Test
     func daylightSavingShiftKeepsCalendarDays() throws {
-        // The New York daylight-saving transition ends 2026-11-01; the
-        // difference through that night still counts whole calendar days.
         let zone = try #require(TimeZone(identifier: "America/New_York"))
         let results = evaluate(
             sheetText: "days until 1 Nov 2026\ndays until 2 Nov 2026",
@@ -175,8 +158,6 @@ struct DatesTests {
         #expect(results[1].display == "3 days")
     }
 
-    // MARK: Weekdays in weeks
-
     @Test
     func weekdayEdgeKeepsTheWeekdayOfTheFarWeek() {
         let results = evaluate(
@@ -186,8 +167,6 @@ struct DatesTests {
         #expect(results[0].display == "2 November 2026")
         #expect(results[1].display == "26 October 2026")
     }
-
-    // MARK: Calendar-month shift with end-of-month clamping
 
     @Test(arguments: [
         ("2026-05-14 09:00:00", "31 Jan + 1 month", "28 February 2026"),
@@ -214,8 +193,6 @@ struct DatesTests {
         #expect(result.diagnostic?.message == "Invalid syntax")
     }
 
-    // MARK: Unix timestamps in the context time zone
-
     @Test
     func fromunixCarriesTheInstantAndShowsTheContextZone() throws {
         let saoPaulo = try #require(TimeZone(identifier: "America/Sao_Paulo"))
@@ -223,8 +200,6 @@ struct DatesTests {
             sheetText: "fromunix(1446587186)",
             context: context(timeZone: saoPaulo, now: clock("2026-10-30 09:00:00"))
         )[0]
-        // The exact UTC instant is the value; the display applies the
-        // context's time zone (São Paulo was at UTC-2 that day).
         #expect(result.value == .date(Date(timeIntervalSince1970: 1_446_587_186)))
         #expect(result.display == "3 November 2015 19:46:26")
 
@@ -247,8 +222,6 @@ struct DatesTests {
         #expect(results[2].diagnostic?.message == "Invalid syntax")
         #expect(results[2].value == nil)
     }
-
-    // MARK: Complete sheet with results beside the expressions
 
     @Test
     func sheetShowsDatesBesideTheirExpressions() {
@@ -286,8 +259,6 @@ struct DatesTests {
         #expect(results[1].display == "152 days")
         #expect(results[2].display == "28 February 2026")
     }
-
-    // MARK: Assignments and references keep date values
 
     @Test(arguments: [
         "x = days until 31 Mar",

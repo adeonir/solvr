@@ -60,8 +60,6 @@ struct ThemeSyntaxColorTests {
         }
     }
 
-    /// Each theme's colors for value, calendar date, time-of-day, unit,
-    /// name, and muted, in that order.
     private static let meaningColors: [(String, [UInt32])] = [
         ("default-light", [0xFF8D28, 0x34C759, 0xAC7F5E, 0x00C3D0, 0x6155F5, 0x8E8E93]),
         ("default-dark", [0xFF9230, 0x30D158, 0xB78A66, 0x00D2E0, 0x6D7CFF, 0x98989D]),

@@ -2,14 +2,6 @@
 import Foundation
 import Testing
 
-// One shared pixel-base value serves `rem` and `em` alike, initially 16
-// pixels, and the pixel density of 96 ppi translates points and physical
-// lengths into pixels. The Settings values arrive through the injected
-// EvaluationContext; an expression-local `at` override applies to its
-// expression only and leaves the Settings values and every other
-// expression unchanged. Locale, display precision, time zone, and clock
-// are fixed per fixture.
-
 struct CssSettingsTests {
     private func context(
         locale identifier: String = "pt_BR",
@@ -20,14 +12,12 @@ struct CssSettingsTests {
         EvaluationContext(
             localeIdentifier: identifier,
             timeZone: TimeZone(identifier: "America/Sao_Paulo")!,
-            now: Date(timeIntervalSince1970: 1_791_926_400), // 2026-10-30 00:00 UTC
+            now: Date(timeIntervalSince1970: 1_791_926_400),
             displayPrecision: precision,
             pixelBase: pixelBase,
             ppi: ppiValue
         )
     }
-
-    // MARK: The shared Settings values define the defaults
 
     @Test
     func settingsCarryTheSharedPixelBaseInitiallySixteenPixels() {
@@ -53,8 +43,6 @@ struct CssSettingsTests {
         #expect(result.display == "16px")
     }
 
-    // MARK: The shared pixel base applies to both `rem` and `em`
-
     @Test(arguments: [
         ("1 rem in px", "20px"),
         ("16px in em", "0,8em"),
@@ -71,8 +59,6 @@ struct CssSettingsTests {
         #expect(result.display == expected)
     }
 
-    // MARK: The expression-local `at 20px` base
-
     @Test
     func localPixelBaseAppliesToItsExpressionOnly() {
         let injected = context()
@@ -80,7 +66,6 @@ struct CssSettingsTests {
             sheetText: "16px in em at 20px\n16px in em\n1 rem", context: injected
         )
         #expect(results[0].display == "0,8em")
-        // Other expressions keep the shared Settings base.
         #expect(results[1].display == "1em")
         #expect(results[2].display == "16px")
         #expect(injected.pixelBase == 16)
@@ -98,8 +83,6 @@ struct CssSettingsTests {
         #expect(results[0].display == "40px")
     }
 
-    // MARK: The expression-local `at 72 ppi` density
-
     @Test
     func localPpiAppliesToItsExpressionOnly() {
         let injected = context()
@@ -107,7 +90,6 @@ struct CssSettingsTests {
             sheetText: "2 inches in px at 72 ppi\n2 inches in px\n12 pt in px", context: injected
         )
         #expect(results[0].display == "144px")
-        // Other expressions keep the shared Settings density.
         #expect(results[1].display == "192px")
         #expect(results[2].display == "16px")
         #expect(injected.ppi == 96)
@@ -119,8 +101,6 @@ struct CssSettingsTests {
         #expect(results[0].display == "144px")
         #expect(results[1].display == "12px")
     }
-
-    // MARK: Abbreviation and full-name aliases convert alike
 
     @Test
     func pixelAndPointAliasesConvertAlike() {
@@ -134,8 +114,6 @@ struct CssSettingsTests {
         }
     }
 
-    // MARK: Quantities alone display at the shared references
-
     @Test
     func bareQuantitiesDisplayTheirValueWithTheirUnit() {
         let results = evaluate(sheetText: "1 px\n2 rem\n12 pt", context: context())
@@ -143,8 +121,6 @@ struct CssSettingsTests {
         #expect(results[1].display == "32px")
         #expect(results[2].display == "12 pt")
     }
-
-    // MARK: Pixel and relative-count sums take the relative unit
 
     @Test
     func relativeCountSumsWithAConvertedPixelOperandShowTheRelativeUnit() {

@@ -2,10 +2,6 @@
 import Foundation
 import Testing
 
-// The total follows the sheet text and the precision settings, is absent
-// when no total is available, and never removes the line results or their
-// diagnostics.
-
 struct SheetTotalDisplayTests {
     private let now = Date(timeIntervalSince1970: 0)
 

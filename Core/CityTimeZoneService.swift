@@ -1,9 +1,3 @@
-// Owns the city data cache and asks the external source for the cities a
-// sheet could not resolve. A lookup that succeeds replaces the cached
-// entry and publishes the fresh cache; a lookup that fails leaves the
-// cache untouched, so a city resolved before keeps converting without a
-// connection.
-
 import Foundation
 import Observation
 
@@ -40,8 +34,6 @@ public final class CityTimeZoneService {
     @ObservationIgnored private let source: any CityTimeZoneSource
     @ObservationIgnored private let cache: any CityTimeZoneCache
     @ObservationIgnored private var attempts: [String: Date] = [:]
-    /// The cities asked for while a lookup was already running; the running
-    /// lookup takes them before it publishes, so no city is dropped.
     @ObservationIgnored private var pending: Set<String> = []
 
     public init(source: any CityTimeZoneSource, cache: any CityTimeZoneCache) {
@@ -81,14 +73,11 @@ public final class CityTimeZoneService {
                 }
             }
             lastUpdateFailed = failed
-            // Publish only once the replacement is durable: neither network nor
-            // disk failure can discard the last usable city data.
             guard resolved != snapshot, (try? cache.save(resolved)) != nil else { continue }
             snapshot = resolved
         }
     }
 
-    /// How often a city the source did not resolve is asked for again.
     static let recheckInterval: TimeInterval = 1800
 
     private func isRecentlyAttempted(_ city: String, now: Date) -> Bool {

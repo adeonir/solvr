@@ -2,10 +2,6 @@
 import Foundation
 import Testing
 
-// General precision runs from 1 through 10 with default 2, crypto precision
-// from 5 through 15 with default 10. A cleared or invalid field restores its
-// last valid value.
-
 struct PrecisionSettingTests {
     @Test func defaultsAndRangesMatchTheSpec() {
         #expect(PrecisionSetting.generalDefault == 2)

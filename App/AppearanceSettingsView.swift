@@ -1,8 +1,3 @@
-// The font family menu and the sheet size and line height fields store a
-// valid value as it is typed, so it reaches every open sheet at once. A
-// cleared or invalid field restores its value when focus leaves it: the
-// default for an empty field, otherwise the last valid value.
-
 import Core
 import SwiftUI
 
@@ -11,7 +6,6 @@ extension AppearanceMode {
     static let lightThemeKey = "lightThemeID"
     static let darkThemeKey = "darkThemeID"
 
-    /// The appearance forced on the app, or nil to let macOS decide.
     var appearance: NSAppearance? {
         switch self {
         case .light: NSAppearance(named: .aqua)
@@ -25,7 +19,6 @@ struct AppearanceSettingsView: View {
     static let familyKey = "sheetFontFamily"
     static let sizeKey = "sheetFontSize"
     static let lineHeightKey = "sheetLineHeight"
-    /// The row height of the Settings design, shared by both tabs.
     static let rowHeight: CGFloat = 24
 
     @AppStorage(AppearanceMode.key) private var modeName = AppearanceMode.auto.rawValue
@@ -52,7 +45,6 @@ struct AppearanceSettingsView: View {
         TypographySetting.storedLineHeight(storedLineHeight)
     }
 
-    /// The kind the window shows now: the mode decides it, and Auto follows macOS.
     private var kind: Theme.Kind {
         Theme.active(mode: AppearanceMode(stored: modeName), systemIsDark: colorScheme == .dark, lightID: nil, darkID: nil).kind
     }
@@ -61,7 +53,6 @@ struct AppearanceSettingsView: View {
         kind == .light ? .defaultLight : .defaultDark
     }
 
-    /// The theme kept for the current kind; a choice is kept for that kind only.
     private var themeID: Binding<String> {
         Binding(
             get: {
@@ -142,30 +133,22 @@ struct AppearanceSettingsView: View {
         .settingsThemed()
         .frame(width: 500)
         .onAppear {
-            // The stored family returns to the default when it is no longer
-            // installed, and the menu shows the installed families only.
             family = SheetFonts.resolvedFamily(family, in: InstalledFonts.faces)
             sizeText = String(size)
             lineHeightText = Self.format(lineHeight)
         }
         .onChange(of: sizeText) { _, text in
-            // A valid size commits as typed; an empty or invalid field holds
-            // its last valid size and commits on focus leave.
             if let size = TypographySetting.validSize(of: text) {
                 storedSize = size
             }
         }
         .onChange(of: lineHeightText) { _, text in
-            // A valid line height commits as typed; an empty or invalid field
-            // holds its last valid value and commits on focus leave.
             if let lineHeight = TypographySetting.validLineHeight(of: text) {
                 storedLineHeight = lineHeight
             }
         }
         .onChange(of: focused) { previous, current in
             if previous == .size, current != .size {
-                // The empty field commits the default, any other invalid text
-                // commits the last valid value, and the field shows the result.
                 storedSize = TypographySetting.committedSize(sizeText, lastValid: size)
                 sizeText = String(size)
             }
@@ -176,8 +159,6 @@ struct AppearanceSettingsView: View {
         }
     }
 
-    /// The line height as CSS number text: a dot separator and no trailing
-    /// zero, whatever the regional number formatting.
     private static func format(_ value: Double) -> String {
         value == value.rounded() ? String(Int(value)) : String(value)
     }

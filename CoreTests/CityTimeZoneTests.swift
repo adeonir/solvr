@@ -2,13 +2,8 @@
 import Foundation
 import Testing
 
-// The city data arrives as an injected snapshot, so the fixtures never
-// touch the network, and the external source and cache run behind fakes.
-
 struct CityTimeZoneTests {
     private let instant = Date(timeIntervalSince1970: 1_793_524_800)
-
-    // MARK: Fixtures
 
     private func record(
         _ name: String,
@@ -26,8 +21,6 @@ struct CityTimeZoneTests {
         )
     }
 
-    /// The cached city data the fixtures resolve names against: the cities
-    /// the acceptance examples name, keyed by the name Open-Meteo returns.
     private var cities: CityTimeZoneSnapshot {
         CityTimeZoneSnapshot(entries: [
             "London": .found(record("London", "Europe/London", country: "United Kingdom", region: "England", population: 8_961_989)),
@@ -80,8 +73,6 @@ struct CityTimeZoneTests {
         evaluate(sheetText: source, context: context(now: november))[0].diagnostic
     }
 
-    // MARK: Acceptance examples
-
     @Test(arguments: [
         ("9am New York in Tokyo", "23:00"),
         ("8pm Tokyo in São Paulo", "08:00"),
@@ -91,8 +82,6 @@ struct CityTimeZoneTests {
         #expect(display(source, now: november) == expected)
     }
 
-    /// A reading with no place of its own is read where the line names it,
-    /// and the macOS system time zone is the destination.
     @Test
     func theSystemTimeZoneIsTheDestinationOfABareReading() {
         #expect(display("5pm in London", now: november) == "14:00")
@@ -104,10 +93,6 @@ struct CityTimeZoneTests {
         #expect(display("9am new york in TOKYO", now: november) == "23:00")
     }
 
-    // MARK: City abbreviations
-
-    /// The cache holds `San Francisco`, never `sf`: the abbreviation expands
-    /// to the city name before the lookup, so the line still converts.
     @Test
     func knownAbbreviationExpandsBeforeLookup() {
         #expect(TimeZones.expanded("LDN") == "London")
@@ -121,10 +106,6 @@ struct CityTimeZoneTests {
         #expect(display("5pm sf in London", now: november) == "01:00")
     }
 
-    // MARK: City data errors
-
-    /// A city the source reported as absent, a city with more than one
-    /// plausible place, and a city never looked up each say their own thing.
     @Test
     func eachUnresolvedCityShowsItsOwnMessage() {
         #expect(diagnostic("9am Atlantis in Tokyo") == .unknownCity(name: "Atlantis"))
@@ -143,16 +124,12 @@ struct CityTimeZoneTests {
         #expect(messages == ["Unknown city: Nowhere", "Ambiguous city: Nowhere", "City not cached: Nowhere"])
     }
 
-    /// An unresolved city shows no clock and never falls back to another
-    /// place or to the system time zone.
     @Test
     func anUnresolvedCityShowsNoResult() {
         let results = evaluate(sheetText: "9am Berlin in Tokyo", context: context(now: november))
         #expect(results[0].display == nil)
         #expect(results[0].value == nil)
     }
-
-    // MARK: Lookup policy
 
     @Test
     func lookupTakesTheOnlyExactMatch() {
@@ -163,9 +140,6 @@ struct CityTimeZoneTests {
         #expect(outcome == .found(record("Tokyo", "Asia/Tokyo", country: "Japan", population: 8_336_599)))
     }
 
-    /// Same-name places stay usable when one of them dwarfs the others, as
-    /// `London` does; near ties, as the several `Springfield`s, stay
-    /// ambiguous so no conversion picks one silently.
     @Test
     func lookupNeedsALeadingPlaceAmongSameNameMatches() {
         let dominant = CityTimeZones.outcome(for: "London", records: [
@@ -188,16 +162,12 @@ struct CityTimeZoneTests {
         #expect(CityTimeZones.outcome(for: "Atlantis", records: []) == .unknown)
     }
 
-    /// A record whose time zone identifier Foundation does not know cannot
-    /// resolve a place.
     @Test
     func lookupLeavesAnInvalidZoneUnresolved() {
         #expect(CityTimeZones.outcome(for: "Atlantis", records: [
             record("Atlantis", "Mars/Olympus", population: 60000)
         ]) == .unknown)
     }
-
-    // MARK: Open-Meteo source
 
     @Test
     func geocodingSourceReadsOpenMeteoRecords() async throws {
@@ -232,8 +202,6 @@ struct CityTimeZoneTests {
         }
     }
 
-    // MARK: The city data service
-
     @MainActor
     @Test
     func resolvedCityIsCachedAndBecomesVisible() async throws {
@@ -251,16 +219,12 @@ struct CityTimeZoneTests {
         ])
         #expect(service.snapshot == expected)
         #expect(try cache.load() == expected)
-        // The abbreviation reaches the source as the city name it stands for.
         #expect(await source.queries == ["London"])
-        // The resolved city reaches the sheet without an edit.
         var offline = context(now: november)
         offline.cityTimeZones = service.snapshot
         #expect(evaluate(sheetText: "5pm London in Tokyo", context: offline)[0].display == "02:00")
     }
 
-    /// A failed fetch leaves the cache unchanged, so a city resolved earlier
-    /// keeps converting offline.
     @MainActor
     @Test
     func failedFetchLeavesTheCachedCityDataAlone() async throws {
@@ -345,7 +309,6 @@ struct CityTimeZoneTests {
         let service = CityTimeZoneService(source: source, cache: MemoryCityCache())
         let first = Task { await service.resolve(["Berlin"], now: instant) }
         await source.waitForQueries(1)
-        // A second city arrives while the first lookup is still in flight.
         await service.resolve(["Lisbon"], now: instant)
         await source.openGate()
         await first.value
@@ -361,8 +324,6 @@ struct CityTimeZoneTests {
         await service.resolve(["Atlantis"], now: instant)
         #expect(service.snapshot.outcome(for: "Atlantis") == .unknown)
     }
-
-    // MARK: Reevaluation
 
     @Test
     func cityDataRefreshesTheVisibleResultWithoutAnEdit() {
@@ -397,8 +358,6 @@ struct CityTimeZoneTests {
         #expect(refresher.cityNames == ["London"])
     }
 }
-
-// MARK: Fakes
 
 @MainActor
 private final class MemoryCityCache: CityTimeZoneCache {
@@ -440,8 +399,6 @@ private actor ControlledCitySource: CityTimeZoneSource {
     }
 }
 
-/// A source whose lookup waits for the test to let it finish, so a second
-/// city can arrive while the first lookup is in flight.
 private actor GatedCitySource: CityTimeZoneSource {
     private(set) var queries: [String] = []
     private var waiters: [CheckedContinuation<Void, Never>] = []

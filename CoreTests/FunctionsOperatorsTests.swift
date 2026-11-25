@@ -2,9 +2,6 @@
 import Foundation
 import Testing
 
-// Locale, display precision, time zone, and clock are fixed per fixture
-// through the EvaluationContext.
-
 struct FunctionsOperatorsTests {
     private func context(
         locale identifier: String = "en_US",
@@ -13,13 +10,11 @@ struct FunctionsOperatorsTests {
         EvaluationContext(
             localeIdentifier: identifier,
             timeZone: TimeZone(identifier: "America/Sao_Paulo")!,
-            now: Date(timeIntervalSince1970: 1_791_926_400), // 2026-10-30 00:00 UTC
+            now: Date(timeIntervalSince1970: 1_791_926_400),
             displayPrecision: precision
         )
     }
 
-    /// Whether the value differs from the independently computed reference
-    /// by at most the tolerance in absolute Decimal units.
     private func approximately(
         _ expressionValue: ExpressionValue?, _ reference: Decimal, tolerance: Decimal
     ) -> Bool {
@@ -30,8 +25,6 @@ struct FunctionsOperatorsTests {
         }
         return difference <= tolerance
     }
-
-    // MARK: Operators: arithmetic words, `&`, and `|`/`or`
 
     @Test(arguments: [
         ("6 and 3", "9"),
@@ -50,8 +43,6 @@ struct FunctionsOperatorsTests {
         #expect(result.display == expected)
     }
 
-    /// Bitwise operands must be whole numbers, in either sign, and the
-    /// two's-complement result carries the sign over.
     @Test(arguments: [
         ("255 & 15", "15"),
         ("1000 | 7", "1,007"),
@@ -66,8 +57,6 @@ struct FunctionsOperatorsTests {
         #expect(result.diagnostic == nil)
         #expect(result.display == expected)
     }
-
-    // MARK: Function call forms and exact results
 
     @Test(arguments: [
         ("min(3; 7)", "3"),
@@ -87,8 +76,6 @@ struct FunctionsOperatorsTests {
         #expect(result.display == expected)
     }
 
-    // MARK: Brazilian formatting, argument separators, two displayed places
-
     @Test(arguments: [
         ("min(1,5; 2,5)", "1,5"),
         ("sin 45°", "0,71"),
@@ -105,8 +92,6 @@ struct FunctionsOperatorsTests {
         #expect(result.display == expected)
     }
 
-    /// The base-10 logarithm divides the constant by itself, so the whole
-    /// powers of ten come out exact regardless of the displayed places.
     @Test(arguments: [
         ("log 100", "2"),
         ("log(100)", "2"),
@@ -119,9 +104,6 @@ struct FunctionsOperatorsTests {
         #expect(result.display == expected)
     }
 
-    // MARK: 34-significant-digit retention
-
-    /// `sqrt` keeps half a unit in the 34th significant digit.
     @Test
     func sqrtOfTwoRetains34SignificantDigits() throws {
         let reference = try Decimal(exact: "1.4142135623730950488016887242096980785696")
@@ -130,7 +112,6 @@ struct FunctionsOperatorsTests {
         #expect(try approximately(result.value, reference, tolerance: Decimal(exact: "0.5e-33")))
     }
 
-    /// `sin` and `log` keep one unit in the 34th significant digit.
     @Test
     func sinOf45DegreesRetains34SignificantDigits() throws {
         let reference = try Decimal(exact: "0.7071067811865475244008443621048490392848")
@@ -155,8 +136,6 @@ struct FunctionsOperatorsTests {
         #expect(tight[1].value == loose[1].value)
     }
 
-    // MARK: Error messages, exact text, staying local
-
     @Test(arguments: [
         ("sqrt()", "sqrt takes 1 argument"),
         ("sqrt(1; 2)", "sqrt takes 1 argument"),
@@ -168,7 +147,6 @@ struct FunctionsOperatorsTests {
         #expect(results[0].kind == .expression)
         #expect(results[0].value == nil)
         #expect(results[0].diagnostic?.message == message)
-        // Independent expressions keep evaluating.
         #expect(results[1].display == "4")
         #expect(results[1].diagnostic == nil)
     }
@@ -193,16 +171,12 @@ struct FunctionsOperatorsTests {
         #expect(results[2].diagnostic == nil)
     }
 
-    // MARK: Incomplete call forms show no message
-
     @Test(arguments: ["sqrt", "sqrt(", "min(1", "log 2 ("])
     func incompleteCallsShowNoMessage(_ source: String) {
         let result = evaluate(sheetText: source, context: context())[0]
         #expect(result.kind == .incomplete)
         #expect(result.value == nil && result.display == nil && result.diagnostic == nil)
     }
-
-    // MARK: The complete sheet
 
     @Test
     func completeSheetVerifiesFunctionsOperatorsAndErrors() {

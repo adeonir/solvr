@@ -1,5 +1,4 @@
 #!/bin/sh
-# Exercises scripts/release.sh through its command line, in throwaway copies of the repository.
 set -u
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -12,7 +11,6 @@ fail() {
     FAILURES=$((FAILURES + 1))
 }
 
-# Copies the working tree into a fresh git repository with one commit.
 new_repo() {
     dir="$WORK/$1"
     mkdir -p "$dir"
@@ -23,19 +21,22 @@ new_repo() {
 
 run_release() {
     dir=$1
-    shift
-    (cd "$dir" && env -u DEVELOPER_ID_IDENTITY -u NOTARY_KEYCHAIN_PROFILE "$@" sh scripts/release.sh $RELEASE_ARGS >"$WORK/out.log" 2>&1)
+    checks=$2
+    shift 2
+    if [ "$checks" = skip ]; then
+        (cd "$dir" && env -u DEVELOPER_ID_IDENTITY -u NOTARY_KEYCHAIN_PROFILE "$@" sh scripts/release.sh --skip-checks >"$WORK/out.log" 2>&1)
+    else
+        (cd "$dir" && env -u DEVELOPER_ID_IDENTITY -u NOTARY_KEYCHAIN_PROFILE "$@" sh scripts/release.sh >"$WORK/out.log" 2>&1)
+    fi
 }
 
 expect_error_before_build() {
     name=$1
     dir=$2
     pattern=$3
-    if [ -n "${4:-}" ]; then
-        run_release "$dir" "$4"
-    else
-        run_release "$dir"
-    fi
+    checks=$4
+    shift 4
+    run_release "$dir" "$checks" "$@"
     status=$?
     if [ "$status" -eq 0 ]; then
         fail "$name: expected a nonzero exit"
@@ -49,29 +50,22 @@ expect_error_before_build() {
     fi
 }
 
-RELEASE_ARGS=""
-
-# Uncommitted changes without the skip-checks flag.
 repo=$(new_repo dirty)
 (cd "$repo" && git tag v0.1.0 && echo change >>README.md)
-expect_error_before_build "dirty tree" "$repo" "uncommitted"
+expect_error_before_build "dirty tree" "$repo" "uncommitted" check
 
-# Clean tree without a tag for the current version on HEAD.
 repo=$(new_repo untagged)
 (cd "$repo" && git tag v9.9.9)
-expect_error_before_build "missing tag" "$repo" "v0.1.0"
+expect_error_before_build "missing tag" "$repo" "v0.1.0" check
 
-# Only one of the two signing variables.
 repo=$(new_repo half-identity)
-RELEASE_ARGS="--skip-checks"
-expect_error_before_build "identity only" "$repo" "NOTARY_KEYCHAIN_PROFILE" "DEVELOPER_ID_IDENTITY=none"
+expect_error_before_build "identity only" "$repo" "NOTARY_KEYCHAIN_PROFILE" skip DEVELOPER_ID_IDENTITY=none
 repo=$(new_repo half-profile)
-expect_error_before_build "profile only" "$repo" "DEVELOPER_ID_IDENTITY" "NOTARY_KEYCHAIN_PROFILE=none"
+expect_error_before_build "profile only" "$repo" "DEVELOPER_ID_IDENTITY" skip NOTARY_KEYCHAIN_PROFILE=none
 
-# Ad-hoc build on a dirty, untagged tree with the skip-checks flag.
 repo=$(new_repo adhoc)
 echo change >>"$repo/README.md"
-if ! run_release "$repo"; then
+if ! run_release "$repo" skip; then
     fail "ad-hoc build: expected exit 0"
     cat "$WORK/out.log"
 fi
@@ -104,7 +98,6 @@ else
     [ "$(defaults read "$plist" CFBundleIdentifier)" = "dev.adeonir.labs.Solvr" ] || fail "ad-hoc build: bundle identifier is wrong"
 fi
 
-# Developer ID mode, with codesign, xcrun, and spctl replaced by stubs that log their calls.
 make_stubs() {
     stubs="$WORK/stubs"
     mkdir -p "$stubs"
@@ -138,13 +131,15 @@ STUB
 }
 
 make_stubs
-SIGN_ENV="DEVELOPER_ID_IDENTITY=Stub-Identity NOTARY_KEYCHAIN_PROFILE=stub-profile PATH=$WORK/stubs:$PATH STUB_LOG=$WORK/stub.log"
 
-# Accepted notarization.
 repo=$(new_repo notarized)
 : >"$WORK/stub.log"
-# shellcheck disable=SC2086
-if ! run_release "$repo" $SIGN_ENV STUB_NOTARY_STATUS=Accepted; then
+if ! run_release "$repo" skip \
+    DEVELOPER_ID_IDENTITY=Stub-Identity \
+    NOTARY_KEYCHAIN_PROFILE=stub-profile \
+    "PATH=$WORK/stubs:$PATH" \
+    "STUB_LOG=$WORK/stub.log" \
+    STUB_NOTARY_STATUS=Accepted; then
     fail "notarized build: expected exit 0"
     cat "$WORK/out.log"
 fi
@@ -161,28 +156,33 @@ echo "$log" | grep -q "stapler staple.*Solvr.app" || fail "notarized build: tick
 echo "$log" | grep -q "spctl .*--assess.*Solvr.app" || fail "notarized build: Gatekeeper assessment missing"
 [ -f "$repo/dist/Solvr-0.1.0.zip" ] || fail "notarized build: zip missing"
 
-# Notarization that is not Accepted.
 repo=$(new_repo rejected)
 : >"$WORK/stub.log"
-# shellcheck disable=SC2086
-if run_release "$repo" $SIGN_ENV STUB_NOTARY_STATUS=Invalid; then
+if run_release "$repo" skip \
+    DEVELOPER_ID_IDENTITY=Stub-Identity \
+    NOTARY_KEYCHAIN_PROFILE=stub-profile \
+    "PATH=$WORK/stubs:$PATH" \
+    "STUB_LOG=$WORK/stub.log" \
+    STUB_NOTARY_STATUS=Invalid; then
     fail "rejected notarization: expected a nonzero exit"
 fi
 grep -q "1234-abcd" "$WORK/out.log" || fail "rejected notarization: submission id not reported"
 grep -q "stapler staple" "$WORK/stub.log" && fail "rejected notarization: stapled anyway"
 [ -f "$repo/dist/Solvr-0.1.0.zip" ] && fail "rejected notarization: zip produced"
 
-# The optional environment file supplies the signing variables, and the real environment wins over it.
 repo=$(new_repo envfile-half)
 echo "DEVELOPER_ID_IDENTITY=Stub-Identity" >"$repo/.env.release"
-RELEASE_ARGS="--skip-checks"
-expect_error_before_build "environment file, identity only" "$repo" "NOTARY_KEYCHAIN_PROFILE"
+expect_error_before_build "environment file, identity only" "$repo" "NOTARY_KEYCHAIN_PROFILE" skip
 
 repo=$(new_repo envfile-loses)
 printf 'DEVELOPER_ID_IDENTITY=File-Identity\nNOTARY_KEYCHAIN_PROFILE=file-profile\n' >"$repo/.env.release"
 : >"$WORK/stub.log"
-# shellcheck disable=SC2086
-if ! run_release "$repo" $SIGN_ENV STUB_NOTARY_STATUS=Accepted; then
+if ! run_release "$repo" skip \
+    DEVELOPER_ID_IDENTITY=Stub-Identity \
+    NOTARY_KEYCHAIN_PROFILE=stub-profile \
+    "PATH=$WORK/stubs:$PATH" \
+    "STUB_LOG=$WORK/stub.log" \
+    STUB_NOTARY_STATUS=Accepted; then
     fail "environment file: expected exit 0"
     cat "$WORK/out.log"
 fi

@@ -11,7 +11,6 @@ struct FiatCatalogCoverageTests {
         EvaluationContext(localeIdentifier: "en_US", timeZone: TimeZone(secondsFromGMT: 0)!, now: Date(timeIntervalSince1970: 0), displayPrecision: 2)
     }
 
-    /// Currencies the source marks without decimal places, captured 2026-10-31.
     private static let withoutDecimals: Set<String> = ["BIF", "CLP", "DJF", "GNF", "HUF", "ISK", "JPY", "KMF", "KRW", "PYG", "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF"]
 
     @Test func catalogHoldsExactly151CurrenciesWithTheirDecimalMetadata() {
@@ -24,7 +23,6 @@ struct FiatCatalogCoverageTests {
     @Test func everyCurrencyShowsDecimalsOnlyWhenItsMetadataAllowsThem() {
         let half = MonetaryValueFixture.half
         for entry in FiatCurrencies.entries {
-            // Each currency reads at least one of the two separators as its decimal mark.
             let results = ["10.5", "10,5"].map { evaluate(sheetText: "\($0) \(entry.code)", context: context())[0] }
             let parsed = results.filter { $0.value == .monetary(MonetaryValue(amount: half, currency: entry.code)) }
             #expect(!parsed.isEmpty, "\(entry.code)")
@@ -96,7 +94,6 @@ struct FiatRateLifecycleCoverageTests {
         #expect(expected.diagnostic == nil)
         #expect(expected.value == .monetary(MonetaryValue(amount: 10 * shippedBRL, currency: "BRL")))
 
-        // Before any fetch, and after a failed first fetch, the shipped table serves the sheet.
         for _ in 0 ..< 2 {
             #expect(service.snapshot == .shipped)
             let line = evaluate(sheetText: "10 USD in BRL\n2 + 2", context: context(service.snapshot))
@@ -133,17 +130,14 @@ struct FiatRateLifecycleCoverageTests {
         #expect(await source.calls == 1)
         #expect(service.snapshot.fetchedAt == instant)
 
-        // Return with recent rates: skipped.
         await service.setForeground(false, now: instant.addingTimeInterval(60))
         await service.setForeground(true, now: instant.addingTimeInterval(1799))
         #expect(await source.calls == 1)
 
-        // Background: skipped, however old the rates become.
         await service.setForeground(false, now: instant.addingTimeInterval(1800))
         await service.refreshIfDue(now: instant.addingTimeInterval(36000))
         #expect(await source.calls == 1)
 
-        // Return at exactly 30 minutes: fetched.
         await service.setForeground(true, now: instant.addingTimeInterval(1800))
         #expect(await source.calls == 2)
         #expect(service.snapshot.fetchedAt == instant.addingTimeInterval(1800))

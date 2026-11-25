@@ -7,7 +7,6 @@ struct MonetaryArithmeticTests {
         Decimal(string: text, locale: Locale(identifier: "en_US_POSIX")) ?? .nan
     }
 
-    /// EUR-to-USD at 2 and USD-to-BRL at 5, with a cryptocurrency.
     private func context(_ locale: String = "en_US", cryptoPrecision: Int = 10) -> EvaluationContext {
         var context = EvaluationContext(localeIdentifier: locale, timeZone: TimeZone(secondsFromGMT: 0)!, now: Date(timeIntervalSince1970: 0), displayPrecision: 2)
         context.cryptoPrecision = cryptoPrecision

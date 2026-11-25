@@ -2,14 +2,6 @@
 import Foundation
 import Testing
 
-// A quantity converted through `in` shows its value in the destination unit
-// beside its expression, and keeps its numeric value reusable inside
-// arithmetic. Each unit accepts only its standard abbreviation and its full
-// name singular and plural; no other alias. Locale, display precision, time
-// zone, and clock are fixed per fixture through the EvaluationContext. The
-// inch abbreviation `in` spells the conversion keyword itself, so inches
-// accept only `inch` and `inches`.
-
 struct UnitConversionTests {
     private func context(
         locale identifier: String = "pt_BR",
@@ -18,7 +10,7 @@ struct UnitConversionTests {
         EvaluationContext(
             localeIdentifier: identifier,
             timeZone: TimeZone(identifier: "America/Sao_Paulo")!,
-            now: Date(timeIntervalSince1970: 1_791_926_400), // 2026-10-30 00:00 UTC
+            now: Date(timeIntervalSince1970: 1_791_926_400),
             displayPrecision: precision
         )
     }
@@ -26,8 +18,6 @@ struct UnitConversionTests {
     private func display(_ source: String) -> String? {
         evaluate(sheetText: source, context: context())[0].display
     }
-
-    // MARK: Acceptance examples
 
     @Test
     func feetConvertToMetresWithBrazilianFormatting() throws {
@@ -43,8 +33,6 @@ struct UnitConversionTests {
         #expect(display("-10 ft in m") == "-3,048 m")
     }
 
-    // MARK: Length conversions with exact factors
-
     @Test(arguments: [
         ("36 inches in feet", "3 ft"),
         ("1 inch in cm", "2,54 cm"),
@@ -55,8 +43,6 @@ struct UnitConversionTests {
     func lengthConversions(_ source: String, _ expected: String) {
         #expect(display(source) == expected)
     }
-
-    // MARK: Abbreviation and full-name aliases convert alike
 
     @Test
     func abbreviationsAndFullNamesConvertAlike() {
@@ -88,8 +74,6 @@ struct UnitConversionTests {
             }
         }
     }
-
-    // MARK: Decimal data units take factors of 1000
 
     @Test(arguments: [
         ("1 KB in bytes", "1.000 B"),
@@ -129,8 +113,6 @@ struct UnitConversionTests {
         #expect(steps[3].value == .decimal(oneTrillion))
     }
 
-    // MARK: Binary data units take factors of 1024
-
     @Test(arguments: [
         ("1 KiB in bytes", "1.024 B"),
         ("1 MiB in KiB", "1.024 KiB"),
@@ -159,8 +141,6 @@ struct UnitConversionTests {
         }
     }
 
-    // MARK: Temperature conversions with two displayed decimal places
-
     @Test(arguments: [
         ("100 F in C", "37,78 °C"),
         ("32 fahrenheit in celsius", "0 °C"),
@@ -181,8 +161,6 @@ struct UnitConversionTests {
         #expect(result.display == "100 °C")
     }
 
-    // MARK: Conversions contribute their value inside arithmetic only
-
     @Test
     func convertedValuesKeepTheirNumericMeaningInsideArithmetic() throws {
         let results = evaluate(sheetText: "10 ft in m times 2", context: context())
@@ -190,8 +168,6 @@ struct UnitConversionTests {
         #expect(try results[0].value == .decimal(Decimal(exact: "6.096")))
         #expect(results[0].display == "6,096")
     }
-
-    // MARK: A converted quantity shows its destination unit
 
     @Test
     func sheetShowsConvertedQuantitiesBesideTheirExpressions() throws {
@@ -203,20 +179,14 @@ struct UnitConversionTests {
         -2 inches in cm
         """
         let results = evaluate(sheetText: sheet, context: context(precision: 2))
-        // The heading holds no result; each expression shows its value in
-        // the destination unit beside itself.
         #expect(results[0].kind == .heading)
         #expect(results[3].display == "100 °C")
         #expect(results[4].display == "-5,08 cm")
-        // The other two examples hold two decimal places only at higher
-        // precision; their values stay exact.
         #expect(try results[1].value == .decimal(Decimal(exact: "3.048")))
         #expect(try results[2].value == .decimal(Decimal(exact: "1000")))
         #expect(results[1].display == "3,05 m")
         #expect(results[2].display == "1.000 B")
     }
-
-    // MARK: Quantities alone display their value with their unit
 
     @Test
     func quantitiesDisplayTheirOwnValueAndUnit() {
@@ -226,8 +196,6 @@ struct UnitConversionTests {
         #expect(results[1].display == "1 KB")
         #expect(results[2].display == "100 °F")
     }
-
-    // MARK: Unknown aliases and incompatible dimensions stay invalid
 
     @Test(arguments: [
         "5 furlongs in feet",
@@ -245,8 +213,6 @@ struct UnitConversionTests {
         #expect(result.diagnostic?.message == "Invalid syntax")
     }
 
-    // MARK: Unit names are reserved
-
     @Test(arguments: [
         ("feet = 2", "Reserved name: feet"),
         ("KB = 2", "Reserved name: KB"),
@@ -256,8 +222,6 @@ struct UnitConversionTests {
         let result = evaluate(sheetText: source, context: context())[0]
         #expect(result.diagnostic?.message == message)
     }
-
-    // MARK: Retained units
 
     @Test
     func bareQuantityRetainsItsUnitAndDisplaysUnchanged() {

@@ -2,10 +2,6 @@
 import Foundation
 import Testing
 
-// Percentages take numeric amounts; currency parsing stays out of scope.
-// Locale, display precision, time zone, and clock are fixed per fixture
-// through the EvaluationContext.
-
 struct PercentTests {
     private func context(
         locale identifier: String = "pt_BR",
@@ -14,12 +10,10 @@ struct PercentTests {
         EvaluationContext(
             localeIdentifier: identifier,
             timeZone: TimeZone(identifier: "America/Sao_Paulo")!,
-            now: Date(timeIntervalSince1970: 1_791_926_400), // 2026-10-30 00:00 UTC
+            now: Date(timeIntervalSince1970: 1_791_926_400),
             displayPrecision: precision
         )
     }
-
-    // MARK: Acceptance examples
 
     @Test(arguments: [
         ("52% of 900", "468"),
@@ -35,15 +29,11 @@ struct PercentTests {
         #expect(results[0].display == expected)
     }
 
-    // MARK: The percent representation through the display contract
-
     @Test
     func ratioAsAPercentShowsThePercentRepresentation() {
         let result = evaluate(sheetText: "50 as a % of 100", context: context())[0]
         #expect(result.kind == .expression)
         #expect(result.diagnostic == nil)
-        // The value stays numeric; only the representation shown beside the
-        // expression carries the percent form.
         #expect(result.value == .decimal(0.5))
         #expect(result.display == "50%")
     }
@@ -66,8 +56,6 @@ struct PercentTests {
         #expect(evaluated.map(\.display) == ["468", "64", "6", "2", "50%"])
     }
 
-    // MARK: Values stay reusable after the percent representation
-
     @Test
     func percentRepresentationKeepsTheNumericValueReusable() {
         let results = evaluate(
@@ -77,8 +65,6 @@ struct PercentTests {
         #expect(results[1].display == "50")
         #expect(results[1].diagnostic == nil)
     }
-
-    // MARK: Regional numbers inside percent expressions
 
     @Test(arguments: [
         ("12,5% of 80", "10"),
@@ -94,8 +80,6 @@ struct PercentTests {
         let result = evaluate(sheetText: "1 as a % of 3", context: context())[0]
         #expect(result.display == "33,33%")
     }
-
-    // MARK: Percent expressions in the full sheet structure
 
     @Test
     func labelKeepsThePercentExpressionValid() {

@@ -1,7 +1,3 @@
-// The public sheet-evaluation boundary. Sheets evaluate as the user types:
-// `evaluate` receives the ordered sheet text and the explicit evaluation
-// context and returns one result per line.
-
 import Foundation
 
 /// The numeric context an evaluation runs in. The caller supplies every
@@ -97,13 +93,7 @@ public struct ExpressionResult: Sendable, Equatable {
     public let display: String?
     /// What failed, or nil when the line has a result or has none to show.
     public let diagnostic: Diagnostic?
-    /// The unit a quantity line carries: its own unit, or the destination
-    /// of a conversion. Nil for every other result.
     let unit: Unit?
-    /// The quantity the result adds to a sheet total with. Unlike
-    /// `unit`, it also follows arithmetic, assignments, and references, and
-    /// it carries time units for durations, timespans, and calendar-day
-    /// differences.
     let measure: Measure?
 
     public init(
@@ -132,9 +122,6 @@ public struct ExpressionResult: Sendable, Equatable {
     }
 }
 
-/// The quantity a result adds to a sheet total with: a unit of
-/// length, data, temperature, or CSS text, or a time unit. Durations and
-/// timespans count their seconds; a calendar-day difference counts its days.
 enum Measure: Sendable, Equatable {
     case unit(Unit)
     case time(Duration.Unit)
@@ -176,7 +163,6 @@ public func sheetTotal(of results: [ExpressionResult], context: EvaluationContex
     return try? totalOfGroup(of: eligible, context: context)
 }
 
-/// The currency or quantity a result selects a group with.
 private enum TotalGroup {
     case currency(String)
     case measure(Measure)
@@ -245,18 +231,12 @@ private func totalOfGroup(of eligible: [ExpressionResult], context: EvaluationCo
     }
 }
 
-/// A result's count in the group's unit, or nil when the result is not
-/// compatible with the group. Plain numbers count in the group's unit as
-/// they are. A duration counts its seconds and a calendar-day difference its
-/// days, both converted to the group's time unit.
 private func amount(of result: ExpressionResult, in target: Measure, context: EvaluationContext) throws -> Decimal? {
     if let plain = plainAmount(result) {
         return plain
     }
     switch (target, result.measure, result.value) {
     case let (.unit(target), .unit(source)?, .decimal(number)?) where source.dimension == target.dimension:
-        // A `rem` or `em` conversion counts its own unit, so its count reads
-        // through the shared pixel base before conversion.
         if source.isRelative {
             let pixels = try Numeric.multiply(number, context.pixelBase)
             return try Units.convert(pixels, from: .pixel, to: target, context: context, override: nil)
@@ -271,8 +251,6 @@ private func amount(of result: ExpressionResult, in target: Measure, context: Ev
     }
 }
 
-/// The count of a plain result: one with no selecting unit, currency, or
-/// time unit.
 private func plainAmount(_ result: ExpressionResult) -> Decimal? {
     guard result.measure == nil, case let .decimal(number)? = result.value else { return nil }
     return number

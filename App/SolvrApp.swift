@@ -34,7 +34,6 @@ struct SolvrApp: App {
     }
 }
 
-/// The colors of the window design, taken from the active theme.
 private struct Palette: Equatable {
     let background: NSColor
     let text: NSColor
@@ -111,7 +110,6 @@ private struct SheetEditorView: View {
         HStack(spacing: 0) {
             sidebar
             VStack(alignment: .leading, spacing: 0) {
-                // The title bar row, centered on the window buttons, which draw over the content.
                 HStack {
                     Spacer()
                     Button(action: createSheet) {
@@ -148,7 +146,6 @@ private struct SheetEditorView: View {
                     sheets.insert(StoredSheet(id: old.id, title: old.title, created: old.created, updated: Date(), text: updatedText), at: 0)
                     autosave?.edit(id, text: updatedText)
                 }
-                // The sheet total sits centered below the content and is absent when no total is available.
                 if let total = coordinator.total {
                     SheetTotalView(total: total, palette: palette)
                 }
@@ -181,13 +178,9 @@ private struct SheetEditorView: View {
                     logger.error("Could not save sheet: \(error.localizedDescription)")
                 }
             }
-            // Cities the results cannot resolve reach the shared service on
-            // every trigger, so a lookup that failed while offline is retried.
             coordinator.requestCityData = { names in
                 ApplicationCityTimeZones.shared.resolve(names)
             }
-            // The stored family returns to the default when it is no longer
-            // installed, so sheets show SF Mono.
             let family = SheetFonts.resolvedFamily(fontFamily, in: InstalledFonts.faces)
             if family != fontFamily {
                 fontFamily = family
@@ -220,17 +213,12 @@ private struct SheetEditorView: View {
                 cryptoPrecision: storedPrecision.crypto
             )
         }
-        // The cities the visible results name go to the shared city data
-        // service, which looks up a city the cache lacks and refreshes one
-        // it holds; the fresh city data reaches the results above.
         .onChange(of: coordinator.cityNames) { _, names in
             ApplicationCityTimeZones.shared.resolve(names)
         }
         .onDisappear { autosave?.flush(); coordinator.closeSheet() }
     }
 
-    /// The sidebar, full height and flush with the window edge, like the Finder,
-    /// with room at the top for the window buttons.
     private var sidebar: some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: 52)
@@ -402,8 +390,6 @@ private struct SheetEditorView: View {
         )
     }
 
-    /// The sheet typography from Settings; the stored family returns to the
-    /// default when it is not installed.
     private var typography: SheetTypography {
         TypographySetting.typography(
             family: SheetFonts.resolvedFamily(fontFamily, in: InstalledFonts.faces),
@@ -412,8 +398,6 @@ private struct SheetEditorView: View {
         )
     }
 
-    /// The Settings precision values, within their ranges even when the
-    /// stored preference is not.
     private var storedPrecision: (general: Int, crypto: Int) {
         (
             PrecisionSetting.stored(generalPrecision, in: PrecisionSetting.generalRange, default: PrecisionSetting.generalDefault),
@@ -441,9 +425,6 @@ private final class AppSaveTimer: SheetSaveTimer {
     }
 }
 
-/// Lets the window background show through the title bar, so the title bar
-/// has the color of the sheet. The title is hidden, and the window buttons sit
-/// lower and farther from the edge, like the Finder.
 private struct WindowChrome: NSViewRepresentable {
     let background: NSColor
 
@@ -480,15 +461,12 @@ private final class ChromeView: NSView {
         }
     }
 
-    /// A change of appearance rebuilds the title bar, which puts the window
-    /// buttons back at the system position.
     override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
         placeWindowButtons()
         DispatchQueue.main.async { [weak self] in self?.placeWindowButtons() }
     }
 
-    /// Runs twice: SwiftUI sets the window up after this view is attached.
     private func configure() {
         guard let window else { return }
         window.titlebarAppearsTransparent = true
@@ -498,8 +476,6 @@ private final class ChromeView: NSView {
         placeWindowButtons()
     }
 
-    /// The system puts the window buttons back at its own position on every
-    /// resize, so this runs again then.
     private func placeWindowButtons() {
         guard let window, !window.styleMask.contains(.fullScreen),
               let bar = window.standardWindowButton(.closeButton)?.superview,
@@ -561,7 +537,6 @@ private final class DimKnobScroller: NSScroller {
     override func drawKnobSlot(in _: NSRect, highlight _: Bool) {}
 }
 
-/// The sheet total below the content: a labeled value, centered, that darkens on hover.
 private struct SheetTotalView: View {
     let total: String
     let palette: Palette
@@ -579,7 +554,6 @@ private struct SheetTotalView: View {
     }
 }
 
-/// What the editor draws beside a line: a result, an error message, or nothing.
 private struct SheetLineResult: Equatable {
     let text: String
     let isError: Bool
@@ -595,8 +569,6 @@ private struct SheetLineResult: Equatable {
     }
 }
 
-/// The fonts and line metrics of the sheet editor, built from the sheet
-/// typography. SF Mono is the system monospaced font.
 private struct Metrics {
     static let sidePadding: CGFloat = 24
     static let columnGap: CGFloat = 16
@@ -605,7 +577,6 @@ private struct Metrics {
     let font: NSFont
     let numberFont: NSFont
     let headingFont: NSFont
-    /// Whether headings draw the regular face in a synthetic bold.
     let headingIsSynthetic: Bool
     let lineHeight: CGFloat
     let numberColumn: CGFloat
@@ -620,7 +591,6 @@ private struct Metrics {
         numberColumn = ("000" as NSString).size(withAttributes: [.font: font]).width
     }
 
-    /// The face by name, or the system monospaced font (SF Mono) without one.
     private static func font(_ name: String?, size: Double, weight: NSFont.Weight) -> NSFont {
         if let name, let font = NSFont(name: name, size: size) {
             return font
@@ -724,12 +694,10 @@ private final class ShortcutTextView: NSTextView {
     var onCommentShortcut: ((ShortcutTextView) -> Void)?
     private var metrics = Metrics(typography: .default)
 
-    /// The context the line parts are read in.
     var partsContext = EvaluationContext(
         localeIdentifier: Locale.current.identifier, timeZone: .current, now: Date(), displayPrecision: 2
     )
 
-    /// The theme colors. A change recolors the open sheet at once.
     var palette = Palette(.defaultLight) {
         didSet {
             guard palette != oldValue else { return }
@@ -739,8 +707,6 @@ private final class ShortcutTextView: NSTextView {
         }
     }
 
-    /// The sheet typography. A change rebuilds the fonts and line metrics
-    /// and restyles the open sheet at once.
     var typography = SheetTypography.default {
         didSet {
             guard typography != oldValue else { return }
@@ -750,7 +716,6 @@ private final class ShortcutTextView: NSTextView {
         }
     }
 
-    /// The results drawn beside the lines, parallel to the sheet's lines.
     var lineResults: [SheetLineResult] = [] {
         didSet {
             updateContainerWidth()
@@ -769,16 +734,11 @@ private final class ShortcutTextView: NSTextView {
         Metrics.sidePadding + metrics.numberColumn + Metrics.columnGap
     }
 
-    /// Lifts the text from the baseline TextKit gives a fixed-height line,
-    /// which varies with each font's ascent and leading, to the baseline
-    /// that centers the cap height.
     private var textBaselineOffset: CGFloat {
         Self.layoutBaseline(for: metrics.font, style: lineParagraphStyle)
             - Self.centeredBaseline(for: metrics.font, lineHeight: metrics.lineHeight)
     }
 
-    /// The baseline, from the top of the line, that TextKit lays out for
-    /// one line in the font with the paragraph style.
     private static func layoutBaseline(for font: NSFont, style: NSParagraphStyle) -> CGFloat {
         let storage = NSTextStorage(string: "0", attributes: [.font: font, .paragraphStyle: style])
         let layoutManager = NSLayoutManager()
@@ -790,8 +750,6 @@ private final class ShortcutTextView: NSTextView {
         return layoutManager.location(forGlyphAt: 0).y
     }
 
-    /// The baseline, from the top of a line, that centers the font's cap
-    /// height in the line.
     private static func centeredBaseline(for font: NSFont, lineHeight: CGFloat) -> CGFloat {
         (lineHeight + font.capHeight) / 2
     }
@@ -803,9 +761,6 @@ private final class ShortcutTextView: NSTextView {
         return style
     }
 
-    /// Gives every line the design's fixed height, the text color, and the
-    /// bold heading look, so the numbers and results drawn beside a line
-    /// stay level with it.
     func applySheetStyle() {
         guard !hasMarkedText(), let storage = textStorage else { return }
         let base: [NSAttributedString.Key: Any] = [
@@ -844,8 +799,6 @@ private final class ShortcutTextView: NSTextView {
 
     private var updatingContainerWidth = false
 
-    /// Setting the inset or the container size resizes the frame, which
-    /// calls back here; the guard stops that recursion.
     func updateContainerWidth() {
         guard !updatingContainerWidth else { return }
         updatingContainerWidth = true
@@ -908,8 +861,6 @@ private final class ShortcutTextView: NSTextView {
             ]
             let number = "\(index + 1)" as NSString
             let numberSize = number.size(withAttributes: numberAttributes)
-            // Drawn from the baseline itself: a font's hidden line gap moves
-            // the baseline of a point-based draw.
             number.draw(
                 with: NSRect(
                     x: Metrics.sidePadding + metrics.numberColumn - numberSize.width,
@@ -945,8 +896,6 @@ private final class ShortcutTextView: NSTextView {
         super.draw(dirtyRect)
     }
 
-    /// The first line fragment of every line, with its baseline, in view
-    /// coordinates. A trailing empty line comes from the extra fragment.
     private func lineFragments(_ layoutManager: NSLayoutManager) -> [(rect: NSRect, baseline: CGFloat)] {
         guard let textContainer else { return [] }
         layoutManager.ensureLayout(for: textContainer)
