@@ -1,11 +1,21 @@
 name: Solvr
 
 options:
-  bundleIdPrefix: com.adeonir.labs
+  bundleIdPrefix: dev.adeonir.labs
   deploymentTarget:
     macOS: "26.0"
+  createIntermediateGroups: true
   xcodeVersion: "27.0"
   projectFormat: "xcode27_0"
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+    CODE_SIGN_IDENTITY: "-"
+    ENABLE_HARDENED_RUNTIME: YES
+    # Xcode leaves the runtime flag off an ad-hoc Debug signature without it.
+    OTHER_CODE_SIGN_FLAGS: "--options=runtime"
 
 targets:
   Core:
@@ -15,7 +25,7 @@ targets:
       - Core
     settings:
       base:
-        SWIFT_VERSION: "6.0"
+        PRODUCT_BUNDLE_IDENTIFIER: dev.adeonir.labs.Core
         GENERATE_INFOPLIST_FILE: YES
 
   CoreTests:
@@ -28,7 +38,7 @@ targets:
         embed: false
     settings:
       base:
-        SWIFT_VERSION: "6.0"
+        PRODUCT_BUNDLE_IDENTIFIER: dev.adeonir.labs.CoreTests
         GENERATE_INFOPLIST_FILE: YES
 
   Solvr:
@@ -38,6 +48,11 @@ targets:
       - App
     dependencies:
       - target: Core
+    entitlements:
+      path: App/Solvr.entitlements
+      properties:
+        # Library validation rejects the embedded Core framework when the signature is ad-hoc and carries no Team ID.
+        com.apple.security.cs.disable-library-validation: true
     info:
       path: App/Info.plist
       properties:
@@ -47,7 +62,7 @@ targets:
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
     settings:
       base:
-        SWIFT_VERSION: "6.0"
+        PRODUCT_BUNDLE_IDENTIFIER: dev.adeonir.labs.Solvr
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
   AppTests:
@@ -61,7 +76,7 @@ targets:
         embed: false
     settings:
       base:
-        SWIFT_VERSION: "6.0"
+        PRODUCT_BUNDLE_IDENTIFIER: dev.adeonir.labs.AppTests
         GENERATE_INFOPLIST_FILE: YES
 
 schemes:
