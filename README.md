@@ -37,12 +37,6 @@ brew install adeonir/tap/solvr
 
 That one command adds the `adeonir/tap` tap and installs Solvr. It trusts only Solvr, not the rest of the tap.
 
-To read the cask before installing, run:
-
-```sh
-brew cat adeonir/tap/solvr
-```
-
 You can also download `Solvr-<version>.zip` from the [releases page](https://github.com/adeonir/solvr/releases), unzip it, and move `Solvr.app` to Applications.
 
 Solvr needs macOS 26 or later and runs on Apple Silicon and Intel Macs.
