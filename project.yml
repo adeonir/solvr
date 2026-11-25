@@ -7,6 +7,15 @@ options:
   xcodeVersion: "27.0"
   projectFormat: "xcode27_0"
 
+settings:
+  base:
+    CODE_SIGN_IDENTITY: "-"
+  configs:
+    Debug:
+      CODE_SIGN_STYLE: Manual
+      CODE_SIGN_IDENTITY: "Apple Development"
+      DEVELOPMENT_TEAM: PX9G95LY8C
+
 targets:
   Core:
     type: framework

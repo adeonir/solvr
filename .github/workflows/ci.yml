@@ -23,7 +23,7 @@ jobs:
         run: xcodegen generate
 
       - name: Build Solvr for macOS
-        run: xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' build
+        run: xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' build CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= CODE_SIGN_STYLE=Automatic
 
       - name: Run CoreTests and AppTests
-        run: xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' test
+        run: xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' test CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= CODE_SIGN_STYLE=Automatic
