@@ -282,13 +282,12 @@ extension Theme {
 }
 
 /// The colors a theme gives the parts of a sheet line that stand out from
-/// its text. The Default themes use the Apple colors. Every other theme
-/// takes from its official palette the number color for a value, the string
-/// color for a calendar date, the keyword color for a time-of-day, the type
-/// color for a unit, and the function color for a name. Monokai shows a
-/// time-of-day in orange because its keyword color is its error color, and
-/// Rosé Pine shows a name in the heading color because its function color is
-/// its number color.
+/// its text. Every theme other than Default takes from its official palette
+/// the number color for a value, the string color for a calendar date, the
+/// keyword color for a time-of-day, the type color for a unit, and the
+/// function color for a name. Monokai shows a time-of-day in orange because
+/// its keyword color is its error color, and Rosé Pine shows a name in the
+/// heading color because its function color is its number color.
 public struct SyntaxColors: Equatable, Sendable {
     public let heading: ThemeColor
     public let comment: ThemeColor
