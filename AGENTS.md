@@ -40,7 +40,7 @@ Solvr is a beautiful text calculator for Mac. It combines a calculation language
 - Assign an ID to every new requirement: the next free number in its list (FR for functional, NFR for non-functional).
 - The PRD keeps its numbered structure (1. Problem through 8. References) and the scope groups Must Have, Should Have, Could Have, Won't Have, and Out of Scope.
 - An ADR keeps the structure name, Context, Decision, Alternatives Considered, Consequences, References.
-- Code comments state the why of a non-obvious choice, an invariant, a domain rule, or a constraint — nothing that names, types, or tests already state. Normative, self-contained, present-tense prose; no IDs, no historical narration.
+- Code comments follow the keep list of the `strip-comments` skill; a domain rule, an invariant, or a surprise of the project's own code belongs in a name, a type, or a test instead. Comments use normative, self-contained, present-tense prose, with no historical narration and no IDs outside such a link.
 - Delete migration scaffolding, such as a conditional compilation guard or a compatibility shim, once its condition can no longer be false; do not leave it disabled.
 - Commits follow Conventional Commits in English, with `docs:` for document-only changes so far.
 - Conventional commit messages carry the Linear issue they implement as the scope, in lowercase, e.g. `feat(adk-233): add the Solvr core package`. A fix made after a task is integrated into its spec branch takes the spec's issue as scope.
