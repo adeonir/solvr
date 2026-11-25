@@ -47,53 +47,172 @@ struct LinePartsTests {
 
     @Test func aCommentAfterAnExpressionColorsFromTheSlashes() {
         #expect(parts("compras 2 + 3 // split") == [
-            Part(text: "compras", kind: .label),
-            Part(text: "2", kind: .number),
-            Part(text: "+", kind: .operator),
-            Part(text: "3", kind: .number),
+            Part(text: "compras", kind: .muted),
+            Part(text: "2", kind: .value),
+            Part(text: "+", kind: .muted),
+            Part(text: "3", kind: .value),
             Part(text: "// split", kind: .comment)
         ])
     }
 
     @Test func aDefinedNameIsAVariableAndTimesIsAnOperator() {
-        let line = parts("price = $8 times 3")
-        #expect(line.contains(Part(text: "price", kind: .variable)))
-        #expect(line.contains(Part(text: "$8", kind: .monetaryValue)))
-        #expect(line.contains(Part(text: "times", kind: .operator)))
-        #expect(line.contains(Part(text: "3", kind: .number)))
+        #expect(parts("price = $8 times 3") == [
+            Part(text: "price", kind: .name),
+            Part(text: "=", kind: .muted),
+            Part(text: "$8", kind: .value),
+            Part(text: "times", kind: .muted),
+            Part(text: "3", kind: .value)
+        ])
     }
 
     @Test func aLaterReferenceToADefinedNameIsAVariable() {
         #expect(parts("price = 5\nprice + 1") == [
-            Part(text: "price", kind: .variable),
-            Part(text: "+", kind: .operator),
-            Part(text: "1", kind: .number)
+            Part(text: "price", kind: .name),
+            Part(text: "+", kind: .muted),
+            Part(text: "1", kind: .value)
         ])
     }
 
-    @Test func unitsAndTheInKeyword() {
-        #expect(parts("10 ft in m") == [
-            Part(text: "10", kind: .number),
-            Part(text: "ft", kind: .unit),
-            Part(text: "in", kind: .reservedName),
-            Part(text: "m", kind: .unit)
+    @Test(arguments: [("16px in em", "16px", "em"), ("10 ft in m", "10 ft", "m")])
+    func aQuantityIsOneUnitPart(line: String, quantity: String, target: String) {
+        #expect(parts(line) == [
+            Part(text: quantity, kind: .unit),
+            Part(text: "in", kind: .muted),
+            Part(text: target, kind: .unit)
         ])
     }
 
     @Test func functionsAndConstants() {
         #expect(parts("sqrt(16) + pi") == [
-            Part(text: "sqrt", kind: .function),
-            Part(text: "16", kind: .number),
-            Part(text: "+", kind: .operator),
-            Part(text: "pi", kind: .constant)
+            Part(text: "sqrt", kind: .name),
+            Part(text: "16", kind: .value),
+            Part(text: "+", kind: .muted),
+            Part(text: "pi", kind: .name)
+        ])
+    }
+
+    @Test func minBeforeParenthesesIsAName() {
+        #expect(parts("min(3; 7)") == [
+            Part(text: "min", kind: .name),
+            Part(text: "3", kind: .value),
+            Part(text: "7", kind: .value)
+        ])
+    }
+
+    @Test func aPercentFormMutesTheSignAndItsReservedName() {
+        #expect(parts("20% of 50") == [
+            Part(text: "20", kind: .value),
+            Part(text: "%", kind: .muted),
+            Part(text: "of", kind: .muted),
+            Part(text: "50", kind: .value)
+        ])
+    }
+
+    @Test(arguments: ["31 Mar", "31 Mar 2027"])
+    func daysUntilACalendarDateReadsAsCalendarDates(date: String) {
+        #expect(parts("days until \(date)") == [
+            Part(text: "days", kind: .calendarDate),
+            Part(text: "until", kind: .muted),
+            Part(text: date, kind: .calendarDate)
+        ])
+    }
+
+    @Test func aMonthShiftKeepsTheCalendarDateKind() {
+        #expect(parts("31 Mar + 1 month") == [
+            Part(text: "31 Mar", kind: .calendarDate),
+            Part(text: "+", kind: .muted),
+            Part(text: "1 month", kind: .calendarDate)
+        ])
+    }
+
+    @Test func aWeekdayExpressionReadsAsCalendarDates() {
+        #expect(parts("monday in 3 weeks") == [
+            Part(text: "monday", kind: .calendarDate),
+            Part(text: "in", kind: .muted),
+            Part(text: "3 weeks", kind: .calendarDate)
+        ])
+    }
+
+    @Test func aWeekdayOutsideAWeekdayExpressionStaysALabel() {
+        #expect(parts("monday 2 + 3").first == Part(text: "monday", kind: .muted))
+    }
+
+    @Test(arguments: [
+        ("5pm ldn in sf", "5pm"),
+        ("11 am PST in London", "11 am"),
+        ("2:30 pm HKT in London", "2:30 pm"),
+        ("5pm Mar del Plata in London", "5pm")
+    ])
+    func aTimeOfDayIsOnePartAndItsPlacesHaveNone(line: String, time: String) {
+        #expect(parts(line) == [
+            Part(text: time, kind: .timeOfDay),
+            Part(text: "in", kind: .muted)
+        ])
+    }
+
+    @Test func anHourOutsideTheTwelveHourClockIsNoTimeOfDay() {
+        #expect(parts("13pm") == [
+            Part(text: "13", kind: .value),
+            Part(text: "pm", kind: .muted)
+        ])
+    }
+
+    @Test func aDurationConversionColorsEachSideByItsUnit() {
+        #expect(parts("1500 mins in days") == [
+            Part(text: "1500 mins", kind: .timeOfDay),
+            Part(text: "in", kind: .muted),
+            Part(text: "days", kind: .calendarDate)
+        ])
+    }
+
+    @Test(arguments: [
+        ("15 min", SyntaxKind.timeOfDay),
+        ("2h", .timeOfDay),
+        ("2 days", .calendarDate)
+    ])
+    func aDurationIsOnePartOfItsKind(line: String, kind: SyntaxKind) {
+        #expect(parts(line) == [Part(text: line, kind: kind)])
+    }
+
+    @Test func minAsAConversionTargetIsATimeOfDayUnit() {
+        #expect(parts("90 s in min").last == Part(text: "min", kind: .timeOfDay))
+    }
+
+    @Test(arguments: [("100 °F in C", "100 °F", "C"), ("25°C in F", "25°C", "F")])
+    func aDegreeMarkerStaysInsideItsQuantity(line: String, quantity: String, target: String) {
+        #expect(parts(line) == [
+            Part(text: quantity, kind: .unit),
+            Part(text: "in", kind: .muted),
+            Part(text: target, kind: .unit)
+        ])
+    }
+
+    @Test func aConversionTargetSpelledLikeAVariableKeepsItsUnitKind() {
+        #expect(parts("s = 5\n90 min in s").last == Part(text: "s", kind: .timeOfDay))
+    }
+
+    @Test func aWeekdaySpelledLikeAVariableReadsAsACalendarDate() {
+        #expect(parts("mon = 2\nmon in 3 weeks").first == Part(text: "mon", kind: .calendarDate))
+    }
+
+    @Test(arguments: [
+        ("$8 in swiss francs", "$8", "swiss francs"),
+        ("$8 in canadian dollars", "$8", "canadian dollars"),
+        ("10 USD in pound sterling", "10 USD", "pound sterling")
+    ])
+    func aCurrencyNameOfSeveralWordsIsOneValue(line: String, amount: String, currency: String) {
+        #expect(parts(line) == [
+            Part(text: amount, kind: .value),
+            Part(text: "in", kind: .muted),
+            Part(text: currency, kind: .value)
         ])
     }
 
     @Test func currenciesAndMonetaryValues() {
         #expect(parts("$8 in BRL") == [
-            Part(text: "$8", kind: .monetaryValue),
-            Part(text: "in", kind: .reservedName),
-            Part(text: "BRL", kind: .currency)
+            Part(text: "$8", kind: .value),
+            Part(text: "in", kind: .muted),
+            Part(text: "BRL", kind: .value)
         ])
     }
 
@@ -104,23 +223,22 @@ struct LinePartsTests {
 
     @Test func aLineThatCannotBeCalculatedKeepsItsParts() {
         #expect(parts("10 ft in kg") == [
-            Part(text: "10", kind: .number),
-            Part(text: "ft", kind: .unit),
-            Part(text: "in", kind: .reservedName)
+            Part(text: "10 ft", kind: .unit),
+            Part(text: "in", kind: .muted)
         ])
     }
 
     @Test func anIncompleteLineKeepsItsParts() {
         #expect(parts("10 + ") == [
-            Part(text: "10", kind: .number),
-            Part(text: "+", kind: .operator)
+            Part(text: "10", kind: .value),
+            Part(text: "+", kind: .muted)
         ])
     }
 
     @Test func charactersTheLanguageDoesNotDefineGetNoPart() {
         #expect(parts("10 ? 5") == [
-            Part(text: "10", kind: .number),
-            Part(text: "5", kind: .number)
+            Part(text: "10", kind: .value),
+            Part(text: "5", kind: .value)
         ])
     }
 
@@ -134,9 +252,9 @@ struct LinePartsTests {
     @Test func rangesCountFromTheStartOfTheLineAsWritten() {
         let all = lineParts(sheetText: "  2 + 3", context: context)
         #expect(all == [[
-            LinePart(kind: .number, range: 2 ..< 3),
-            LinePart(kind: .operator, range: 4 ..< 5),
-            LinePart(kind: .number, range: 6 ..< 7)
+            LinePart(kind: .value, range: 2 ..< 3),
+            LinePart(kind: .muted, range: 4 ..< 5),
+            LinePart(kind: .value, range: 6 ..< 7)
         ]])
     }
 }
