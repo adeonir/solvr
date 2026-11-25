@@ -1,0 +1,147 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.event_name == 'push'
+    runs-on: xcode-27
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Select Xcode 27
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_27*.app | sort -V | tail -1)/Contents/Developer"
+
+      - name: Install tools
+        run: brew install xcodegen
+
+      - name: Check the tag against the marketing version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(sed -n 's/^ *MARKETING_VERSION: *"\(.*\)"/\1/p' project.yml)
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::tag $TAG does not match the marketing version $version in project.yml (expected v$version)"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Build the release zip
+        run: sh scripts/release.sh
+
+      - name: Draft the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          zip="dist/Solvr-$VERSION.zip"
+          sha=$(shasum -a 256 "$zip" | cut -d ' ' -f 1)
+          gh release create "$TAG" "$zip" --draft --title "$TAG" --notes "sha256: \`$sha\`"
+
+  verify:
+    if: github.event_name == 'release'
+    runs-on: macos-26
+    outputs:
+      sha256: ${{ steps.verify.outputs.sha256 }}
+    env:
+      EXPECTED_TEAM_ID: PX9G95LY8C
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Download the release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release download "$TAG" --pattern 'Solvr-*.zip' --dir asset
+
+      - name: Verify the notarized build
+        id: verify
+        run: |
+          fail() {
+            echo "::error::$1"
+            echo "Replace the release asset with a notarized zip: run scripts/release.sh with DEVELOPER_ID_IDENTITY and NOTARY_KEYCHAIN_PROFILE set, upload it with 'gh release upload <tag> dist/Solvr-<version>.zip --clobber', and publish the release again."
+            exit 1
+          }
+
+          zip=$(ls asset/Solvr-*.zip)
+          work=$(mktemp -d)
+          ditto -x -k "$zip" "$work"
+          app="$work/Solvr.app"
+          [ -d "$app" ] || fail "the zip does not contain Solvr.app"
+
+          codesign --verify --strict --verbose=2 "$app" || fail "the app signature is not valid"
+
+          team=$(codesign -dv "$app" 2>&1 | sed -n 's/^TeamIdentifier=//p')
+          [ "$team" = "$EXPECTED_TEAM_ID" ] || fail "the app is signed by team '${team:-none}', expected $EXPECTED_TEAM_ID"
+
+          xcrun stapler validate "$app" || fail "the app has no valid stapled notarization ticket"
+
+          # The runner's Gatekeeper state is not documented, so the assessment only fails the job when assessments are enabled.
+          if spctl --status 2>&1 | grep -q "assessments enabled"; then
+            spctl --assess --type execute --verbose "$app" || fail "Gatekeeper rejects the app"
+          else
+            spctl --assess --type execute --verbose "$app" || echo "::warning::Gatekeeper rejects the app, but the runner has assessments disabled"
+          fi
+
+          echo "sha256=$(shasum -a 256 "$zip" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+  tap:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Download the release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release download "$TAG" --pattern 'Solvr-*.zip' --dir asset
+
+      - name: Check out the tap
+        uses: actions/checkout@v7
+        with:
+          repository: adeonir/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: tap
+
+      - name: Update the cask
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          VERIFIED_SHA256: ${{ needs.verify.outputs.sha256 }}
+        run: |
+          version="${TAG#v}"
+          sha256=$(sha256sum asset/Solvr-*.zip | cut -d ' ' -f 1)
+          if [ "$sha256" != "$VERIFIED_SHA256" ]; then
+            echo "::error::the asset sha256 $sha256 differs from the verified sha256 $VERIFIED_SHA256; the tap is not updated"
+            exit 1
+          fi
+          mkdir -p tap/Casks
+          sed -e "s/@VERSION@/$version/" -e "s/@SHA256@/$sha256/" packaging/homebrew/solvr.rb > tap/Casks/solvr.rb
+
+      - name: Commit and push the cask
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          cd tap
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "The cask already carries this version and sha256."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/solvr.rb
+          git commit -m "solvr: update to ${TAG#v}"
+          git push

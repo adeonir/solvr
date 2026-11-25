@@ -1,7 +1,7 @@
 ---
 name: prd
 created: 2026-10-26
-updated: 2026-11-22
+updated: 2026-11-24
 status: approved
 sources: []
 ---
@@ -63,7 +63,7 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
 - FR-12 The mode is Light, Dark, or Auto. Auto follows the appearance of macOS.
 - FR-33 The default theme uses the Apple colors and has a light version and a dark version. The theme colors the whole window.
 - FR-9 The app shows either in the Dock or in the menu bar. The Show in Menu Bar option moves the app from the Dock to the menu bar, and turning the option off moves it back to the Dock. The option is off by default. The menu of the menu bar icon opens the window, opens Settings, and quits the app.
-- FR-13 The app is distributed by direct download and by Homebrew. App Store distribution is TBD. The app updates itself automatically in every case.
+- FR-13 The app is distributed by direct download and by Homebrew. The app updates itself automatically.
 
 ### Should Have
 
@@ -120,7 +120,7 @@ Must Have, Should Have, and Could Have state how much a requirement matters to t
 
 ## 7. Open Questions
 
-- App Store distribution: TBD.
+None.
 
 ## 8. References
 
