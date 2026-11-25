@@ -21,7 +21,7 @@ jobs:
         run: brew install xcodegen swiftformat
 
       - name: Check Swift formatting
-        run: sh scripts/check-swift-format.sh
+        run: swiftformat App Core CoreTests AppTests --lint
 
       - name: Generate Xcode project
         run: xcodegen generate
