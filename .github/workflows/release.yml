@@ -1,9 +1,6 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
   release:
     types: [published]
 
@@ -11,42 +8,6 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    if: github.event_name == 'push'
-    runs-on: xcode-27
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Select Xcode 27
-        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_27*.app | sort -V | tail -1)/Contents/Developer"
-
-      - name: Install tools
-        run: brew install xcodegen
-
-      - name: Check the tag against the marketing version
-        env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          version=$(sed -n 's/^ *MARKETING_VERSION: *"\(.*\)"/\1/p' project.yml)
-          if [ "$TAG" != "v$version" ]; then
-            echo "::error::tag $TAG does not match the marketing version $version in project.yml (expected v$version)"
-            exit 1
-          fi
-          echo "VERSION=$version" >> "$GITHUB_ENV"
-
-      - name: Build the release zip
-        run: sh scripts/release.sh
-
-      - name: Draft the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          zip="dist/Solvr-$VERSION.zip"
-          sha=$(shasum -a 256 "$zip" | cut -d ' ' -f 1)
-          gh release create "$TAG" "$zip" --draft --title "$TAG" --notes "sha256: \`$sha\`"
-
   verify:
     if: github.event_name == 'release'
     runs-on: macos-26
