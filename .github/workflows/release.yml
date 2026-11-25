@@ -4,12 +4,15 @@ on:
   push:
     tags:
       - 'v*'
+  release:
+    types: [published]
 
 permissions:
   contents: write
 
 jobs:
   build:
+    if: github.event_name == 'push'
     runs-on: xcode-27
     steps:
       - name: Check out repository
@@ -43,3 +46,27 @@ jobs:
           zip="dist/Solvr-$VERSION.zip"
           sha=$(shasum -a 256 "$zip" | cut -d ' ' -f 1)
           gh release create "$TAG" "$zip" --draft --title "$TAG" --notes "sha256: \`$sha\`"
+
+  verify:
+    if: github.event_name == 'release'
+    runs-on: macos-26
+    outputs:
+      sha256: ${{ steps.verify.outputs.sha256 }}
+    env:
+      EXPECTED_TEAM_ID: PX9G95LY8C
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Download the release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release download "$TAG" --pattern 'Solvr-*.zip' --dir asset
+
+      - name: Verify the notarized build
+        id: verify
+        run: |
+          zip=$(ls asset/Solvr-*.zip)
+          sh scripts/verify-release.sh "$zip"
+          echo "sha256=$(shasum -a 256 "$zip" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
