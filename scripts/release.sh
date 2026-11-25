@@ -55,8 +55,8 @@ if [ -n "${DEVELOPER_ID_IDENTITY:-}" ]; then
     for framework in "$app"/Contents/Frameworks/*.framework; do
         codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID_IDENTITY" "$framework"
     done
-    codesign --force --options runtime --timestamp --entitlements App/Solvr.entitlements \
-        --sign "$DEVELOPER_ID_IDENTITY" "$app"
+    # The app and the framework share the Team ID, so library validation passes without the ad-hoc entitlement; --force drops it.
+    codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID_IDENTITY" "$app"
 fi
 codesign --verify --strict --verbose=2 "$app"
 

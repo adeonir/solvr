@@ -16,7 +16,7 @@ fail() {
 new_repo() {
     dir="$WORK/$1"
     mkdir -p "$dir"
-    (cd "$ROOT" && tar --exclude=.git --exclude=dist --exclude='*.xcodeproj' --exclude=.build --exclude=DerivedData --exclude=.artifacts -cf - .) | (cd "$dir" && tar -xf -)
+    (cd "$ROOT" && tar --exclude=.git --exclude=dist --exclude='*.xcodeproj' --exclude=.build --exclude=DerivedData --exclude=.artifacts --exclude=.env.release -cf - .) | (cd "$dir" && tar -xf -)
     (cd "$dir" && git init -q && git add -A && git -c user.name=test -c user.email=test@example.com commit -q -m init)
     echo "$dir"
 }
@@ -148,6 +148,7 @@ echo "$log" | grep "^codesign" | grep -q -- "--options runtime" || fail "notariz
 [ "$(echo "$log" | grep '^codesign' | grep -c -- '--timestamp')" -eq 2 ] || fail "notarized build: secure timestamp missing"
 echo "$log" | grep "^codesign" | grep -q -- "Stub-Identity" || fail "notarized build: Developer ID identity unused"
 echo "$log" | grep "^codesign" | grep -q -- "--deep" && fail "notarized build: --deep used"
+echo "$log" | grep "^codesign" | grep -q -- "--entitlements" && fail "notarized build: entitlements passed to the Developer ID signature"
 echo "$log" | grep -q "notarytool submit.*--keychain-profile stub-profile" || fail "notarized build: submission missing"
 echo "$log" | grep -q "stapler staple.*Solvr.app" || fail "notarized build: ticket not stapled"
 echo "$log" | grep -q "spctl .*--assess.*Solvr.app" || fail "notarized build: Gatekeeper assessment missing"
