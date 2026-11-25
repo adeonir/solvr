@@ -26,3 +26,17 @@ days until 31 Mar       148 days
 It converts units, currencies, and cryptocurrencies, with exchange rates that update over the internet, and it converts time zones by abbreviation or by city name. When a line can't be calculated, it shows the reason in place of the result, and the rest of the sheet keeps working. The total at the bottom sums the results of the sheet.
 
 Each sheet saves after every change, so there's no save button, and you can edit it without an internet connection.
+
+## Install
+
+Install it with Homebrew:
+
+```sh
+brew install adeonir/tap/solvr
+```
+
+Homebrew asks you to trust a third-party tap the first time. `brew install adeonir/tap/solvr` adds the `adeonir/tap` tap for you, and `brew tap adeonir/tap` adds it ahead of time. You can read the cask before installing with `brew cat adeonir/tap/solvr`.
+
+You can also download `Solvr-<version>.zip` from the [releases page](https://github.com/adeonir/solvr/releases), unzip it, and move `Solvr.app` to Applications.
+
+Solvr needs macOS 26 or later and runs on Apple Silicon and Intel Macs.

@@ -36,3 +36,6 @@ jobs:
 
       - name: Test release verification
         run: sh scripts/test-verify-release.sh
+
+      - name: Test cask update
+        run: sh scripts/test-update-cask.sh
