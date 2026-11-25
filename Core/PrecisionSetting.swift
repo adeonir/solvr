@@ -1,6 +1,3 @@
-// A precision field that holds no valid value restores its last valid
-// value; a stored value outside its range falls back to the default.
-
 import Foundation
 
 public enum PrecisionSetting {

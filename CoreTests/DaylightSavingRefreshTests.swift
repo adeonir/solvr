@@ -2,13 +2,7 @@
 import Foundation
 import Testing
 
-// A conversion schedules the next transition of the zones it uses, and
-// every reevaluation trigger — including the transition itself — shows
-// the clock the transition changed. The clock is injected per trigger,
-// never read from the process, and no UI automation runs.
-
 struct DaylightSavingRefreshTests {
-    /// The city data the fixtures resolve city names against.
     private let cities = CityTimeZoneSnapshot(entries: [
         "London": .found(CityRecord(name: "London", country: "United Kingdom", region: "England", timeZoneIdentifier: "Europe/London", population: 8_961_989)),
         "New York": .found(CityRecord(name: "New York", country: "United States", region: "New York", timeZoneIdentifier: "America/New_York", population: 8_804_190)),
@@ -40,15 +34,11 @@ struct DaylightSavingRefreshTests {
         SheetRefresher(sheetText: sheetText, context: context(now: clock(now)))
     }
 
-    // MARK: The acceptance example — Pacific falls back and the clock moves
-
     @Test
     func conversionRefreshesAtTheNextTransition() throws {
         var refresher = refresher("11am PST in London", now: "2026-10-26 09:00:00")
         #expect(refresher.results[0].display == "18:00")
 
-        // Pacific daylight saving time ends at 09:00 UTC on 1 November
-        // 2026, earlier than the next London transition.
         let transition = try #require(
             refresher.nextDaylightSavingTransition(after: refresher.context.now)
         )
@@ -61,8 +51,6 @@ struct DaylightSavingRefreshTests {
         #expect(outcome.changedIndexes == Set([0]))
     }
 
-    /// The transition reaches the results through every existing trigger,
-    /// so a transition missed while the app slept leaves no stale clock.
     @Test(arguments: [
         SheetRefreshTrigger.midnight,
         .sheetOpening,
@@ -76,11 +64,6 @@ struct DaylightSavingRefreshTests {
         #expect(outcome.changedIndexes == Set([0]))
     }
 
-    // MARK: Which transition is scheduled
-
-    /// A conversion uses both its source and its destination zone: the
-    /// earliest transition among them decides. Chicago moves before London
-    /// in March 2027.
     @Test
     func theEarliestTransitionOfTheUsedZonesIsScheduled() {
         let refresher = refresher("9am CST in London", now: "2026-11-01 09:00:00")
@@ -104,16 +87,12 @@ struct DaylightSavingRefreshTests {
         #expect(outcome.changedIndexes == Set([0]))
     }
 
-    /// A sheet with no conversion uses no zone: nothing to schedule, even
-    /// when it shows a written reading.
     @Test
     func sheetsWithoutAConversionScheduleNoTransition() {
         let refresher = refresher("days until 31 Mar 2027\n4 * 5\n9am", now: "2026-10-26 09:00:00")
         #expect(refresher.hasTimeZoneDependentResults == false)
         #expect(refresher.nextDaylightSavingTransition(after: refresher.context.now) == nil)
     }
-
-    // MARK: An edit updates the schedule
 
     @Test
     func anEditUpdatesTheScheduledTransition() {
@@ -133,10 +112,6 @@ struct DaylightSavingRefreshTests {
         #expect(refresher.nextDaylightSavingTransition(after: clock("2026-10-26 10:00:00")) == nil)
     }
 
-    // MARK: Fresh city data schedules the transition
-
-    /// A city resolved after the sheet opened turns its error into a clock
-    /// and begins following that zone's transitions.
     @Test
     func freshCityDataSchedulesTheTransition() {
         var refresher = SheetRefresher(

@@ -1,7 +1,3 @@
-// The font size in px and the line height as a multiplier of the size. An
-// empty field commits the default; any other invalid text commits the last
-// valid value. A stored value outside its range falls back to the default.
-
 import Foundation
 
 public enum TypographySetting {
@@ -83,9 +79,6 @@ public enum TypographySetting {
         )
     }
 
-    /// The number of tenths in line-height text: digits, optionally a dot
-    /// and one digit. The dot is the only decimal separator, whatever the
-    /// region, and the whole part carries no leading zero.
     private static func tenths(of text: String) -> Int? {
         let parts = text.split(separator: ".", omittingEmptySubsequences: false)
         guard parts.count <= 2, let whole = parts.first, !whole.isEmpty, whole.count <= 2,
@@ -98,8 +91,6 @@ public enum TypographySetting {
         return wholeValue * 10 + tenth
     }
 
-    /// The whole number in size text: at most two ASCII digits, no sign and
-    /// no leading zero. The zero alone parses, and the range rules settle it.
     private static func wholeNumber(of text: String) -> Int? {
         guard text.count <= 2, let first = text.first, first != "0" || text.count == 1,
               text.allSatisfy({ $0.isASCII && $0.isNumber })

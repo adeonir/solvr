@@ -1,7 +1,6 @@
 import AppKit
 import Core
 
-/// One rate service and durable cache for every sheet and window.
 @MainActor
 final class ApplicationExchangeRates: NSObject {
     static let shared = ApplicationExchangeRates()
@@ -36,8 +35,6 @@ final class ApplicationExchangeRates: NSObject {
     }
 
     @objc private func refresh() {
-        // Check the real app state too: a pending timer cannot start a request
-        // during a queued deactivation notification or after waking asleep.
         guard NSApp.isActive else { setForeground(false); return }
         Task {
             await service.refreshIfDue(now: Date())

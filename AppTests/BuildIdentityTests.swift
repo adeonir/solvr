@@ -2,9 +2,6 @@ import Foundation
 import Security
 import Testing
 
-// The build identity is observed on the built products: bundle identifiers,
-// the deployment target, and the signature the app was built with.
-
 private final class TestBundleToken {}
 
 struct BuildIdentityTests {
@@ -25,8 +22,6 @@ struct BuildIdentityTests {
         #expect(minimum == "26.0")
     }
 
-    /// Debug signs with the team's Apple Development identity; every other
-    /// configuration, and the CI override, signs ad-hoc.
     @Test func appSignatureMatchesTheBuildConfiguration() throws {
         var code: SecStaticCode?
         #expect(SecStaticCodeCreateWithPath(Bundle.main.bundleURL as CFURL, [], &code) == errSecSuccess)

@@ -1,5 +1,4 @@
 #!/bin/sh
-# Publishes version X.Y.Z from main: bumps MARKETING_VERSION, tags, builds the notarized zip, pushes, and creates the GitHub release.
 set -eu
 
 cd "$(dirname "$0")/.."
@@ -24,7 +23,6 @@ remote_tag=$(git ls-remote --tags origin "refs/tags/$tag")
 [ -z "$remote_tag" ] || fail "tag $tag already exists on origin"
 gh auth status >/dev/null || fail "gh is not authenticated"
 
-# release.sh builds an ad-hoc zip without these variables, so check them before any commit or tag.
 for key in DEVELOPER_ID_IDENTITY NOTARY_KEYCHAIN_PROFILE; do
     eval "value=\${$key:-}"
     [ -n "$value" ] || grep -q "^$key=." .env.release 2>/dev/null || fail "$key is not set in the shell or in .env.release"
@@ -38,7 +36,6 @@ git tag "$tag"
 sh scripts/release.sh
 xcrun stapler validate .build/release/Build/Products/Release/Solvr.app
 
-# The push comes after the build, so a failed build or notarization publishes nothing.
 git push --atomic origin main "$tag"
 sha=$(shasum -a 256 "$zip" | cut -d ' ' -f 1)
 gh release create "$tag" "$zip" --verify-tag --title "$tag" --notes "sha256: \`$sha\`"

@@ -1,9 +1,3 @@
-// The city data a time-of-day conversion resolves a city name against. A
-// lookup leaves one outcome per city in the cache — the place it resolved,
-// no place of that name, or more than one plausible place — so the
-// evaluator can tell an unknown city from a city that was never looked up
-// without reaching the network.
-
 import Foundation
 
 /// One city record as the external city data source returns it.
@@ -79,22 +73,13 @@ public struct CityTimeZoneSnapshot: Sendable, Equatable, Codable {
     }
 }
 
-/// The city name rules and the lookup policy, apart from the network and
-/// the disk.
 enum CityTimeZones {
-    /// The abbreviations the language expands to a city name before the
-    /// lookup: `ldn` reads London and `sf` reads San Francisco.
     static let aliasNames: [String: String] = ["ldn": "London", "sf": "San Francisco"]
 
-    /// The city name an abbreviation stands for, any casing; a name that no
-    /// abbreviation stands for comes back as written.
     static func expanded(_ city: String) -> String {
         aliasNames[folded(city)] ?? city
     }
 
-    /// The cache key of a city name: case, diacritics, the abbreviation it
-    /// stands for, and the blanks between words all fold away, so
-    /// `São Paulo`, `sao paulo`, and `SAO PAULO` name one place.
     static func key(_ city: String) -> String {
         folded(expanded(city))
     }
@@ -110,11 +95,8 @@ enum CityTimeZones {
             .lowercased()
     }
 
-    /// The outcome one lookup's records leave for the city: a place whose
-    /// name matches exactly, when the name means one place. Same-name
-    /// places stay usable while one of them dwarfs the others — `London`
-    /// names the British city, not the Canadian one — and stay ambiguous
-    /// when they are near ties, as the several `Springfield`s are.
+    private static let dominanceRatio = 2
+
     static func outcome(for city: String, records: [CityRecord]) -> CityLookupOutcome {
         let name = key(city)
         let matches = records
@@ -124,7 +106,7 @@ enum CityTimeZones {
         guard matches.count > 1 else { return .found(leading) }
         let runnerUp = matches[1].population ?? 0
         guard let population = leading.population,
-              population > 0, population >= 2 * runnerUp
+              population > 0, population >= dominanceRatio * runnerUp
         else { return .ambiguous }
         return .found(leading)
     }

@@ -2,12 +2,6 @@
 import Foundation
 import Testing
 
-// Bindings, names, reassignment, and error propagation follow the nearest
-// preceding definition and the longest complete visible name. Editing an
-// input reevaluates the sheet from scratch, which is what updates the
-// dependent results. Locale, display precision, time zone, and clock are
-// fixed per fixture through the EvaluationContext.
-
 struct VariablesSheetTests {
     private func context(
         locale identifier: String = "pt_BR",
@@ -16,12 +10,10 @@ struct VariablesSheetTests {
         EvaluationContext(
             localeIdentifier: identifier,
             timeZone: TimeZone(identifier: "America/Sao_Paulo")!,
-            now: Date(timeIntervalSince1970: 1_791_926_400), // 2026-10-30 00:00 UTC
+            now: Date(timeIntervalSince1970: 1_791_926_400),
             displayPrecision: precision
         )
     }
-
-    // MARK: Assignment and dependent expressions
 
     @Test
     func assignmentProducesItsValueAndDependentExpressionUsesIt() {
@@ -36,8 +28,6 @@ struct VariablesSheetTests {
 
     @Test
     func editingTheAssignmentUpdatesTheDependentResult() {
-        // The sheet reevaluates whole after a text edit; the same
-        // evaluation text with the new input must yield the new result.
         let before = evaluate(sheetText: "price = 8\nprice * 3", context: context())
         #expect(before[0].display == "8" && before[1].display == "24")
         let after = evaluate(sheetText: "price = 10\nprice * 3", context: context())
@@ -58,8 +48,6 @@ struct VariablesSheetTests {
         #expect(results[2].display == "20")
     }
 
-    // MARK: Forward references stay undefined
-
     @Test
     func referenceBeforeItsDefinitionStaysUndefinedEvenWhenDefinedLater() {
         let results = evaluate(sheetText: "total * 2\ntotal = 10\n2 + 2", context: context())
@@ -72,8 +60,6 @@ struct VariablesSheetTests {
         #expect(results[2].display == "4")
     }
 
-    // MARK: Reassignment in sheet order
-
     @Test
     func reassignmentBindsOnlyTheLaterExpressions() {
         let results = evaluate(
@@ -84,8 +70,6 @@ struct VariablesSheetTests {
         #expect(results[3].value == .decimal(Decimal(12)) && results[3].display == "12")
         #expect(results.allSatisfy { $0.diagnostic == nil })
     }
-
-    // MARK: Names
 
     @Test(arguments: [
         ("salário = 5\nsalário * 2", "10"),
@@ -109,8 +93,6 @@ struct VariablesSheetTests {
         #expect(results.allSatisfy { $0.diagnostic == nil })
     }
 
-    // MARK: The longest complete visible name wins
-
     @Test
     func referenceUsesTheLongestCompleteDefinedName() {
         let results = evaluate(
@@ -125,8 +107,6 @@ struct VariablesSheetTests {
 
     @Test(arguments: ["  ", "\t", "\u{00A0}"])
     func runsOfSpacesTabsAndNonBreakingSpacesCountAsOneSpace(_ gap: String) {
-        // `despesa mensal = 100` defined; the reference line writes the two
-        // name words with a run of blanks between them.
         let results = evaluate(
             sheetText: "despesa mensal = 100\ndespesa\(gap)mensal * 2", context: context()
         )
@@ -144,8 +124,6 @@ struct VariablesSheetTests {
         #expect(results[1].diagnostic == nil)
     }
 
-    // MARK: Values stay independent of the display
-
     @Test
     func brazilianDecimalExactValueSurvivesReuse() {
         let results = evaluate(sheetText: "x = 0,1 + 0,2\nx * 3", context: context())
@@ -162,14 +140,10 @@ struct VariablesSheetTests {
             sheetText: "x = 1 / 3\nx * 3", context: context(precision: 2)
         )
         #expect(results[0].display == "0,33")
-        // The multiplication reuses the retained value, not the displayed
-        // two-decimal one: the result shows 1, never 0,99.
         #expect(results[1].display == "1")
         #expect(results[1].value != .decimal(Decimal(1)))
         #expect(results.allSatisfy { $0.diagnostic == nil })
     }
-
-    // MARK: Reserved names
 
     @Test(arguments: [
         ("min = 3", "Reserved name: min"),
@@ -190,8 +164,6 @@ struct VariablesSheetTests {
         #expect(results[0].diagnostic?.message == "Reserved name: min")
         #expect(results[1].display == "10" && results[1].diagnostic == nil)
     }
-
-    // MARK: Dependency propagation
 
     @Test
     func anErroredAssignmentBlocksItsDependentsAndLeavesOthersEvaluating() {
@@ -230,14 +202,10 @@ struct VariablesSheetTests {
         let results = evaluate(
             sheetText: "x = 2\nx = 1 / 0\nx * 3", context: context()
         )
-        // The reassignment failed: the stale value never survives, and
-        // dependents of the name show the dependency error.
         #expect(results[0].display == "2")
         #expect(results[1].diagnostic?.message == "Division by zero")
         #expect(results[2].diagnostic?.message == "Depends on an error")
     }
-
-    // MARK: Complete sheet
 
     @Test
     func completeSheetCoversBindingsNamesReassignmentAndPropagation() {

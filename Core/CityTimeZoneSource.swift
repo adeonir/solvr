@@ -1,7 +1,3 @@
-// The external city data source that resolves a city name to its place
-// record and time zone. The evaluator never calls it; the application
-// service does, and only the cache reaches a sheet.
-
 import Foundation
 
 public enum CityLookupError: Error, Sendable, Equatable {

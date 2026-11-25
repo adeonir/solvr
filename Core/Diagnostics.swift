@@ -1,6 +1,3 @@
-// The exact user-facing message strings for every language error.
-// Tests assert these texts exactly.
-
 public enum Diagnostic: Error, Equatable, Sendable, Hashable {
     /// The line cannot be recognized as an expression at all.
     case syntax

@@ -2,12 +2,7 @@
 import Foundation
 import Testing
 
-// Locale, time zone, display precision, and clock are fixed per fixture
-// through the EvaluationContext.
-
 struct TimeZoneConversionTests {
-    /// The city data the fixtures resolve city names against: a lookup reads
-    /// the injected city data, never the network.
     private let cities = CityTimeZoneSnapshot(entries: [
         "London": .found(CityRecord(name: "London", country: "United Kingdom", region: "England", timeZoneIdentifier: "Europe/London", population: 8_961_989)),
         "New York": .found(CityRecord(name: "New York", country: "United States", region: "New York", timeZoneIdentifier: "America/New_York", population: 8_804_190)),
@@ -47,8 +42,6 @@ struct TimeZoneConversionTests {
         return results[0].display
     }
 
-    // MARK: Acceptance examples
-
     @Test(arguments: [
         ("2026-10-26 09:00:00", "11am PST in London", "18:00"),
         ("2026-10-26 09:00:00", "11 am PST in London", "18:00"),
@@ -63,26 +56,17 @@ struct TimeZoneConversionTests {
         #expect(display(source, now: clock(clockText)) == expected)
     }
 
-    /// The same written line follows the daylight-saving rules of the
-    /// place its abbreviation names, not a fixed offset.
     @Test
     func pacificConversionFollowsDaylightSaving() {
         #expect(display("11am PST in London", now: clock("2026-10-26 09:00:00")) == "18:00")
         #expect(display("11am PST in London", now: clock("2026-11-01 09:00:00")) == "19:00")
     }
 
-    // MARK: System time zone as destination
-
-    /// A reading that names no place is read where the line names it, and
-    /// the sheet's system time zone is the destination.
     @Test
     func bareTimeIsReadInThePlaceTheLineNames() {
         #expect(display("5pm in London", now: clock("2026-11-01 09:00:00")) == "14:00")
-        // Naming the source place turns the same line the other way.
         #expect(display("5pm São Paulo in London", now: clock("2026-11-01 09:00:00")) == "20:00")
     }
-
-    // MARK: Display contract
 
     @Test
     func conversionShowsTheClockAlone() {
@@ -91,8 +75,6 @@ struct TimeZoneConversionTests {
             context: context(now: clock("2026-10-26 09:00:00"))
         )
         #expect(results[0].display == "18:00")
-        // The clock is fixed width and carries neither the date nor the
-        // place, whatever the sheet's region.
         #expect(display("11am PST in London", now: clock("2026-10-26 09:00:00"), locale: "pt_BR") == "18:00")
         #expect(display("9am IST in London", now: clock("2026-11-01 09:00:00"), locale: "pt_BR") == "03:30")
     }
@@ -107,8 +89,6 @@ struct TimeZoneConversionTests {
         #expect(display("11AM pst in london", now: clock("2026-10-26 09:00:00")) == "18:00")
     }
 
-    // MARK: Unresolved places
-
     @Test
     func unknownPlaceShowsADiagnosticInsteadOfTheNumber() {
         let results = evaluate(
@@ -119,8 +99,6 @@ struct TimeZoneConversionTests {
         #expect(results[0].display == nil)
         #expect(results[0].diagnostic != nil)
     }
-
-    // MARK: The typed value
 
     @Test
     func valueCarriesTheDestinationClock() throws {
@@ -133,8 +111,6 @@ struct TimeZoneConversionTests {
         #expect(value == .timeOfDay(expected))
     }
 
-    /// A reading that no conversion shows keeps its written clock in the
-    /// sheet's system time zone.
     @Test(arguments: [
         ("12am", "00:00"),
         ("12pm", "12:00"),
@@ -155,7 +131,6 @@ struct TimeZoneConversionTests {
         #expect(results[0].display == nil)
     }
 
-    /// A reading is a whole-line value: arithmetic does not consume it.
     @Test
     func arithmeticDoesNotConsumeAReading() {
         let results = evaluate(
@@ -173,8 +148,6 @@ struct TimeZoneConversionTests {
         )
         #expect(results[0].diagnostic == .reservedName(name: "am"))
     }
-
-    // MARK: Sheet total
 
     @Test
     func sheetTotalStaysWithoutATimeOfDayResult() {

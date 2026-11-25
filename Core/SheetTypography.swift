@@ -1,7 +1,3 @@
-// The line height is a multiplier of the font size, like CSS unitless
-// `line-height`. The editor's font sizes and line metrics all derive from
-// this one value.
-
 import Foundation
 
 public struct SheetTypography: Equatable, Sendable {

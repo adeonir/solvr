@@ -13,8 +13,6 @@ public struct MonetaryValue: Sendable, Equatable {
 
 enum Money {
     static let symbols: [(String, String)] = [("R$", "BRL"), ("$", "USD"), ("€", "EUR"), ("£", "GBP"), ("¥", "JPY")]
-    /// Shared currencies (EUR, CHF and the regional X currencies) deliberately
-    /// have no home locale. USD and GBP follow their unambiguous symbol forms.
     static let locales: [String: String] = Dictionary(uniqueKeysWithValues: """
     AED:ar_AE AFN:fa_AF ALL:sq_AL AMD:hy_AM ANG:nl_CW AOA:pt_AO ARS:es_AR AUD:en_AU AWG:nl_AW AZN:az_AZ
     BAM:bs_BA BBD:en_BB BDT:bn_BD BGN:bg_BG BHD:ar_BH BIF:fr_BI BMD:en_BM BND:ms_BN BOB:es_BO BRL:pt_BR BSD:en_BS BTN:dz_BT BWP:en_BW BYN:be_BY BZD:en_BZ
@@ -27,11 +25,8 @@ enum Money {
     UAH:uk_UA UGX:en_UG USD:en_US UYU:es_UY UZS:uz_UZ VES:es_VE VND:vi_VN VUV:en_VU WST:en_WS YER:ar_YE ZAR:en_ZA ZMW:en_ZM
     """.split(whereSeparator: \.isWhitespace).map { pair in
         let fields = pair.split(separator: ":")
-        // Keep the currency's regional separators with Latin decimal digits,
-        // matching the calculator's numeric language.
         return (String(fields[0]), String(fields[1]) + "@numbers=latn")
     })
-    /// The two cryptocurrencies that have a symbol; their results still show the code.
     static let cryptoSymbols: [(String, String)] = [("₿", "BTC"), ("Ξ", "ETH")]
     static let names = FiatCurrencies.names.merging(CryptoCurrencies.names) { fiat, _ in fiat }
 
@@ -113,9 +108,6 @@ enum Money {
         let numberLocale = Locale(identifier: locales[currency] ?? locale.identifier)
         let separator = numberLocale.decimalSeparator?.first ?? "."
         let run = String(line[numberStart ..< numberEnd])
-        // A no-decimal currency still accepts the fractional input `10,5 JPY`;
-        // rounding is display-only. Prefer its own grouping interpretation,
-        // then permit the other decimal separator for a fractional input.
         let alternateSeparator: Character = separator == "." ? "," : "."
         let fractionalAmount = FiatCurrencies.byCode[currency]?.hasDecimalPlaces == false ? Tokenizer.parseNumberRun(run, decimal: alternateSeparator, grouping: separator) : nil
         guard let amount = Tokenizer.parseNumberRun(run, decimal: separator, grouping: separator == "." ? "," : ".") ?? fractionalAmount else {

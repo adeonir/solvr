@@ -2,12 +2,6 @@
 import Foundation
 import Testing
 
-// A percentage written beside a value reads that value as its base: a
-// money share keeps the currency, an addition takes the base from the
-// other side, and a monetary ratio converts through the exchange rate.
-// Locale and display precision stay fixed per fixture through the
-// EvaluationContext.
-
 struct PercentMonetaryTests {
     private func decimal(_ text: String) -> Decimal {
         Decimal(string: text, locale: Locale(identifier: "en_US_POSIX")) ?? .nan
@@ -29,8 +23,6 @@ struct PercentMonetaryTests {
         )
         return context
     }
-
-    // MARK: Shares and portions over monetary values
 
     @Test(arguments: [
         ("$100 + 10%", "$ 110"),
@@ -58,8 +50,6 @@ struct PercentMonetaryTests {
         #expect(results[1].diagnostic == nil)
     }
 
-    // MARK: Addition reads a percentage's base from the other side
-
     @Test(arguments: [
         ("10 + 40%", "14"),
         ("10% + 40", "44"),
@@ -82,8 +72,6 @@ struct PercentMonetaryTests {
         #expect(result.display == "364.5771125")
     }
 
-    // MARK: Monetary ratios in the percent representation
-
     @Test(arguments: [
         ("$50 as a % of $200", "25%"),
         ("R$ 50 as a % of 200", "25%"),
@@ -97,8 +85,6 @@ struct PercentMonetaryTests {
 
     @Test
     func distinctCurrenciesConvertThroughTheExchangeRate() {
-        // The EUR rate builds the EUR→BRL cross so the ratio comes out at
-        // exactly 32,5562535498% (and the EUR→USD one at exactly 22,3405%).
         let rateEUR = decimal("0.325562535498") * decimal("5.4393") / 2
         let reais = evaluate(
             sheetText: "R$ 1.000 as a % of €500",
@@ -124,8 +110,6 @@ struct PercentMonetaryTests {
         #expect(result.diagnostic?.message == "Exchange rate unavailable: EUR")
     }
 
-    // MARK: Quantities and durations
-
     @Test(arguments: [
         ("15% of 200 min", "30 min", 1800),
         ("15% of 200 km", "30 km", 30),
@@ -147,8 +131,6 @@ struct PercentMonetaryTests {
         #expect(result.display == "25%")
     }
 
-    // MARK: A percentage of a percentage
-
     @Test
     func shareOfAShareShowsAsAPercent() {
         let result = evaluate(sheetText: "10% of 50%", context: context())[0]
@@ -157,8 +139,6 @@ struct PercentMonetaryTests {
         #expect(result.display == "5%")
     }
 
-    // MARK: Cryptocurrency
-
     @Test
     func cryptoJoinsThroughTheMonetaryValueConcept() {
         let result = evaluate(sheetText: "20% of 5 BTC", context: context())[0]
@@ -166,8 +146,6 @@ struct PercentMonetaryTests {
         #expect(result.value == .monetary(MonetaryValue(amount: 1, currency: "BTC")))
         #expect(result.display == "BTC 1")
     }
-
-    // MARK: Incompatible forms and the ratio of zero
 
     @Test(arguments: [
         ("20% of 31 Mar", "Invalid syntax"),
@@ -179,8 +157,6 @@ struct PercentMonetaryTests {
         #expect(result.value == nil)
         #expect(result.diagnostic?.message == message)
     }
-
-    // MARK: The sheet shows each result beside its expression
 
     @Test
     func sheetShowsTheResultsBesideEachExpression() {

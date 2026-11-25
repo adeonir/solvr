@@ -1,15 +1,6 @@
-// The named functions and the bitwise operators compute on Foundation
-// Decimal directly, without passing through Double. Argument counts are
-// errors local to their expression and name their function exactly; `;`
-// separates arguments in every locale. min and max take at least two
-// arguments; sqrt, sin, and log are calculated on Decimal and keep their
-// error bounds: arithmetic and sqrt stay within half a unit in the 34th
-// significant digit, sin and log within one.
-
 import Foundation
 
 enum Functions {
-    /// The language's 38-digit pi, shared with the constants.
     private static let pi = VariableTable.Constants.values["pi"]!
     private static let naturalLog2 = try? Decimal(
         exact: "0.69314718055994530941723212145817656808"
@@ -17,13 +8,8 @@ enum Functions {
     private static let naturalLog10 = try? Decimal(
         exact: "2.30258509299404568401799145468436420760"
     )
-    /// Series terms below this magnitude can no longer move the 34th
-    /// significant digit.
     private static let seriesCutoff = try! Decimal(exact: "1e-46")
-    /// Relative seed-error at which Newton's root self-consistency holds.
     private static let rootCutoff = try! Decimal(exact: "1e-36")
-
-    // MARK: Dispatch
 
     static func apply(name: String, arguments: [Decimal]) throws -> Decimal {
         switch name {
@@ -59,8 +45,6 @@ enum Functions {
         return try body(arguments[0])
     }
 
-    // MARK: min and max: at least two arguments each
-
     static func minimum(_ arguments: [Decimal]) throws -> Decimal {
         try extremum(arguments, named: "min", keep: { $0 < $1 })
     }
@@ -85,12 +69,6 @@ enum Functions {
         return result
     }
 
-    // MARK: Square root: Newton's method seeded by the power of ten
-
-    /// sqrt on Decimal: the magnitude splits into mantissa and exponent,
-    /// a power-of-ten seed stays within a small factor of the root, and
-    /// the Newton iteration refines quadratically to well within half a
-    /// unit in the 34th significant digit without Double pass-through.
     static func sqrt(_ x: Decimal) throws -> Decimal {
         if x.isNaN {
             throw Diagnostic.outOfRange
@@ -109,9 +87,6 @@ enum Functions {
             split.remainder += 2
         }
         let decade = try Numeric.power(Decimal(10), by: split.quotient)
-        // sqrt(mantissa) lies in [1, 3.17) for an even exponent and
-        // sqrt(10·mantissa) in [3.16, 10) for an odd one: 2 and 5 seed
-        // within a factor of two of the root both ways.
         let seed = split.remainder == 0 ? Decimal(2) : Decimal(5)
         var guess = try Numeric.multiply(seed, decade)
         for iteration in 1 ... 40 {
@@ -126,11 +101,6 @@ enum Functions {
         return guess
     }
 
-    // MARK: Factorial: the product climbs to the numeric range edge
-
-    /// `fact 80` keeps its whole digits inside the supported magnitude;
-    /// the product past `fact 84` overflows Decimal and reports Out of
-    /// range.
     static func factorial(_ x: Decimal) throws -> Decimal {
         if x.isNaN {
             throw Diagnostic.outOfRange
@@ -150,11 +120,6 @@ enum Functions {
         return product
     }
 
-    // MARK: Sine: degrees reduced, radians from the language's pi
-
-    /// Sine of an angle given in degrees: full turns reduce exactly on
-    /// Decimal, the radians come from the 38-digit pi, and the Taylor
-    /// series carries the rest.
     static func sine(degrees: Decimal) throws -> Decimal {
         if degrees.isNaN {
             throw Diagnostic.outOfRange
@@ -166,8 +131,6 @@ enum Functions {
             var floored = Decimal()
             var mutable = turns
             NSDecimalRound(&floored, &mutable, 0, .down)
-            // The division rounds; step the turn count back onto the
-            // exact multiple so the remainder keeps its true place.
             let turn = Decimal(360)
             while floored * turn > magnitude {
                 floored -= 1
@@ -182,8 +145,6 @@ enum Functions {
         return negative ? -value : value
     }
 
-    /// The alternating Taylor series of the sine; terms shrink below a
-    /// magnitude that cannot move the 34th significant digit.
     private static func sineSeries(_ radians: Decimal) throws -> Decimal {
         let squared = radians * radians
         var term = radians
@@ -200,10 +161,6 @@ enum Functions {
         return sum
     }
 
-    // MARK: Logarithm: decades and mantissa halves, series remainder
-
-    /// The logarithm of x to base b on Decimal; the natural logarithm
-    /// divides through, so both operands stay on Decimal.
     static func logarithm(_ x: Decimal, base: Decimal) throws -> Decimal {
         if x.isNaN || base.isNaN {
             throw Diagnostic.outOfRange
@@ -212,9 +169,6 @@ enum Functions {
         return try Numeric.divide(naturalLog(x), by: naturalLog(base))
     }
 
-    /// The natural logarithm: the decade carries into the sum of the
-    /// language's ln constants, the mantissa halves down to `[1, 2)`, and
-    /// the inverse hyperbolic tangent series carries the remainder.
     static func naturalLog(_ x: Decimal) throws -> Decimal {
         guard x > 0 else { throw Diagnostic.notARealNumber }
         let (mantissa, exponent) = Numeric.normalizedParts(of: x)
@@ -224,8 +178,6 @@ enum Functions {
             scaled = try Numeric.check(scaled / 2)
             halves += 1
         }
-        // scaled in [1, 2) keeps the series ratio below 1/3, so it
-        // converges within a few dozen terms.
         let ratio = try Numeric.check((scaled - 1) / (scaled + 1))
         var term = ratio
         var sum = ratio
@@ -247,17 +199,11 @@ enum Functions {
         return result
     }
 
-    // MARK: Bitwise operators: whole numbers, two's-complement signs
-
-    /// `6 & 3` is 2. The bitwise operators demand whole numbers and keep
-    /// the sign of two's-complement arithmetic over the language's whole
-    /// magnitude range.
     static func bitwiseAnd(_ a: Decimal, _ b: Decimal) throws -> Decimal {
         try combining(a, b, bit: { left, right in left == 1 && right == 1 ? 1 : 0 },
                       negative: { negativeA, negativeB in negativeA && negativeB })
     }
 
-    /// `6 | 3` and `6 or 3` are 7.
     static func bitwiseOr(_ a: Decimal, _ b: Decimal) throws -> Decimal {
         try combining(a, b, bit: { left, right in left == 1 || right == 1 ? 1 : 0 },
                       negative: { negativeA, negativeB in negativeA || negativeB })
@@ -289,9 +235,6 @@ enum Functions {
         return negativeResult ? -value : value
     }
 
-    /// The two's-complement pattern at the given width: a positive value
-    /// zero-extends its magnitude bits, a negative one flips the bits of
-    /// its magnitude's predecessor, `|v| - 1`.
     private static func patternBits(of value: Decimal, width: Int) -> [Int] {
         var padded = [Int](repeating: 0, count: width)
         let magnitude = value < 0 ? -value : value
@@ -302,9 +245,6 @@ enum Functions {
         return value < 0 ? padded.map { $0 == 1 ? 0 : 1 } : padded
     }
 
-    /// The bits, least significant first, of a whole number's magnitude.
-    /// Decimal carries whole numbers as a digit string over an exponent,
-    /// so the digits divide down by two.
     private static func magnitudeBits(of value: Decimal) -> [Int] {
         let magnitude = value < 0 ? -value : value
         if magnitude == 0 {
@@ -336,8 +276,6 @@ enum Functions {
         return bits
     }
 
-    /// The magnitude bits of a negative two's-complement pattern: the
-    /// flipped bits, plus one.
     private static func complementMagnitude(_ bits: [Int]) -> [Int] {
         var flipped = bits.map { $0 == 1 ? 0 : 1 }
         var carry = 1
@@ -351,8 +289,6 @@ enum Functions {
         return flipped
     }
 
-    /// The Decimal a magnitude's bits build back into, most significant
-    /// bit first with carries along the decimal digits.
     private static func decimalFromBits(_ bits: [Int]) throws -> Decimal {
         var decimalDigits = [0]
         for bit in bits.reversed() {

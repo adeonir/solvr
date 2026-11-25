@@ -2,19 +2,11 @@
 import Foundation
 import Testing
 
-// `15 min` is a duration of 15 minutes rather than a minimum-function
-// call, each unit accepts its standard abbreviation and its full name
-// singular and plural, `in` converts numerically with ten displayed
-// decimal places, and `to timespan` decomposes in chains that compose in
-// their written order, with one sign over the whole duration and
-// preserved fractions. A date-free month counts 30 days, on any clock.
-// Locale, display precision, time zone, and clock are fixed per fixture.
-
 struct DurationTests {
     private func context(
         locale identifier: String = "pt_BR",
         precision: Int = 10,
-        now: Date = Date(timeIntervalSince1970: 1_791_926_400) // 2026-10-30 00:00 UTC
+        now: Date = Date(timeIntervalSince1970: 1_791_926_400)
     ) -> EvaluationContext {
         EvaluationContext(
             localeIdentifier: identifier,
@@ -31,8 +23,6 @@ struct DurationTests {
     private func display(_ source: String, precision: Int = 10) -> String? {
         result(source, context: context(precision: precision)).display
     }
-
-    // MARK: Acceptance examples
 
     @Test(arguments: [
         ("145 mins to timespan", "2 hours 25 min"),
@@ -52,8 +42,6 @@ struct DurationTests {
         #expect(conversion.display == expected)
     }
 
-    // MARK: `15 min` is a duration, not a minimum call
-
     @Test
     func fifteenMinutesIsADurationTheValueAnchoringOnSeconds() {
         let conversion = result("15 min")
@@ -69,8 +57,6 @@ struct DurationTests {
         #expect(results[0].display == "1,5")
         #expect(results[1].display == "15 min")
     }
-
-    // MARK: Abbreviations and full names accept alike
 
     @Test(arguments: [
         (["15 min", "15 mins", "15 minute", "15 minutes"], "15 min"),
@@ -89,7 +75,6 @@ struct DurationTests {
         }
     }
 
-    /// Unit lookup is not case-sensitive, like every unit's aliases.
     @Test
     func unitAliasesMatchAnyCase() {
         let results = evaluate(
@@ -100,8 +85,6 @@ struct DurationTests {
         #expect(results[1].display == "1 min 30 s")
     }
 
-    /// No alias beyond the standard abbreviation and the full names:
-    /// an unaccepted unit word leaves the line with no usable result.
     @Test(arguments: ["15 sec in mins", "2 yrs in days", "1 fortnight in weeks"])
     func wordsNoDurationUnitAcceptsStayInvalidSyntax(_ source: String) {
         let conversion = result(source)
@@ -110,8 +93,6 @@ struct DurationTests {
         #expect(conversion.diagnostic == .syntax)
         #expect(conversion.diagnostic?.message == "Invalid syntax")
     }
-
-    // MARK: Numeric conversions
 
     @Test(arguments: [
         ("1500 mins in hours", "25 hours"),
@@ -126,8 +107,6 @@ struct DurationTests {
         #expect(display(source) == expected)
     }
 
-    /// Conversions never round the duration value: a chain that converts
-    /// twice still shows the value the written quantity carries.
     @Test
     func chainedConversionsKeepTheSecondsValue() {
         let results = evaluate(sheetText: "1500 mins in days in hours", context: context())
@@ -136,9 +115,6 @@ struct DurationTests {
         #expect(results[0].display == "25 hours")
     }
 
-    /// A conversion is numeric and reusable inside arithmetic: the line
-    /// counts the seconds magnitude the conversion contributes, and
-    /// shows a plain number, like any quantity conversion.
     @Test
     func convertedDurationsKeepTheirNumericMeaningInsideArithmetic() {
         let result = evaluate(sheetText: "1500 mins in hours times 4", context: context())
@@ -146,8 +122,6 @@ struct DurationTests {
         #expect(result[0].value == .decimal(360_000))
         #expect(result[0].display == "360.000")
     }
-
-    // MARK: Display precision changes formatting, not the value
 
     @Test
     func displayPrecisionChangesTheDurationFormattingNotTheValue() {
@@ -157,12 +131,8 @@ struct DurationTests {
         )
         #expect(results[0].display == "1,04 days")
         #expect(results[0].value == .decimal(90000))
-        // The value keeps the seconds magnitude, so the timespan form at
-        // low precision still holds the day and the hour.
         #expect(results[2].display == "1 day 1 hour")
     }
-
-    // MARK: Duration arithmetic composes into timespans
 
     @Test(arguments: [
         ("(45 min + 30 s) to timespan", "45 min 30 s"),
@@ -172,8 +142,6 @@ struct DurationTests {
     func arithmeticComposesIntoTheTimespan(_ source: String, _ expected: String) {
         #expect(display(source) == expected)
     }
-
-    // MARK: Timespans of other units
 
     @Test(arguments: [
         ("90 min to timespan", "1 hour 30 min"),
@@ -185,8 +153,6 @@ struct DurationTests {
     func timespansOfOtherUnits(_ source: String, _ expected: String) {
         #expect(display(source) == expected)
     }
-
-    // MARK: Signs and fractions
 
     @Test(arguments: [
         ("-90,5 s to timespan", "-1 min 30,5 s"),
@@ -204,11 +170,9 @@ struct DurationTests {
         #expect(conversion.display == "1 min 30,5 s")
     }
 
-    // MARK: Date-free months count 30 days
-
     @Test(arguments: [
-        (Date(timeIntervalSince1970: 1_791_926_400), "30 days"), // Oct 2026
-        (Date(timeIntervalSince1970: 1_767_225_600), "30 days") // Jan 2026
+        (Date(timeIntervalSince1970: 1_791_926_400), "30 days"),
+        (Date(timeIntervalSince1970: 1_767_225_600), "30 days")
     ])
     func monthConversionsAreClockIndependent(now: Date, _ expected: String) {
         let results = evaluate(
@@ -221,16 +185,12 @@ struct DurationTests {
         }
     }
 
-    // MARK: Labels ignore their own words
-
     @Test
     func labelsLeaveTheDurationFormToEvaluate() {
         let result = evaluate(sheetText: "reunião 90 min to timespan", context: context())
         #expect(result[0].diagnostic == nil)
         #expect(result[0].display == "1 hour 30 min")
     }
-
-    // MARK: Incomplete duration forms show no message
 
     @Test(arguments: ["1500 mins to", "90 s in", "145 mins in days to"])
     func cutShortDurationFormsStayIncomplete(_ source: String) {
@@ -241,7 +201,6 @@ struct DurationTests {
         #expect(conversion.diagnostic == nil)
     }
 
-    /// A word the timespan form does not complete is invalid where it fits.
     @Test
     func unfinishableTimespanFormIsInvalidSyntax() {
         let conversion = result("1500 mins to hours")

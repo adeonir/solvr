@@ -74,8 +74,6 @@ public final class ExchangeRateService {
             let table = try await source.fetch()
             try table.validate()
             let fresh = ExchangeRateSnapshot(base: table.base, rates: table.rates, fetchedAt: now)
-            // Publish only once the replacement is durable. Neither network
-            // nor disk failure can discard the last usable snapshot.
             try cache.save(fresh)
             snapshot = fresh
             lastUpdateFailed = false

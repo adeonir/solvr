@@ -2,10 +2,6 @@
 import Foundation
 import Testing
 
-// One value of family, size, and line height gives every font size and line
-// metric of the sheet editor. The defaults reproduce the editor's fixed
-// metrics.
-
 struct SheetTypographyTests {
     @Test func defaultsMatchTheCurrentSheet() {
         let typography = SheetTypography.default

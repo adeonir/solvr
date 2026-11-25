@@ -2,9 +2,6 @@
 import Foundation
 import Testing
 
-// Locale, display precision, time zone, and clock are fixed per fixture
-// through the EvaluationContext.
-
 struct ArithmeticSheetTests {
     private func context(
         locale identifier: String = "en_US",
@@ -13,12 +10,10 @@ struct ArithmeticSheetTests {
         EvaluationContext(
             localeIdentifier: identifier,
             timeZone: TimeZone(identifier: "America/Sao_Paulo")!,
-            now: Date(timeIntervalSince1970: 1_791_926_400), // 2026-10-30 00:00 UTC
+            now: Date(timeIntervalSince1970: 1_791_926_400),
             displayPrecision: precision
         )
     }
-
-    // MARK: Basic arithmetic
 
     @Test(arguments: [
         ("2 + 2", "4"),
@@ -54,8 +49,6 @@ struct ArithmeticSheetTests {
         #expect(result.display == expected)
     }
 
-    // MARK: Exact decimal values independent of display
-
     @Test
     func exactDecimalArithmetic() {
         let result = evaluate(sheetText: "0.1 + 0.2\nx = 0.1 + 0.2\nx", context: context())[1]
@@ -65,7 +58,6 @@ struct ArithmeticSheetTests {
 
     @Test
     func approximateValueRetainsSignificantDigits() {
-        // 1 / 3 retains at least 34 significant decimal digits internally.
         let digits34 = String(repeating: "3", count: 34)
         let result = evaluate(
             sheetText: "1 / 3",
@@ -80,11 +72,8 @@ struct ArithmeticSheetTests {
         let loose = context(precision: 40)
         #expect(evaluate(sheetText: "x = 1 / 3\nx * 3", context: precise)[0].display == "0.33")
         #expect(evaluate(sheetText: "x = 1 / 3\nx * 3", context: precise)[1].display == "1")
-        // The retained value must not depend on the display precision.
         #expect(evaluate(sheetText: "x = 1 / 3\nx * 3", context: loose)[1].display == "0.9999999999999999999999999999999999")
     }
-
-    // MARK: Numeric range
 
     @Test
     func supportedMagnitudeEndpointsAreAccepted() {
@@ -106,8 +95,6 @@ struct ArithmeticSheetTests {
         #expect(result.diagnostic?.message == "Out of range")
     }
 
-    // MARK: Rounding ties
-
     @Test
     func displayedExactTiesRoundAwayFromZero() {
         let brazillian = context(locale: "pt_BR", precision: 2)
@@ -117,17 +104,12 @@ struct ArithmeticSheetTests {
 
     @Test
     func retainedTieAt34SignificantDigitsRoundsAwayFromZero() {
-        // 1.0000000000000000000000000000000005 rounded to 34 significant
-        // digits is 1.000000000000000000000000000000001 (tenth of a mantissa
-        // unit up), never the even neighbor.
         let tie = "1.0000000000000000000000000000000005"
         let up = "1.000000000000000000000000000000001"
         let result = evaluate(sheetText: tie, context: context(precision: 36))[0]
         #expect(result.display == up)
         #expect(evaluate(sheetText: "-" + tie, context: context(precision: 36))[0].display == "-" + up)
     }
-
-    // MARK: Errors stay local to one expression
 
     @Test
     func divisionByZero_leavesIndependentExpressionsEvaluating() {
@@ -147,8 +129,6 @@ struct ArithmeticSheetTests {
         #expect(results[1].display == "4")
     }
 
-    // MARK: Incomplete expressions show no message and no stale result
-
     @Test(arguments: ["2 +", "min(3", "price ="])
     func incompleteExpressionsShowNoMessage(_ source: String) {
         let result = evaluate(sheetText: source, context: context())[0]
@@ -162,8 +142,6 @@ struct ArithmeticSheetTests {
         let before = evaluate(sheetText: "2 + 2\n3 + 3", context: context())
         #expect(before[0].display == "4")
         #expect(before[1].display == "6")
-        // The same sheet edited on line 1 reevaluates from scratch: the one
-        // invalid line leaves no result; nothing else changes.
         let after = evaluate(sheetText: "2 +\n3 + 3", context: context())
         #expect(after[0].kind == .incomplete)
         #expect(after[0].value == nil && after[0].diagnostic == nil)
@@ -172,8 +150,6 @@ struct ArithmeticSheetTests {
         #expect(validAgain[0].display == "40")
         #expect(validAgain[1].display == "6")
     }
-
-    // MARK: Text lines and labels
 
     @Test
     func textLineShowsNoResultAndNoMessage() {
@@ -188,8 +164,6 @@ struct ArithmeticSheetTests {
         #expect(result.display == "5")
         #expect(result.diagnostic == nil)
     }
-
-    // MARK: Headings and comments are distinguished from expressions
 
     @Test
     func headingAndCommentProduceNoResult() {

@@ -2,8 +2,6 @@
 import Foundation
 import Testing
 
-// The parts of sheet lines are read through the public SolvrCore API only.
-
 struct LinePartsTests {
     private let context = EvaluationContext(
         localeIdentifier: "en_US",
@@ -20,7 +18,6 @@ struct LinePartsTests {
         }
     }
 
-    /// The parts of the last line of the sheet text, as the text each covers.
     private func parts(_ sheetText: String) -> [Part] {
         let lines = sheetText.components(separatedBy: "\n")
         let all = lineParts(sheetText: sheetText, context: context)

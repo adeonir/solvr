@@ -1,7 +1,3 @@
-// A valid precision value is stored as it is typed and reaches every open
-// sheet at once. A cleared or invalid field restores its last valid value
-// when focus leaves it.
-
 import Core
 import SwiftUI
 

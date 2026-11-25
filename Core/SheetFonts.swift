@@ -1,7 +1,3 @@
-// The app reads the installed faces from the system; this file decides
-// which families are monospaced, which faces a sheet draws with, and which
-// family it falls back to.
-
 import Foundation
 
 /// One installed font face, as the system reports it.

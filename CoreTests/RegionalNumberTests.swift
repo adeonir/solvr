@@ -2,9 +2,6 @@
 import Foundation
 import Testing
 
-// Locale and display precision are fixed per fixture through the
-// EvaluationContext.
-
 struct RegionalNumberTests {
     private func context(
         locale identifier: String = "pt_BR",
@@ -13,12 +10,10 @@ struct RegionalNumberTests {
         EvaluationContext(
             localeIdentifier: identifier,
             timeZone: TimeZone(identifier: "America/Sao_Paulo")!,
-            now: Date(timeIntervalSince1970: 1_791_926_400), // 2026-10-30 00:00 UTC
+            now: Date(timeIntervalSince1970: 1_791_926_400),
             displayPrecision: precision
         )
     }
-
-    // MARK: Regional number reading
 
     @Test
     func brazilianFormattingReadsDotsForThousandsAndCommasForDecimals() throws {
@@ -63,8 +58,6 @@ struct RegionalNumberTests {
         #expect(result.value == nil)
     }
 
-    // MARK: Base literals
-
     @Test(arguments: [
         ("0b110111011", Decimal(443)),
         ("0o1435343", Decimal(408_291)),
@@ -75,8 +68,6 @@ struct RegionalNumberTests {
         #expect(result.value == .decimal(value))
         #expect(result.diagnostic == nil)
     }
-
-    // MARK: Representation conversions
 
     @Test(arguments: [
         ("0b110111011 in hex", "0x1bb", Decimal(443)),
@@ -97,8 +88,6 @@ struct RegionalNumberTests {
         #expect(result.value == .decimal(value))
     }
 
-    // MARK: Scientific representation
-
     @Test(arguments: [
         ("5 300 in sci", "5,3E3"),
         ("150 000 in sci", "1,5E5"),
@@ -118,29 +107,22 @@ struct RegionalNumberTests {
         #expect(result.display == "5.3E3")
     }
 
-    // MARK: Display precision changes only the representation
-
     @Test
     func displayPrecisionChangesTheRepresentationOnly() throws {
         let atTwo = evaluate(sheetText: "1 / 3", context: context(precision: 2))[0]
         let atTen = evaluate(sheetText: "1 / 3", context: context(precision: 10))[0]
         #expect(atTwo.display == "0,33")
         #expect(atTen.display == "0,3333333333")
-        // The retained value stays the same at every precision.
         #expect(atTwo.value == atTen.value)
         let one = try Decimal(exact: "1")
         let three = try Decimal(exact: "3")
         #expect(atTwo.value == .decimal(Numeric.retain(one / three)))
-        // At least 34 significant digits survive internally.
         let atForty = evaluate(sheetText: "1 / 3", context: context(precision: 40))[0]
         #expect(atForty.display == "0," + String(repeating: "3", count: 34))
-        // The reused value does not shrink with the displayed places.
         #expect(
             evaluate(sheetText: "x = 1 / 3\nx * 3", context: context(precision: 2))[1].display == "1"
         )
     }
-
-    // MARK: Representations keep the numeric value
 
     @Test
     func representationInsideArithmeticKeepsItsNumericValue() {
@@ -156,8 +138,6 @@ struct RegionalNumberTests {
         #expect(results[1].display == "510")
     }
 
-    // MARK: Regional labels behave like everywhere else
-
     @Test
     func labelIsIgnoredBeforeARegionalNumber() {
         let result = evaluate(sheetText: "compras 5 300 in sci", context: context())[0]
@@ -165,16 +145,12 @@ struct RegionalNumberTests {
         #expect(result.diagnostic == nil)
     }
 
-    // MARK: Incomplete conversions show no message
-
     @Test
     func conversionCutShortShowsNoMessage() {
         let result = evaluate(sheetText: "5 in", context: context())[0]
         #expect(result.kind == .incomplete)
         #expect(result.value == nil && result.display == nil && result.diagnostic == nil)
     }
-
-    // MARK: Unreadable input stays invalid syntax
 
     @Test(arguments: [
         "0b12",

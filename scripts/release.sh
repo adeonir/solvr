@@ -1,5 +1,4 @@
 #!/bin/sh
-# Builds dist/Solvr-<version>.zip, ad-hoc signed; with DEVELOPER_ID_IDENTITY and NOTARY_KEYCHAIN_PROFILE it signs with Developer ID, notarizes, and staples. Pass --skip-checks to skip the clean-tree and version-tag guards.
 set -eu
 
 cd "$(dirname "$0")/.."
@@ -17,7 +16,6 @@ for arg in "$@"; do
     esac
 done
 
-# Read the two signing variables from an optional gitignored file; a variable already set in the environment is kept.
 if [ -f .env.release ]; then
     while IFS='=' read -r key value; do
         case "$key" in

@@ -2,11 +2,6 @@
 import Foundation
 import Testing
 
-// Size runs from 9 through 32 with default 13, line height from 1 through 3
-// with at most one decimal place and default 2. An empty field commits the
-// default; any other invalid text commits the last valid value. Line height
-// text uses a dot separator whatever the regional number formatting.
-
 struct TypographySettingTests {
     @Test func defaultsAndRangesMatchTheSpec() {
         #expect(TypographySetting.sizeDefault == 13)

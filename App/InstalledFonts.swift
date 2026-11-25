@@ -1,7 +1,3 @@
-// The installed faces are read from the system once. Each face carries its
-// CoreText monospace trait and the measured advances of a glyph sample,
-// which SolvrCore uses to decide what counts as monospaced.
-
 import AppKit
 import Core
 import CoreText
@@ -9,7 +5,6 @@ import CoreText
 enum InstalledFonts {
     static let faces: [InstalledFace] = readFaces()
 
-    /// Wide and narrow glyphs: equal advances across them mean monospaced.
     private static let sample = "iIlmW0.-"
 
     private static func readFaces() -> [InstalledFace] {

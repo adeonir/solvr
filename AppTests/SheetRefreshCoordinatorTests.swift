@@ -3,10 +3,6 @@ import Foundation
 @testable import Solvr
 import Testing
 
-// AppTests exercises the app-owned refresh coordinator without UI
-// automation: a controllable clock and a test event source drive local
-// midnight and the return-to-app refresh deterministically.
-
 @MainActor
 final class TestApplicationEventSource: ApplicationEventSource {
     private var handler: ((SheetRefreshTrigger) -> Void)?

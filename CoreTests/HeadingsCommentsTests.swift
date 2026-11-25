@@ -2,11 +2,6 @@
 import Foundation
 import Testing
 
-// Headings and comments organize the sheet without evaluating their text;
-// the evaluator keeps both distinguishable from expressions. Locale,
-// display precision, time zone, and clock are fixed per fixture through
-// the EvaluationContext.
-
 struct HeadingsCommentsTests {
     private func context(
         locale identifier: String = "en_US",
@@ -15,7 +10,7 @@ struct HeadingsCommentsTests {
         EvaluationContext(
             localeIdentifier: identifier,
             timeZone: TimeZone(identifier: "America/Sao_Paulo")!,
-            now: Date(timeIntervalSince1970: 1_791_926_400), // 2026-10-30 00:00 UTC
+            now: Date(timeIntervalSince1970: 1_791_926_400),
             displayPrecision: precision
         )
     }
@@ -28,8 +23,6 @@ struct HeadingsCommentsTests {
         "##### Title",
         "###### Title"
     ]
-
-    // MARK: Headings produce no numeric result
 
     @Test(arguments: HeadingsCommentsTests.headingLines)
     func headingProduceNoNumericResult(_ source: String) {
@@ -52,8 +45,6 @@ struct HeadingsCommentsTests {
 
     @Test
     func headingTextIsNeverEvaluated() {
-        // Expression-looking heading text and trailing marker runs do not
-        // evaluate: the heading is the whole line.
         let result = evaluate(sheetText: "# 2 + 2", context: context())[0]
         #expect(result.kind == .heading)
         #expect(result.value == nil && result.display == nil && result.diagnostic == nil)
@@ -61,16 +52,11 @@ struct HeadingsCommentsTests {
 
     @Test
     func lineWithoutSpaceOrWithSevenMarkersIsNoHeading() {
-        // Markdown headings need the space after the markers, and the
-        // markers run to six: anything else follows the plain-line rule of
-        // no number, operator, `=`, or known name — a text line.
         let results = evaluate(sheetText: "#Title\n####### Title", context: context())
         #expect(results.count == 2)
         #expect(results.allSatisfy { $0.kind == .textLine })
         #expect(results.allSatisfy { $0.value == nil && $0.diagnostic == nil })
     }
-
-    // MARK: Comments produce no result
 
     @Test(arguments: [
         "// purchases",
@@ -87,15 +73,11 @@ struct HeadingsCommentsTests {
 
     @Test
     func commentTextNeverEvaluatesOrErrors() {
-        // Neither incomplete nor invalid comment text shows a message: the
-        // comment is never evaluated.
         let results = evaluate(sheetText: "// 2 +\n// undefined_name * 2", context: context())
         #expect(results.count == 2)
         #expect(results.allSatisfy { $0.kind == .comment })
         #expect(results.allSatisfy { $0.value == nil && $0.display == nil && $0.diagnostic == nil })
     }
-
-    // MARK: Inline comments leave their text unevaluated
 
     @Test(arguments: [
         ("2 + 2 // example", "4"),
@@ -108,8 +90,6 @@ struct HeadingsCommentsTests {
         #expect(result.display == expected)
         #expect(result.diagnostic == nil)
     }
-
-    // MARK: Headings, comments, and expressions stay distinguishable
 
     @Test
     func completeSheetDistinguishesHeadingsCommentsAndExpressions() {
