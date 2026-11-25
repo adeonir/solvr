@@ -50,12 +50,18 @@ xcodebuild -project Solvr.xcodeproj -scheme Solvr -configuration Release -destin
 
 app=.build/release/Build/Products/Release/Solvr.app
 
+# Nested code first, then the app; --deep is deprecated for signing.
 if [ -n "${DEVELOPER_ID_IDENTITY:-}" ]; then
-    # Nested code first, then the app; --deep is deprecated for signing.
     for framework in "$app"/Contents/Frameworks/*.framework; do
         codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID_IDENTITY" "$framework"
     done
     codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID_IDENTITY" "$app"
+else
+    # Library validation needs a Team ID, which an ad-hoc signature lacks, so an ad-hoc app with the hardened runtime cannot load the embedded Core framework.
+    for framework in "$app"/Contents/Frameworks/*.framework; do
+        codesign --force --sign - --timestamp=none "$framework"
+    done
+    codesign --force --sign - --timestamp=none "$app"
 fi
 codesign --verify --strict --verbose=2 "$app"
 

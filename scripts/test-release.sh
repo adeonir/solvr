@@ -90,6 +90,14 @@ else
     if ! codesign -dv "$app" 2>&1 | grep -q "Signature=adhoc"; then
         fail "ad-hoc build: signature is not ad-hoc"
     fi
+    if codesign -dv "$app" 2>&1 | grep -q "flags=.*runtime"; then
+        fail "ad-hoc build: the app carries the hardened runtime flag"
+    fi
+    for framework in "$app"/Contents/Frameworks/*.framework; do
+        if codesign -dv "$framework" 2>&1 | grep -q "flags=.*runtime"; then
+            fail "ad-hoc build: $(basename "$framework") carries the hardened runtime flag"
+        fi
+    done
     plist="$app/Contents/Info.plist"
     [ "$(defaults read "$plist" CFBundleShortVersionString)" = "0.1.0" ] || fail "ad-hoc build: version is not 0.1.0"
     [ "$(defaults read "$plist" CFBundleVersion)" = "1" ] || fail "ad-hoc build: build is not 1"
