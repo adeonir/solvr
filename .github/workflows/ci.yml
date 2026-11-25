@@ -33,3 +33,6 @@ jobs:
 
       - name: Test release script
         run: sh scripts/test-release.sh
+
+      - name: Test release verification
+        run: sh scripts/test-verify-release.sh
