@@ -67,8 +67,32 @@ jobs:
       - name: Verify the notarized build
         id: verify
         run: |
+          fail() {
+            echo "::error::$1"
+            echo "Replace the release asset with a notarized zip: run scripts/release.sh with DEVELOPER_ID_IDENTITY and NOTARY_KEYCHAIN_PROFILE set, upload it with 'gh release upload <tag> dist/Solvr-<version>.zip --clobber', and publish the release again."
+            exit 1
+          }
+
           zip=$(ls asset/Solvr-*.zip)
-          sh scripts/verify-release.sh "$zip"
+          work=$(mktemp -d)
+          ditto -x -k "$zip" "$work"
+          app="$work/Solvr.app"
+          [ -d "$app" ] || fail "the zip does not contain Solvr.app"
+
+          codesign --verify --strict --verbose=2 "$app" || fail "the app signature is not valid"
+
+          team=$(codesign -dv "$app" 2>&1 | sed -n 's/^TeamIdentifier=//p')
+          [ "$team" = "$EXPECTED_TEAM_ID" ] || fail "the app is signed by team '${team:-none}', expected $EXPECTED_TEAM_ID"
+
+          xcrun stapler validate "$app" || fail "the app has no valid stapled notarization ticket"
+
+          # The runner's Gatekeeper state is not documented, so the assessment only fails the job when assessments are enabled.
+          if spctl --status 2>&1 | grep -q "assessments enabled"; then
+            spctl --assess --type execute --verbose "$app" || fail "Gatekeeper rejects the app"
+          else
+            spctl --assess --type execute --verbose "$app" || echo "::warning::Gatekeeper rejects the app, but the runner has assessments disabled"
+          fi
+
           echo "sha256=$(shasum -a 256 "$zip" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
 
   tap:
@@ -97,7 +121,15 @@ jobs:
         env:
           TAG: ${{ github.event.release.tag_name }}
           VERIFIED_SHA256: ${{ needs.verify.outputs.sha256 }}
-        run: sh scripts/update-cask.sh tap "${TAG#v}" "$VERIFIED_SHA256" "$(ls asset/Solvr-*.zip)"
+        run: |
+          version="${TAG#v}"
+          sha256=$(sha256sum asset/Solvr-*.zip | cut -d ' ' -f 1)
+          if [ "$sha256" != "$VERIFIED_SHA256" ]; then
+            echo "::error::the asset sha256 $sha256 differs from the verified sha256 $VERIFIED_SHA256; the tap is not updated"
+            exit 1
+          fi
+          mkdir -p tap/Casks
+          sed -e "s/@VERSION@/$version/" -e "s/@SHA256@/$sha256/" packaging/homebrew/solvr.rb > tap/Casks/solvr.rb
 
       - name: Commit and push the cask
         env:
