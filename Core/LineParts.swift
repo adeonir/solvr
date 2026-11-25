@@ -92,28 +92,38 @@ extension SheetEvaluator {
             let item = spanned[position]
             switch item.token {
             case .word:
-                // A run of words: the longest defined name first, then each
-                // word on its own.
+                // A run of words: a conversion target or a weekday as the
+                // evaluation reads it, then the longest defined name, then
+                // each word on its own.
                 var end = position
                 var words: [String] = []
                 while end < spanned.count, case let .word(word) = spanned[end].token {
                     words.append(word)
                     end += 1
                 }
-                if let name = matchingDefinedName(words: words, definedNames: definedNames) {
+                // After `in` the evaluation reads a currency or a unit as the
+                // conversion target, whatever else shares its spelling.
+                let followsIn = position > 0 && spanned[position - 1].token == .in
+                if followsIn, let count = Self.currencyWordCount(words) {
+                    let last = spanned[position + count - 1]
+                    result.append(LinePart(kind: .value, range: lineRange(item.range.lowerBound ..< last.range.upperBound)))
+                    position += count
+                    continue
+                }
+                let target = followsIn ? Self.kind(ofUnit: words[0]) : nil
+                // A weekday names a calendar date only before the `in` of a
+                // weekday expression.
+                let weekday = words.count == 1 && Dates.Weekday(keyword: words[0]) != nil
+                    && end < spanned.count && spanned[end].token == .in
+                if target == nil, !weekday,
+                   let name = matchingDefinedName(words: words, definedNames: definedNames)
+                {
                     let last = spanned[position + name.count - 1]
                     result.append(LinePart(kind: .name, range: lineRange(item.range.lowerBound ..< last.range.upperBound)))
                     position += name.count
                     leading = false
                     continue
                 }
-                // A weekday names a calendar date only before the `in` of a
-                // weekday expression.
-                let weekday = words.count == 1 && Dates.Weekday(keyword: words[0]) != nil
-                    && end < spanned.count && spanned[end].token == .in
-                // After `in` a unit word is the conversion target, even when
-                // a function shares its spelling.
-                let target = position > 0 && spanned[position - 1].token == .in ? Self.kind(ofUnit: words[0]) : nil
                 let kind = weekday ? .calendarDate : target ?? Self.kind(ofWord: words[0], leading: leading)
                 if let kind {
                     result.append(LinePart(kind: kind, range: lineRange(item.range)))
@@ -157,7 +167,11 @@ extension SheetEvaluator {
         if let end = endOfTimeOfDay(at: position, in: spanned) {
             return (.timeOfDay, end, true)
         }
-        let next = position + 1
+        var next = position + 1
+        // The degree marker rides its number: `100 °F` is one quantity.
+        if next < spanned.count, spanned[next].token == .degree {
+            next += 1
+        }
         guard next < spanned.count, case let .word(word) = spanned[next].token else { return nil }
         if let kind = Self.kind(ofUnit: word) {
             return (kind, next, false)
@@ -205,6 +219,13 @@ extension SheetEvaluator {
             index += 1
         }
         return index
+    }
+
+    /// The number of leading words that spell the longest currency name.
+    private static func currencyWordCount(_ words: [String]) -> Int? {
+        (1 ... words.count).reversed().first {
+            Money.names[words.prefix($0).joined(separator: " ").lowercased()] != nil
+        }
     }
 
     /// The kind of a word that names a unit or a duration unit.

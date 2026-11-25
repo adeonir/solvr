@@ -178,6 +178,36 @@ struct LinePartsTests {
         #expect(parts("90 s in min").last == Part(text: "min", kind: .timeOfDay))
     }
 
+    @Test(arguments: [("100 °F in C", "100 °F", "C"), ("25°C in F", "25°C", "F")])
+    func aDegreeMarkerStaysInsideItsQuantity(line: String, quantity: String, target: String) {
+        #expect(parts(line) == [
+            Part(text: quantity, kind: .unit),
+            Part(text: "in", kind: .muted),
+            Part(text: target, kind: .unit)
+        ])
+    }
+
+    @Test func aConversionTargetSpelledLikeAVariableKeepsItsUnitKind() {
+        #expect(parts("s = 5\n90 min in s").last == Part(text: "s", kind: .timeOfDay))
+    }
+
+    @Test func aWeekdaySpelledLikeAVariableReadsAsACalendarDate() {
+        #expect(parts("mon = 2\nmon in 3 weeks").first == Part(text: "mon", kind: .calendarDate))
+    }
+
+    @Test(arguments: [
+        ("$8 in swiss francs", "$8", "swiss francs"),
+        ("$8 in canadian dollars", "$8", "canadian dollars"),
+        ("10 USD in pound sterling", "10 USD", "pound sterling")
+    ])
+    func aCurrencyNameOfSeveralWordsIsOneValue(line: String, amount: String, currency: String) {
+        #expect(parts(line) == [
+            Part(text: amount, kind: .value),
+            Part(text: "in", kind: .muted),
+            Part(text: currency, kind: .value)
+        ])
+    }
+
     @Test func currenciesAndMonetaryValues() {
         #expect(parts("$8 in BRL") == [
             Part(text: "$8", kind: .value),
