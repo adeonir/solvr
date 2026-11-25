@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solvr: a text calculator for Mac</title>
+<meta name="description" content="Solvr is a text calculator for Mac. You type a line, and the result shows up next to it.">
+<link rel="icon" href="assets/solvr-s.svg" type="image/svg+xml">
+<style>
+:root {
+  --bg: #161618;
+  --panel: #1F1F22;
+  --border: #2E2E33;
+  --text: #F2F2F3;
+  --muted: #B4B4BA;
+  --subtle: #96969E;
+  --accent: #E35A3C;
+  --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  line-height: 1.55;
+}
+
+a { color: var(--text); text-underline-offset: 4px; }
+a:hover { color: var(--accent); }
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.brand img { width: 28px; height: 28px; }
+
+.nav { display: flex; gap: 8px; }
+
+.nav a,
+.footer-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 15px;
+  text-decoration: none;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 96px;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding-top: 64px;
+  text-align: center;
+}
+
+.hero img { width: 96px; height: 96px; }
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(44px, 8vw, 64px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+
+.lead {
+  margin: 0;
+  max-width: 560px;
+  font-size: clamp(18px, 3vw, 22px);
+  color: var(--muted);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 28px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cta:hover { color: var(--bg); filter: brightness(1.08); }
+
+.screenshot {
+  display: flex;
+  justify-content: center;
+  margin-top: -48px;
+}
+
+.screenshot img {
+  display: block;
+  width: 100%;
+  max-width: 912px;
+  height: auto;
+}
+
+section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+h2 {
+  margin: 0;
+  font-size: clamp(26px, 4vw, 32px);
+  letter-spacing: -0.02em;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.intro p,
+.features p,
+.install p {
+  margin: 0;
+  font-size: 17px;
+  color: var(--muted);
+}
+
+.intro p { max-width: 640px; }
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 16px;
+}
+
+.sheet-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 24px;
+  padding: 12px 16px;
+}
+
+.sheet-line .result {
+  margin-left: auto;
+  color: #89B4FA;
+}
+
+.features {
+  gap: 40px;
+}
+
+.features-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+}
+
+.features-grid > div {
+  flex: 1 1 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.features h3 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.install-command {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 24px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+.install-command pre {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.install-command code { color: #CDD6F4; }
+.kw { color: #89B4FA; }
+.flag { color: #CBA6F7; }
+.arg { color: #A6E3A1; }
+
+.copy {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.copy:hover { color: var(--text); }
+
+.copy svg {
+  width: 18px;
+  height: 18px;
+}
+
+.subtle {
+  font-size: 15px !important;
+  color: var(--subtle) !important;
+}
+
+footer {
+  margin-top: 96px;
+  border-top: 1px solid var(--border);
+}
+
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 32px;
+  padding-bottom: 48px;
+  font-size: 15px;
+  color: var(--subtle);
+}
+
+.site-footer a { color: var(--subtle); }
+.site-footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="site-header">
+    <div class="brand">
+      <img src="assets/solvr-s.svg" alt="">
+      <span>Solvr</span>
+    </div>
+    <nav class="nav" aria-label="Page">
+      <a href="#install">Install</a>
+      <a href="https://github.com/adeonir/solvr">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <img src="assets/solvr-s.svg" alt="">
+      <h1>Solvr</h1>
+      <p class="lead">A beautiful text calculator for Mac. You type a line, and the result shows up next to it.</p>
+      <a class="cta" href="#install">Install with Homebrew</a>
+    </section>
+
+    <section class="screenshot">
+      <img src="assets/main-window.png" alt="Solvr main window with a sheet of calculation lines and their results">
+    </section>
+
+    <section class="intro">
+      <h2>The text is the calculator</h2>
+      <p>A sheet can hold a quick conversion during work or a budget you keep for months, because earlier lines and variables keep their meaning until you delete them.</p>
+      <div class="sheet" aria-label="Example sheet">
+        <div class="sheet-line">
+          <span><span class="kw">price</span> = <span>$8</span> times <span>3</span></span>
+          <span class="result">$ 24</span>
+        </div>
+        <div class="sheet-line">
+          <span><span class="kw">days</span> until <span class="arg">31 Mar</span></span>
+          <span class="result">148 days</span>
+        </div>
+        <div class="sheet-line">
+          <span><span class="kw">5pm</span> ldn in sf</span>
+          <span class="result">09:00</span>
+        </div>
+        <div class="sheet-line">
+          <span><span class="arg">16px</span> in <span class="arg">em</span></span>
+          <span class="result">1em</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <h2>What it does</h2>
+      <div class="features-grid">
+        <div>
+          <h3>Conversions</h3>
+          <p>Units, currencies, and cryptocurrencies, with exchange rates that update over the internet.</p>
+        </div>
+        <div>
+          <h3>Time zones</h3>
+          <p>Convert a time by time zone abbreviation or by city name.</p>
+        </div>
+        <div>
+          <h3>Saved sheets</h3>
+          <p>Each sheet saves after every change, so there is no save button, and you can edit it without an internet connection.</p>
+        </div>
+        <div>
+          <h3>Total and errors</h3>
+          <p>The total appears below the content. A line that cannot be calculated shows the reason, and the rest of the sheet keeps working.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="install" id="install">
+      <h2>Install</h2>
+      <p>Install it with Homebrew:</p>
+      <div class="install-command">
+        <pre><code><span class="kw">brew</span> install <span class="flag">--cask</span> <span class="arg">adeonir/tap/solvr</span></code></pre>
+        <button type="button" class="copy" aria-label="Copy command" data-copy="brew install --cask adeonir/tap/solvr">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        </button>
+      </div>
+      <p>You can also download the zip from the <a href="https://github.com/adeonir/solvr/releases">releases page</a>, unzip it, and move Solvr.app to Applications.</p>
+      <p class="subtle">Solvr needs macOS 26 or later and runs on Apple Silicon and Intel Macs.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="site-footer">
+      <span>Solvr</span>
+      <a href="https://github.com/adeonir/solvr">Source on GitHub</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+  document.querySelector('.copy').addEventListener('click', function (event) {
+    var command = event.currentTarget.dataset.copy;
+    navigator.clipboard.writeText(command);
+  });
+</script>
+</body>
+</html>
