@@ -14,7 +14,7 @@ This page is for the maintainer. CI builds an ad-hoc signed zip, and you replace
   ```
 
   A variable set in your shell wins over the file. Set both variables or neither.
-- Add the repository secret `TAP_TOKEN`, a token with write access to `adeonir/homebrew-tap`.
+- Add the repository secret `HOMEBREW_TAP_TOKEN`, a token with write access to `adeonir/homebrew-tap`.
 
 ## Publish a version
 

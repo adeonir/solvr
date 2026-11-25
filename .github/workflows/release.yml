@@ -90,7 +90,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: adeonir/homebrew-tap
-          token: ${{ secrets.TAP_TOKEN }}
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           path: tap
 
       - name: Update the cask
