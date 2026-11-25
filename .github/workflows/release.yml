@@ -70,3 +70,46 @@ jobs:
           zip=$(ls asset/Solvr-*.zip)
           sh scripts/verify-release.sh "$zip"
           echo "sha256=$(shasum -a 256 "$zip" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+  tap:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Download the release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release download "$TAG" --pattern 'Solvr-*.zip' --dir asset
+
+      - name: Check out the tap
+        uses: actions/checkout@v7
+        with:
+          repository: adeonir/homebrew-tap
+          token: ${{ secrets.TAP_TOKEN }}
+          path: tap
+
+      - name: Update the cask
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          VERIFIED_SHA256: ${{ needs.verify.outputs.sha256 }}
+        run: sh scripts/update-cask.sh tap "${TAG#v}" "$VERIFIED_SHA256" "$(ls asset/Solvr-*.zip)"
+
+      - name: Commit and push the cask
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          cd tap
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "The cask already carries this version and sha256."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/solvr.rb
+          git commit -m "solvr: update to ${TAG#v}"
+          git push
