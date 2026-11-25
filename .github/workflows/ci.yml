@@ -30,3 +30,6 @@ jobs:
 
       - name: Run CoreTests and AppTests
         run: xcodebuild -project Solvr.xcodeproj -scheme Solvr -destination 'platform=macOS' test CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= CODE_SIGN_STYLE=Automatic
+
+      - name: Test release script
+        run: sh scripts/test-release.sh
