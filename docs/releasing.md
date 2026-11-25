@@ -21,7 +21,7 @@ This page is for the maintainer. CI builds an ad-hoc signed zip, and you replace
 1. Set `MARKETING_VERSION` in `project.yml` and commit the change.
 2. Create the matching version tag on that commit: `git tag v<version>`.
 3. Push the tag: `git push origin v<version>`. This starts CI, which builds the ad-hoc zip and creates a draft release with the zip and its sha256.
-4. After CI creates the draft, run `sh scripts/release.sh` on the tagged commit. The script stops if the tree has uncommitted or untracked files. With both signing variables set, it signs with Developer ID, notarizes, staples, and writes `dist/Solvr-<version>.zip`.
+4. Wait for the `Release` workflow job to finish and create the draft. Then run `sh scripts/release.sh` on the tagged commit. The script stops if the tree has uncommitted or untracked files. With both signing variables set, it signs with Developer ID, notarizes, staples, and writes `dist/Solvr-<version>.zip`.
 5. Replace the draft asset: `gh release upload v<version> dist/Solvr-<version>.zip --clobber`.
 6. Replace the sha256 in the release notes, which still belongs to the ad-hoc zip:
 
