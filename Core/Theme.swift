@@ -64,22 +64,22 @@ public struct Theme: Equatable, Sendable, Identifiable {
         name: "Default",
         kind: .light,
         background: ThemeColor(hex: 0xFFFFFF),
-        text: ThemeColor(hex: 0x1D1D1F),
+        text: ThemeColor(hex: 0x000000, alpha: 0.85),
         lineNumber: ThemeColor(hex: 0xC7C7CC),
         lineNumberActive: ThemeColor(hex: 0x8E8E93),
-        result: ThemeColor(hex: 0x0062CC),
-        error: ThemeColor(hex: 0xD70015),
+        result: ThemeColor(hex: 0x0088FF),
+        error: ThemeColor(hex: 0xFF383C),
         caret: ThemeColor(hex: 0x007AFF),
         activeLine: ThemeColor(hex: 0x000000, alpha: 0.05),
-        sidebar: ThemeColor(hex: 0xF2F2F4),
-        sidebarSelection: ThemeColor(hex: 0xE1E1E5),
-        secondaryText: ThemeColor(hex: 0x636368),
+        sidebar: ThemeColor(hex: 0xF2F2F7),
+        sidebarSelection: ThemeColor(hex: 0xE5E5EA),
+        secondaryText: ThemeColor(hex: 0x8E8E93),
         tertiaryText: ThemeColor(hex: 0x8E8E93),
         border: ThemeColor(hex: 0x000000, alpha: 0.1),
         inputBackground: ThemeColor(hex: 0xFFFFFF),
         syntax: SyntaxColors(
-            heading: 0x1D1D1F, comment: 0x8E8E93, value: 0xB25000, calendarDate: 0x248A3D,
-            timeOfDay: 0x8A6D3B, unit: 0x0E7C86, name: 0x5856D6
+            heading: 0x000000, headingAlpha: 0.85, comment: 0x8E8E93, value: 0xFF8D28,
+            calendarDate: 0x34C759, timeOfDay: 0xAC7F5E, unit: 0x00C3D0, name: 0x6155F5
         )
     )
 
@@ -88,22 +88,22 @@ public struct Theme: Equatable, Sendable, Identifiable {
         name: "Default",
         kind: .dark,
         background: ThemeColor(hex: 0x1E1E1E),
-        text: ThemeColor(hex: 0xF5F5F7),
-        lineNumber: ThemeColor(hex: 0x505055),
+        text: ThemeColor(hex: 0xFFFFFF, alpha: 0.85),
+        lineNumber: ThemeColor(hex: 0x48484A),
         lineNumberActive: ThemeColor(hex: 0x8E8E93),
-        result: ThemeColor(hex: 0x4DA3FF),
-        error: ThemeColor(hex: 0xFF453A),
-        caret: ThemeColor(hex: 0x0A84FF),
+        result: ThemeColor(hex: 0x0091FF),
+        error: ThemeColor(hex: 0xFF4245),
+        caret: ThemeColor(hex: 0x007AFF),
         activeLine: ThemeColor(hex: 0xFFFFFF, alpha: 0.06),
-        sidebar: ThemeColor(hex: 0x232326),
-        sidebarSelection: ThemeColor(hex: 0x303033),
-        secondaryText: ThemeColor(hex: 0xA1A1A6),
-        tertiaryText: ThemeColor(hex: 0x7C7C82),
-        border: ThemeColor(hex: 0xFFFFFF, alpha: 0.1),
+        sidebar: ThemeColor(hex: 0x2C2C2E),
+        sidebarSelection: ThemeColor(hex: 0x2C2C2E),
+        secondaryText: ThemeColor(hex: 0x98989D),
+        tertiaryText: ThemeColor(hex: 0x8E8E93),
+        border: ThemeColor(hex: 0xFFFFFF, alpha: 0.12),
         inputBackground: ThemeColor(hex: 0x1E1E1E),
         syntax: SyntaxColors(
-            heading: 0xF5F5F7, comment: 0x7C7C82, value: 0xFF9F0A, calendarDate: 0x32D74B,
-            timeOfDay: 0xD6B07A, unit: 0x40C8E0, name: 0x7D7AFF
+            heading: 0xFFFFFF, headingAlpha: 0.85, comment: 0x8E8E93, value: 0xFF9230,
+            calendarDate: 0x30D158, timeOfDay: 0xB78A66, unit: 0x00D2E0, name: 0x6D7CFF
         )
     )
 
@@ -298,10 +298,10 @@ public struct SyntaxColors: Equatable, Sendable {
     public let name: ThemeColor
 
     init(
-        heading: UInt32, comment: UInt32, value: UInt32, calendarDate: UInt32,
-        timeOfDay: UInt32, unit: UInt32, name: UInt32
+        heading: UInt32, headingAlpha: Double = 1, comment: UInt32, value: UInt32,
+        calendarDate: UInt32, timeOfDay: UInt32, unit: UInt32, name: UInt32
     ) {
-        self.heading = ThemeColor(hex: heading)
+        self.heading = ThemeColor(hex: heading, alpha: headingAlpha)
         self.comment = ThemeColor(hex: comment)
         self.value = ThemeColor(hex: value)
         self.calendarDate = ThemeColor(hex: calendarDate)
